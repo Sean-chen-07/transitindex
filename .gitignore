@@ -1,0 +1,24 @@
+# Secrets — never commit the real connection string
+.env
+.env.local
+
+# Node (web/, Lane B)
+node_modules/
+.next/
+out/
+
+# Python (ingest/, Lane A)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# dbmate local artifacts
+/db/.dbmate/
+
+# Claude Code machine-local settings (per-user; shared config stays tracked)
+.claude/settings.local.json
+
+# OS / editor
+.DS_Store
+Thumbs.db

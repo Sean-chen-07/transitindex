@@ -1,0 +1,157 @@
+# TransitIndex — TODOS
+
+Deferred work and decisions, captured from the 2026-05-29 CEO review.
+"Written down or it doesn't exist." Source of truth for build order is the MVP
+sequence in `phase-plan.md` and the approved office-hours design doc.
+
+## P1 — blockers (resolve before/at start of build)
+
+### Confirm source licensing per feed before ANY public render
+- **What:** Verify each launch source permits derived public display with attribution.
+- **Why:** The CUTA trap (anti-derivation terms — back-room only) and per-city variance
+  in municipal open-data licences mean a wrong assumption ships an unlicensed product.
+  Facts aren't copyrightable in Canada, but a source's *compilation* can be restricted.
+- **Context:** StatCan open licence = yes, attribution required. Municipal portals =
+  verify per city (Calgary/Edmonton/Ottawa). Agency PDFs = facts free, confirm no
+  redistribution restriction. CUTA = never a cited public source. See source-registry.md.
+- **Effort:** S (research, not code). **Priority:** P1. **Blocks:** public launch.
+
+### Pick ORM: Drizzle vs Prisma
+- **What:** Decide before the schema is written; the value contract is the spine.
+- **Why:** Reworking the ORM after adapters exist is expensive. Currently "open."
+- **Effort:** S. **Priority:** P1. **Blocks:** schema implementation.
+
+### StatCan agency-code → slug mapping table
+- **What:** Map StatCan 23-10-0307 internal agency identifiers to TransitIndex slugs.
+- **Why:** The adapter can't write `metric_values` without resolving agencies; unmapped
+  rows must be skipped + alerted, not silently dropped.
+- **Effort:** S. **Priority:** P1. **Blocks:** StatCan adapter.
+
+## P2 — should land in the MVP branch
+
+### Value-contract test + StatCan fixture parse test
+- **What:** A contract test asserting every adapter emits the identical row shape
+  (agency, metric, period type + real start/end, mode, service_scope, value, unit,
+  currency, source doc/page/url + license + retrieved date, quality, confidence);
+  plus a fixture-based parse test for the StatCan adapter.
+- **Why:** The contract is what keeps adapters/validation/store/web decoupled and
+  country-agnostic. Without the test, later adapters drift and the decoupling rots.
+- **Effort:** S-M. **Priority:** P2.
+
+> NOTE: Peer-percentile ranking moved INTO MVP scope (it is the free tier: free = ranking,
+> paid = ranking + raw number). See phase-plan.md Phase 2. Needs `comparable_flag` +
+> province (`subdivision`) peer-set logic at build time (typology dropped 2026-05-30).
+
+## P3 — follow-ups
+
+### Index on agencies(subdivision)
+- **What:** Add the index backing the directory filter/listing.
+- **Why:** The all-CA-agencies directory is the only list view; filter perf.
+- **Effort:** S. **Priority:** P3.
+
+## Design (from plan-design-review 2026-05-30)
+Full spec in phase-plan.md "Design" section + DESIGN.md. Items below are build/debt.
+
+### Rank period-comparability (eng + data-model) — P1/P2
+- **What:** Rank computation must compare the same *period* across agencies, not only the
+  same scope. Agency missing the latest period → rank on latest comparable period or sit out
+  (flagged), never silently mixed across years.
+- **Why:** A rank mixing FY2024 vs FY2023 is a wrong number — the exact dispute-proof
+  failure the product exists to prevent. Pairs with the existing scope guard.
+- **Blocks:** any public rank render. **Confirm in eng review / record in data-model.md.**
+
+### Strict period-matched ratios — P2
+- **What:** Derived ratios (cost-per-rider, farebox recovery, subsidy-per-rider) computed
+  only from same-period inputs; labeled "as of FYxxxx"; "= a ÷ b" note; no TTM/mixed estimate.
+- **Why:** Mixed-period ratios are attackable; annual is the native cadence for these metrics.
+
+### WCAG 2.1 AA baseline — P2
+- **What:** Real table semantics, screen-reader rank labels ("ranked 1st of 10"), mode group
+  by icon+label not color alone, focus-trapped paywall dialog, 44px targets, body ≥16px,
+  contrast ≥4.5:1, sparkline text alternatives.
+- **Why:** Audience is civic/government; a11y is effectively required, not optional.
+
+### Stale-feed visual treatment — P2
+- **What:** When a metric is past its expected cadence, render "as of" muted + amber
+  "may be outdated"; normal reporting lag stays clean. Driven by the feed-health alert.
+- **Why:** Honest freshness is the trust story (invariants #2/#3).
+
+### Directory IA: search + province grouping + expand-in-place — P2/P3
+- **What:** Search hero, province-grouped listing, accordion expand-in-place (no back button),
+  agency card shown as soon as any metric is sourced ("not yet sourced" on gaps).
+- **Why:** Free directory is the only SEO surface (hard-ish gate); findability at 100+ agencies.
+
+### Mobile 3-level (Bloomberg/Yahoo-iOS) — P3
+- **What:** L1 list (name + 1–2 ranks) → L2 full card → L3 tabbed paid sheet; sheet rows
+  tap-to-expand. Optional: "N of 6 sourced" completeness meter on cards (D8 enhancement).
+
+### Deferred design (revisit only on demand)
+- AI-generated mockups / aesthetic variants — needs OpenAI key (`design setup`).
+- Clickable source deep-links — dropped (D6); revisit if buyers want the live "prove it" click.
+- Fresher TTM ratio estimates — rejected (D12); revisit only if buyers ask.
+
+## Architecture (from eng re-review 2026-05-30)
+Resolutions captured in phase-plan.md "Architecture — eng re-review" + data-model.md.
+
+### Paywall: account-gate numbers server-side — P1
+- **What:** Raw numbers gate behind a paid account, enforced server-side; web serves free
+  public ranks (crawlable, no login, no tracking); drop the anonymous metering. Native app
+  deferred to Phase 3.
+- **Why:** The design review's 1-free-detail cookie meter + crawlable full-detail made the
+  paid dataset trivially scrapeable (reopened invariant A1). Account-gate closes it without
+  any user tracking (no App Store ATT concern).
+- **Test (IRON):** unauthenticated detail request returns ranks only, never raw numbers.
+
+### `metric_ranks` materialized table + refresh job — P1
+- **What:** Precompute ranks in the data layer (`all`/`subdivision` sets);
+  refresh incrementally on promote/restate. Period-comparability rule: same-period only;
+  missing-period agency → "not ranked".
+- **Why:** Ranks are on every free card (SEO surface); recomputing per request is wasteful
+  and risks the period/scope rule drifting across call-sites.
+- **Test (IRON):** same-period-only rank; missing-period → not ranked, never cross-year.
+
+### Derived-recompute step (ratios) — P2
+- **What:** Post-promotion step computes period-matched ratios from approved inputs, stores
+  as first-class `metric_values`, re-runs on input promote/restate; auto sanity flags.
+- **Why:** Pipeline had no derived-compute step; a corrected input could leave a stale ratio.
+- **Test (IRON/regression):** corrected input re-runs the ratio, no stale value.
+
+### Incremental recompute — P3
+- **What:** Both jobs recompute only the affected metric/period/agency cohort, not full rebuilds.
+- **Why:** A monthly StatCan update shouldn't re-rank all 100+ agencies × all metrics.
+
+## Deferred features (gated on demand validation: >=3 of 10 buyers pay)
+- **Public API + bulk dataset download** (CSV/Parquet + JSON endpoint). Out of MVP —
+  the MVP audience reads the website, they don't write code. Build only if a researcher,
+  journalist, or another builder asks for raw/programmatic access. DX checklist below.
+- **Compare view** (2–4 agencies side by side, type-mismatch warnings — by modes + size).
+- **Accounts / watchlist / personal dashboard** (Auth.js).
+- **PDF + human-review treadmill** (TTC CEO Report adapter, annual-report adapters,
+  OC Transpo scraper, board decks). This is the cost center — do not scale on conviction.
+- **US / NTD ingestion** (schema absorbs it with zero change; no build until CA core validated).
+- **Bounding-box provenance deep-links** (~2× ingestion cost).
+
+## Open decisions (from README + design doc)
+- Legibility vs neutrality (recommend: strictly factual, no editorial grade).
+- Everything-paid vs free-public (revisit toward Approach C if conversion is weak).
+- DB host: Neon vs Supabase. Restatement display. Provenance granularity (page-level at launch).
+
+## DX / API (deferred — flagged by plan-devex-review 2026-05-30)
+
+**Status:** Not in MVP. The MVP has no developer-facing surface — it's a website for
+non-technical civic users (city staff, councillors, advocates). A developer-experience
+review doesn't apply until there's something developers plug into. Revisit only if
+people ask for programmatic access or raw data — that request is the demand signal.
+
+**DX checklist for when you build the public API + dataset download** (so first
+impressions land):
+- **No-signup demo first.** A copy-paste example that returns real data with no API key
+  gets people to "it works" in under 2 minutes. Require a key only to scale up.
+- **Stable IDs + clear units.** Every number says what it is (e.g. "annual unlinked
+  passenger trips") with its period and as-of date — the same provenance rules the
+  website already enforces.
+- **One copy-paste example that actually runs.** A real query returning real numbers,
+  not a fill-in-the-blanks template.
+- **Honest errors.** When a call fails, say what went wrong and how to fix it.
+- **Respect the paywall.** Same rule as the web app — raw numbers never ship to an
+  unauthenticated caller; the free API tier returns ranks only.
