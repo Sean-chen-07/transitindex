@@ -26,10 +26,7 @@ GRANT USAGE ON SCHEMA app TO web_reader;
 
 DROP SCHEMA IF EXISTS app CASCADE;
 DROP SCHEMA IF EXISTS core CASCADE;
-DO $$
-BEGIN
-  IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'web_reader') THEN
-    EXECUTE 'DROP OWNED BY web_reader';
-    EXECUTE 'DROP ROLE web_reader';
-  END IF;
-END $$;
+-- Dropping the two schemas above removes every grant web_reader held, so the role
+-- has no remaining dependencies and can be dropped directly. (We avoid DROP OWNED
+-- BY here: Supabase's postgres role is not a superuser and cannot run it.)
+DROP ROLE IF EXISTS web_reader;

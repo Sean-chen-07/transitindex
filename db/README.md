@@ -20,13 +20,17 @@ db/
 
 ## 1. Install the tools (Windows)
 
+No admin rights needed (this is the verified setup):
+
 ```powershell
-# dbmate — download the release exe and put it on PATH (e.g. a folder already on PATH)
-#   https://github.com/amacneil/dbmate/releases  ->  dbmate-windows-amd64.exe  (rename to dbmate.exe)
-# psql + pg_dump — the PostgreSQL client (pg_dump is needed for `dbmate dump`):
-winget install PostgreSQL.PostgreSQL.16
+# dbmate — single static exe. Download to a folder on PATH:
+#   https://github.com/amacneil/dbmate/releases/latest/download/dbmate-windows-amd64.exe
+# psql + pg_dump — the PostgreSQL client. Easiest no-admin route is Scoop:
+irm get.scoop.sh | iex       # install Scoop (user-scope)
+scoop install postgresql     # provides psql + pg_dump
 dbmate --version
 psql --version
+pg_dump --version
 ```
 
 ## 2. Point at your database
@@ -46,10 +50,17 @@ dbmate reads `DATABASE_URL` automatically (it loads `.env`).
 ## 3. Run migrations
 
 ```powershell
-dbmate up          # apply 001..007
-dbmate down        # revert the last migration (repeatable; full round-trip = down x7 then up)
-dbmate dump        # refresh db/schema.sql from the live schema
+dbmate --no-dump-schema up     # apply 001..007
+dbmate --no-dump-schema down   # revert the last migration (repeatable; full round-trip = down x7 then up)
+
+# Refresh db/schema.sql. We DON'T use `dbmate dump` here: its dump covers the whole
+# database, and a Supabase project has ~10 built-in schemas (auth, storage, ...) that
+# would bury our contract. So we scope pg_dump to just our two schemas:
+pg_dump $env:DATABASE_URL --schema-only --no-owner --schema=core --schema=app -f db/schema.sql
 ```
+
+> `--no-dump-schema` skips dbmate's built-in auto-dump (same whole-DB reason); regenerate
+> `db/schema.sql` with the scoped `pg_dump` above instead.
 
 ## 4. Load seeds (reference data only — no metric values)
 
