@@ -155,3 +155,52 @@ impressions land):
 - **Honest errors.** When a call fails, say what went wrong and how to fix it.
 - **Respect the paywall.** Same rule as the web app — raw numbers never ship to an
   unauthenticated caller; the free API tier returns ranks only.
+
+## Re-review action items (2026-05-31, /autoplan) — M1-FIRST
+
+The /autoplan re-review graded the plan against the **merged** Lane 0 + Lane A code and
+found the "0 critical gaps / paywall holds" status was overstated: the build inverted its
+own sequencing (M2 PDF pipeline fully built; M1 `web/` = `.gitkeep`, 0% started). **User
+decision: M1-first — freeze M2 additions; the next code goes into `web/`.** Full findings +
+audit trail in `phase-plan.md` (RE-REVIEW section); evidence in
+`~/.gstack/projects/transitindex/chenc-master-test-plan-20260531.md`.
+
+### DONE
+- **`monthly_ridership` metric added; StatCan no longer mislabels monthly trips as
+  `annual_ridership`.** `statcan_307.py` maps "Total passenger trips" → `monthly_ridership`;
+  metric registered in `refdata.py` + `db/seeds/04_metrics.sql` (now 21 metrics); count
+  assertions updated. 135 tests pass. NOTE: M1 (StatCan-only) now has NO `annual_ridership`
+  until a month→year rollup or annual sources exist — M1 ranks on `monthly_ridership`.
+
+### P1 — before M1 ships
+- **Add auth to the review `/approve` endpoint** (`review/app.py`). It is the only door into
+  live `metric_values` and currently has none; localhost-default mitigates but a public bind
+  defeats Invariant #1. Require auth on all mutating review endpoints.
+- **Reconcile DESIGN.md + the 3 wireframes to the account-gate model.** `DESIGN.md:65` + the
+  wireframes still spec the KILLED "1 free / used" cookie-meter paywall (superseded by D5).
+  Drop every "first view free" / meter string; add a first-class **"numbers gated
+  (anonymous)"** state to the interaction-states table.
+- **Paywall integrity is UNVERIFIED until `web/` ships** with a data-access layer that never
+  selects raw `value` for anonymous requests + the red→green A1 test. Don't treat it as built.
+- **Period-comparability in `refresh_ranks`** — currently ranks only agencies in the one
+  passed `period_id` (missing agency silently vanishes). Add "resolve latest comparable
+  period per metric" + emit explicit "not ranked — latest FYxxxx" rows so the UI can render
+  the committed state. Pairs with the N<5 minimum-denominator suppression.
+
+### P2
+- **Reconcile the scope-guard contradiction.** Schema DECISION 3 dropped the scope-caveat
+  guard, but the plan invariant + Failure Modes T2 still claim it. Either re-introduce a
+  UI-rendered scope flag (BC Transit = Victoria, Metrolinx = GO+UP) in `metric_values.notes`,
+  or delete the invariant/T2 claim. As-is, BC Transit (Victoria-only) ranks vs TTC whole-system.
+- **Wire live validation into the real path.** `staging._default_validator` passes
+  `prior_value=None` (YoY flag can never fire); the PDF path passes `validator=None`. Wire
+  `prior_value` + `validate_cohort` into `stage_records`; pass the real validator into
+  `run_pdf`; auto-flag PDF↔StatCan disagreement. Otherwise "20 reviews/agency not 200" is unbacked.
+- **Postgres-backed CI test.** All 135 tests run on `InMemoryRepository` (which reimplements
+  the invariants in Python). Add a CI job that applies `db/migrations`, runs `db/tests/*.sql`,
+  and round-trips `PostgresRepository` so the real `one_current_value` index / audit trigger /
+  grants are actually exercised.
+- **Replace the synthetic gold fixture with REAL values.** `ttc_annual_2024.json` reads as
+  made-up round numbers; the eval grades against it. Seed it from real TTC 2024 figures
+  (and an Edmonton cross-check) — see `foi-sourcing-plan.md` "Start here". Add the design
+  states (error, gated-anon, N<5) flagged in the design re-review.

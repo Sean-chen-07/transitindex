@@ -403,3 +403,81 @@ Recorded, not acted on (user re-affirmed the full build). Revisit if the demand 
 - **VERDICT:** CEO + ENG (x2) + DESIGN reviewed; scope + UX + architecture locked, 0 critical
   gaps. Ready to implement Milestone 1 once you approve. New schema artifacts to add at build:
   `metric_ranks` table + the rank-refresh and derived-recompute jobs (see data-model.md).
+
+---
+
+## RE-REVIEW (2026-05-31, /autoplan, codex unavailable → subagent + direct code reads)
+
+Re-ran the full pipeline against **merged Lane 0 + Lane A code**. The original review
+graded the plan as a *plan* (no code existed). This pass graded it against reality and
+found the "0 critical gaps" status is **overstated** — the plan and the merged code have
+drifted. Findings below were verified by reading the cited files.
+
+### Headline: the build inverted its own sequencing
+The plan's defense of "full Approach B" is "revenue comes first, the risky piece is off the
+critical path." Reality: **M2 (PDF/vision pipeline — the deferrable cost center) is fully
+built and merged; M1 (web app — the revenue + payment-signal engine) is 0% started**
+(`web/` = a single `.gitkeep`). The kill-line (">=3 of 10 buyers pay") now sits behind an
+unbuilt M1 → the innovation token was spent before the test that authorizes it.
+
+### Verified findings (file:line)
+- **ENG-5 (CRITICAL data bug):** `statcan_307.py:40` stores *monthly* StatCan trips under
+  `metric_code="annual_ridership"` (docstring `:3`/`:15` says monthly; `:95` writes
+  `period_type="monthly"`). Marquee "annual ridership" rank = one month; `cost_per_rider`
+  goes ~12× wrong once PDF annual expenses land. `test_statcan_307` asserts the bug.
+- **ENG-2 (HIGH):** "paywall holds / 0 critical gaps" is false — `web/` is empty; A1 paywall
+  has zero code + zero tests; `web_reader` grant = SELECT on raw `metric_values`.
+- **ENG-11 (HIGH security):** `review/app.py:91` `POST /approve` (only door into
+  `metric_values`) has no auth. Localhost default mitigates; a public bind defeats Invariant #1.
+- **ENG-4 (HIGH drift):** `refresh_ranks` has no period-comparability logic — missing-period
+  agency silently vanishes; no "not ranked — latest FYxxxx" row. Plan claim unimplemented.
+- **ENG-6 (HIGH contradiction):** schema DECISION 3 dropped the scope-caveat guard, but the
+  plan invariant + Failure Modes T2 still claim it. Code follows schema (no guard) → BC Transit
+  (Victoria-only) ranked vs TTC whole-system, no caveat.
+- **ENG-10 (HIGH):** live ingest runs with validation disabled (`prior_value=None`;
+  PDF `validator=None`) → YoY/sum/cross-source flags are dead in real runs; "20 not 200"
+  reviews/agency promise is unbacked. No Postgres-backed CI test (in-memory repo only).
+- **DESIGN (CRITICAL contradiction):** `DESIGN.md:65` + all 3 approved wireframes still spec
+  the KILLED "1 free / used" cookie-meter paywall (superseded by D5/account-gate, plan
+  lines 308-322). An implementer following DESIGN.md rebuilds the scrapeable paywall. No
+  "numbers gated (anonymous)" state in the interaction-states table.
+- **DESIGN/CEO (cross-phase, the plan's own #1 risk):** the free SEO surface is ranks-only,
+  no numbers, no source links (D6) → thin-content risk AND no conversion taste. Re-flagged
+  by both voices independently.
+- **CEO premises (all unvalidated):** SEO-funnel-works, $20-self-serve-fits-civic-buyer,
+  PDF-5-15%-wrong. Gold fixture `ttc_annual_2024.json` reads as synthetic.
+
+### Premise gate outcome (2026-05-31)
+User declined all three cheap validation tests; raised **FOI/ATIP requests** as an
+alternative data-sourcing route. Assessment: FOI is the wrong *primary* channel (not a
+feed, fees + commercial scrutiny, most fundamentals already published → redirects to the
+PDF), but a narrow *informal data request* to each agency is high-leverage to (a) skip
+extraction where agencies share the Excel and (b) get **real ground-truth to replace the
+synthetic gold fixture**. FOI planning spun out to subagents (see separate FOI plan).
+
+### Re-review consensus (single-voice, codex unavailable)
+- CEO: 6 dimensions flagged; 1 User Challenge (sequencing inverted in code).
+- Design: 9/10 → **6/10** (drift) — killed-paywall contradiction + missing error/gated/N<5
+  states + unanswered trust gap.
+- Eng: value-contract door HOLDS + decoupling sound + eval real; but 1 verified data bug,
+  1 security gap, paywall unbuilt, period-comparability + scope-guard + live-validation gaps.
+
+<!-- AUTONOMOUS DECISION LOG -->
+### Decision Audit Trail (re-review)
+
+| # | Phase | Decision | Classification | Principle | Rationale |
+|---|-------|----------|----------------|-----------|-----------|
+| 1 | CEO | Surface 3 unvalidated premises to user | GATE (not auto) | — | Premises need human judgment; user chose to validate none |
+| 2 | CEO | Sequencing inverted (M2 built, M1 empty) → final gate | USER CHALLENGE | — | Both available voices say direction should change; user owns it |
+| 3 | CEO | Concierge "sell the spreadsheet" MVP | Defer to TODOS | P3/P6 | Cheapest demand test; flag not block |
+| 4 | Eng | Fix `statcan_307` monthly-as-annual mislabel | Mechanical (FIX) | P1 | Verified correctness bug in merged code |
+| 5 | Eng | Add auth to review `/approve` before non-localhost | Mechanical (FIX) | P1 | Verified security gap; only door to live data |
+| 6 | Eng | Correct "paywall holds / 0 gaps" → UNVERIFIED | Mechanical | P5 | Factual: web/ is empty |
+| 7 | Eng | Wire live validation (`prior_value`, cohort, PDF validator) | Mechanical (FIX) | P1 | Flags dead in real path; blast-radius, <1d |
+| 8 | Eng | Add Postgres-backed CI test (apply migrations + db/tests) | Auto (ADD) | P1/P2 | In-memory repo reimplements invariants; real SQL untested |
+| 9 | Eng | Period-comparability: BUILD vs downgrade plan claim | TASTE → gate | P1/P5 | Reasonable disagreement on scope-now vs defer |
+| 10 | Eng | Scope-guard contradiction: re-add guard vs delete claim | TASTE → gate | P1 | Correctness vs DECISION-3 simplicity |
+| 11 | Design | Reconcile DESIGN.md/wireframes to account-gate model | Mechanical (FIX) | P5/P1 | Doc contradicts a locked decision |
+| 12 | Design | Add error + gated-anon + N<5 states to states table | Auto (ADD) | P1 | Load-bearing launch states missing |
+| 13 | Design | SEO trust-builder (reverse D6: one free source link / demo agency) | TASTE → gate | P1 | Reverses a locked decision; user's call |
+| 14 | Eng | Replace synthetic gold fixture w/ real agency values | Auto (ties to FOI) | P1 | Eval grades vs made-up answers today |
