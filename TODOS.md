@@ -120,6 +120,37 @@ Resolutions captured in phase-plan.md "Architecture — eng re-review" + data-mo
 - **What:** Both jobs recompute only the affected metric/period/agency cohort, not full rebuilds.
 - **Why:** A monthly StatCan update shouldn't re-rank all 100+ agencies × all metrics.
 
+## Data expansion — balance sheets + native frequency (2026-05-31)
+Full plan: [balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-plan.md). Additive —
+**no `db/migrations/` change** (the existing tables absorb it). Build tasks, roughly in order:
+
+- **`quarterly_period()` builder** (`ingest/.../periods.py`) — the one new period primitive
+  (TransLink). No `period_type` enum change. **P2.**
+- **Seed 11 new metrics** in `refdata.METRICS` *and* `db/seeds/04_metrics.sql` (kept in parity):
+  8 sourced balance-sheet lines (`comparable_flag=false`) + `net_debt`, `debt_to_assets`,
+  `net_debt_per_capita`. Catalog 20 → 31. **P2.**
+- **Derived recompute** (`jobs/derived_recompute.py`): add `net_debt`, `debt_to_assets`,
+  `net_debt_per_capita`; pass `service_area_population` into the inputs map for per-capita. **P2.**
+- **Workbook multi-sheet redesign** (`workbook.py`): Monthly / Annual Fundamentals / Balance Sheet
+  sheets keyed by a `Period` token; balance-sheet check columns; light-yellow optional cells;
+  import dispatches the token to `annual_period`/`quarterly_period`. **P2.**
+- **`parse_number` accounting-negatives bug** (`pdf/llm.py`): `(1,234)` currently raises and the
+  value is silently dropped — strip accounting parens → `-1234`. **P1 (correctness bug).**
+- **Financial-statement extraction** (`pdf/llm.py`, `pdf/claude_pdf.py`): locate-then-read
+  statement pages (EN+FR title anchors); add `printed_label`/`table_reference`/`printed_scale`/
+  `printed_sign`/`column_year` tool fields (model declares scale & sign, code applies); always feed
+  page images for statements; harvest the prior-year comparative column = free history. **P2.**
+- **PSAB identity checks** (`validation/flags.py`): asset split, net-debt identity, printed-vs-
+  computed net debt, component bounds — reuse `sum_mismatch`/`cross_source_disagreement`/
+  `unit_mismatch` (no new flag strings); 2% relative + absolute floor. **P2.**
+- **Carry-forward display rule** (web): latest value carried forward with amber + "carried
+  forward"; never stored, never ranked; charts show a gap. **P2.**
+- **Gold fixtures** (`eval/gold.py`): TransLink balance sheet, one `should_flag` per failure mode,
+  one French (STM) fixture; 0.5% tolerance for currency lines. **P3.**
+- **Open decisions** (defaults in the plan §9): balance-sheet depth (defer reserves +
+  surplus-bridge?), per-capita denominator (static pop?), TransLink quarterly balance sheet (yes?),
+  restatement label (show?). **Manual-entry quality flag: ✅ DECIDED — keep `verified`** (no change).
+
 ## Deferred features (gated on demand validation: >=3 of 10 buyers pay)
 - **Public API + bulk dataset download** (CSV/Parquet + JSON endpoint). Out of MVP —
   the MVP audience reads the website, they don't write code. Build only if a researcher,

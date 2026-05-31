@@ -8,6 +8,13 @@ The data is one big table with **one row per agency per year** (for example, "TT
 
 Every value also carries some hidden bookkeeping (where it came from, how trustworthy it is, what period it covers). Those are explained in the last two sections.
 
+> **Two updates as of 2026-05-31** (see [balance-sheet-and-frequency-plan.md](../balance-sheet-and-frequency-plan.md)):
+> (1) The table now also holds **balance-sheet (financial-position) numbers** — 11 more columns,
+> listed in their own section below. (2) Fast-moving numbers (ridership, operating revenue) can be
+> kept **monthly** now, not only as one annual figure — so a row is really "one agency for one
+> *period*", and a period can be a month, a quarter, or a year. The plain-language idea is the same;
+> there are just more rows when an agency reports more often.
+
 ## The 20 columns
 
 The 14 **Sourced** columns are numbers you copy from a published document or dataset. The 6 **Calculated** columns are filled in for you. "Where it comes from" and "Typical update frequency" describe the most common case across the 10 launch agencies; the exact source per agency lives in `source-registry.md` and `update-frequency.md`.
@@ -63,3 +70,29 @@ Every value carries a quality label so readers know how solid it is:
 - **Estimated** — our best estimate where a clean figure was not published.
 
 Values also carry a "comparable across agencies" flag. Agencies count and report things slightly differently, and some serve very different populations and mix of services, so two numbers that look alike are not always strictly comparable. Where we are confident a value is safe to compare side by side, it is flagged as comparable; where there is a known caveat, that flag is off and the difference should be read with care. When a number is later corrected, the table keeps the history but shows the latest figure as the current one.
+
+## Balance-sheet columns (added 2026-05-31)
+
+These describe an agency's **financial position** — what it owns and owes at the end of its
+financial year — taken from the audited statement of financial position in the annual report.
+They are **annual** for almost every agency (TransLink also reports them quarterly). Big dollar
+figures like total assets are **not ranked** against other agencies (a bigger agency simply has
+bigger numbers — that's size, not performance); only the two ratios at the bottom are ranked.
+
+| Column name | Plain meaning | Unit | Sourced / Calculated | Formula (if calculated) | Update frequency |
+|---|---|---|---|---|---|
+| Total Financial Assets | Cash, investments, and money owed to the agency — what could be turned into cash | CAD | Sourced | — | Annual |
+| Total Liabilities | Everything the agency owes — debt, payables, employee future benefits | CAD | Sourced | — | Annual |
+| Total Non-Financial Assets | Assets the agency uses rather than sells — mainly vehicles, buildings, equipment | CAD | Sourced | — | Annual |
+| Total Assets | Everything the agency owns (financial + non-financial combined) | CAD | Sourced | — | Annual |
+| Tangible Capital Assets | Net book value of vehicles, buildings, track and equipment (after depreciation) | CAD | Sourced | — | Annual |
+| Accumulated Surplus | The agency's bottom-line net worth, built up over time (assets − liabilities) | CAD | Sourced | — | Annual |
+| Long-Term Debt | Money borrowed that is repaid over more than a year (bonds, loans) | CAD | Sourced | — | Annual |
+| Cash & Investments | Cash on hand plus investments — the agency's liquidity | CAD | Sourced | — | Annual |
+| Net Debt | What the agency owes beyond what its financial assets cover (lower is healthier) | CAD | Calculated | Total Liabilities − Total Financial Assets | Annual |
+| Debt to Assets | Share of everything the agency owns that is financed by what it owes | % | Calculated | Total Liabilities ÷ Total Assets | Annual |
+| Net Debt per Capita | Net debt divided by the population the agency serves — debt per resident | CAD | Calculated | Net Debt ÷ population served | Annual |
+
+These numbers check themselves: an agency's financial assets, liabilities and surplus must add up
+according to public-sector accounting rules, so if a typed-in or extracted figure doesn't
+reconcile, the system flags it for review rather than publishing a number that doesn't balance.

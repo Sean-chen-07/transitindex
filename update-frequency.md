@@ -13,7 +13,14 @@ The core question: can we update numbers more often than yearly? **Yes — but f
 |---|---|---|---|
 | **Fast** | Ridership, fare revenue | Counted continuously (fare gates, APCs); reported to boards monthly | **Monthly** (~1–2 mo lag) |
 | **Medium** | Operating expenses, service hours, on-time performance | Tracked internally but reported in budget cycles | **Quarterly** (a few agencies only) |
-| **Slow** | Farebox recovery, cost per rider, cost per hour, subsidy per rider, fleet size, labour cost, energy/fuel cost, materials & services, total subsidy, capital expenditure, fleet age, accessible-fleet % | Depend on audited annual financials; derived from expenses | **Annual** (almost everywhere) |
+| **Slow** | Farebox recovery, cost per rider, cost per hour, subsidy per rider, fleet size, labour cost, energy/fuel cost, materials & services, total subsidy, capital expenditure, fleet age, accessible-fleet %, **balance-sheet lines (assets, liabilities, net debt, accumulated surplus, TCA, long-term debt)** | Depend on audited annual financials; balance sheet = audited *statement of financial position* | **Annual** (almost everywhere) |
+
+**Balance sheet is the slowest layer (added 2026-05-31).** The statement of financial position
+lives in audited annual financial statements, so its native cadence is **annual** — be honest:
+universal *quarterly* balance sheets are **not** promised. **TransLink** is the one agency that
+publishes a quarterly statement of financial position; show it quarterly, everyone else annual.
+Small agencies (MiWay, Burlington) appear inside their municipality's consolidated annual
+statements. See [balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-plan.md).
 
 **Why farebox recovery is stuck at annual:** it's `revenue / expenses`, and *expenses* come from audited year-end statements for almost every agency. A derived metric can never refresh faster than its slowest input. So the headline farebox number is annual for 9 of 10 agencies — **TransLink is the only exception** (publishes it quarterly).
 
@@ -111,6 +118,14 @@ Both are annual-only for practical purposes. The Ontario **FAO Transit Subsidies
 - **The fundamentals** (farebox recovery, cost per rider, cost per hour, subsidy per rider, fleet) = annual "earnings." Refresh once a year when audited statements drop. TransLink is the one agency where these go quarterly.
 
 **Per-metric freshness is a feature, not an apology.** Show "Ridership · as of Mar 2026" next to "Farebox recovery · FY2024" and it reads as rigor, not staleness — same as a stock page showing live price + last-quarter earnings.
+
+**Carry-forward (display only).** When a metric's newest value is older than the current bucket
+(e.g. the FY2024 balance sheet while FY2025 ridership is in), the website **carries the last
+known value forward** into the headline, labelled "as of FY2024 · carried forward" with the amber
+stale-feed treatment. It is **never** written into the database (no fabricated rows), **never**
+ranked, and trend charts show a **gap** rather than a flat line. Blanks in the Excel workbook stay
+blank — the website carries forward, the editor never types a guessed number. Full rule in
+[balance-sheet-and-frequency-plan.md §3](balance-sheet-and-frequency-plan.md).
 
 ---
 
