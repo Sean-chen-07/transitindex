@@ -8,7 +8,9 @@ yields one `MetricValueRecord` per (system, measure, month):
     A label that is not in the map is SKIPPED (collected in `.skipped`) rather
     than crashing -- it usually means a system we do not track, or a renamed
     geography that needs the map updated.
-  * the measure label -> metric_code (annual_ridership / operating_revenue).
+  * the measure label -> metric_code (monthly_ridership / operating_revenue).
+    NB: 23-10-0307 trips are a MONTHLY count, so they map to monthly_ridership;
+    annual_ridership is fed only by true annual sources (or a month->year rollup).
     Measures we do not map (e.g. fare totals) are skipped silently; they are not
     failures, just rows we have no metric for.
   * SCALAR_FACTOR ('units'/'thousands'/'millions') scales VALUE.
@@ -37,7 +39,7 @@ STATCAN_307_URL = "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2310030
 #: "Transit measures" member label -> our metric code. Only the two measures we
 #: ingest are listed; any other measure row is ignored.
 _MEASURE_TO_METRIC: dict[str, str] = {
-    "Total passenger trips": "annual_ridership",
+    "Total passenger trips": "monthly_ridership",
     "Total operating revenue (excluding subsidies)": "operating_revenue",
 }
 
@@ -98,7 +100,7 @@ class StatCan23100307Adapter:
                     period_label=period.label,
                     service_scope="total",
                     value=value,
-                    unit="count" if metric_code == "annual_ridership" else "CAD",
+                    unit="CAD" if metric_code == "operating_revenue" else "count",
                     quality=quality,
                     currency=currency,
                     source=SourceRef(

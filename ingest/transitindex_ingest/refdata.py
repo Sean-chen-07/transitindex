@@ -73,13 +73,17 @@ AGENCIES: Mapping[str, Mapping] = MappingProxyType(
     }
 )
 
-# --- 20 metrics (db/seeds/04_metrics.sql) ------------------------------------
+# --- 21 metrics (db/seeds/04_metrics.sql) ------------------------------------
 # code -> unit, unit_type, is_derived, formula (None unless derived),
 # higher_is_better (None = neutral). Insertion order preserved.
 
 METRICS: Mapping[str, Mapping] = MappingProxyType(
     {
         "annual_ridership": MappingProxyType(
+            {"unit": "count", "unit_type": "count", "is_derived": False,
+             "formula": None, "higher_is_better": True}
+        ),
+        "monthly_ridership": MappingProxyType(
             {"unit": "count", "unit_type": "count", "is_derived": False,
              "formula": None, "higher_is_better": True}
         ),
