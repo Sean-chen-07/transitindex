@@ -57,8 +57,14 @@ No purple/violet gradients. No decorative blobs. No icon-in-colored-circle featu
 2. **Expand panel (free):** all ranks (each with its own "as of"), trend **shape**
    (exact values locked), `Open full data →` (paid). Scroll past to next agency, no back button.
 3. **Spreadsheet (paid):** financial-statement tabs — *Ridership & Service / Financials /
-   Fleet & Assets / Trends*. Columns: Metric · Value (tabular, right-aligned) · Rank ·
-   Period · As of · YoY · 5-yr sparkline. Zebra rows, hairline grid, hover tint.
+   Fleet & Assets / **Financial Position** / Trends*. Columns: Metric · Value (tabular,
+   right-aligned) · Rank · Period · As of · YoY · 5-yr sparkline. Zebra rows, hairline grid,
+   hover tint. The **Financial Position** tab (added 2026-05-31) holds the balance sheet — a
+   point-in-time *snapshot* at fiscal year-end, kept separate from the flow-based *Financials*
+   tab so each tab's "as of" stays honest. Three plain-language sections: *What the agency owns*
+   · *What it owes* · *Net position*. Raw dollars are paid-only and unranked; only
+   `net_debt_per_capita` and `debt_to_assets` carry ranks. See
+   [balance-sheet-and-frequency-plan.md §5](balance-sheet-and-frequency-plan.md).
 4. **Rank display:** ordinal only ("3rd"); comparison set named **once per page**
    ("ranked vs all Canadian agencies"), not "(3 of 10)" on every number. Paid switches
    the set (region / province).
@@ -81,6 +87,12 @@ No purple/violet gradients. No decorative blobs. No icon-in-colored-circle featu
   signals it's a guess, not history). Estimates are never stored or ranked.
 - **Ranks compare same period + same scope** across agencies. Rank carries its period.
   Scope caveats shown inline (BC Transit = Victoria system; Metrolinx = GO + UP Express).
+- **Carry-forward (display only).** When a metric's newest value is older than the current
+  period (e.g. an annual balance sheet beside monthly ridership), the headline row carries the
+  last known value forward, styled with the **amber stale-feed state** + a "carried forward"
+  label. It is never ranked; **trend charts show a gap**, never a flat carried segment or
+  interpolation (same signal as the estimate toggle's missing trend). Nothing is ever fabricated
+  into the data — carry-forward is purely a reading affordance.
 
 ## Accessibility — WCAG 2.1 AA baseline
 - Real `<table>` semantics (caption, `scope` on `th`) for the spreadsheet.

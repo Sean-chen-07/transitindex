@@ -143,6 +143,36 @@ The web app is a pure reader; ranks and derived ratios are computed in the data 
   computed at click time). The strict period-matched stored value stays the default and the
   only ranked / dispute-proof number.
 
+## Balance-sheet metric family + carry-forward (2026-05-31)
+
+Added by [balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-plan.md). **No table
+migration** — these live in `metric_values` like every other metric. The catalog grows **20 → 31**.
+
+- **8 sourced balance-sheet line items** (PSAB / PS 1201 statement of financial position):
+  `total_financial_assets`, `total_liabilities`, `total_non_financial_assets`, `total_assets`,
+  `tangible_capital_assets`, `accumulated_surplus`, `long_term_debt`, `cash_and_investments`.
+  All `CAD` / currency, `mode_id` NULL, `service_scope='total'`, native cadence **annual**
+  (`quarterly` for TransLink only).
+- **3 derived:** `net_debt` (= `total_liabilities − total_financial_assets`; printed value rides
+  in `crosscheck_value`), `debt_to_assets`, `net_debt_per_capita` (= `net_debt` ÷ static
+  `agencies.service_area_population`).
+- **Ranking:** raw balance-sheet dollars carry **`comparable_flag = false`** (they measure size,
+  not performance) — never ranked. Only the two scale-free ratios `debt_to_assets` and
+  `net_debt_per_capita` are ranked, via the existing `metric_ranks` materialization.
+- **Cross-checks** (PSAB identities) fire the existing flags — `sum_mismatch` for the asset
+  split / net-debt identity / component bounds, `cross_source_disagreement` for printed-vs-computed
+  net debt, `unit_mismatch` for order-of-magnitude. 2% relative tolerance + absolute floor.
+
+### Carry-forward & frequency rule (load-bearing, applies DB + Excel + website)
+
+**Store only observed values, at each metric's native cadence, with their true period. NEVER
+store a carried-forward value** — no fabricated rows, no `imputed` row used to show an old number.
+`quality='imputed'` keeps its original meaning (a *stored* row a source genuinely estimated) and
+is **not** repurposed for carry-forward. A missing period is a real blank (no row).
+**Carry-forward is DISPLAY-ONLY:** the website shows the latest known value forward, labelled "as
+of FY2024 · carried forward" with the amber stale-feed state; trend charts show a **gap**, never a
+flat carried segment or interpolation. Carried-forward values are never ranked and never charted.
+
 ## Open schema questions (see CLAUDE.md)
 - Restatement display (latest+badge recommended)
 - Provenance granularity (page-level at launch; bounding boxes deferred)

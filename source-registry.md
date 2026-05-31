@@ -53,6 +53,19 @@ Derived metrics (farebox recovery ratio, cost per rider, cost per hour, subsidy 
 > Also note: the *Typology:* label in each agency section below is **descriptive only** — typology was
 > dropped as a stored field 2026-05-30.
 
+> **Balance-sheet expansion (2026-05-31, [balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-plan.md)):**
+> +11 metrics → catalog of **31**. The 8 sourced balance-sheet lines (`total_financial_assets`,
+> `total_liabilities`, `total_non_financial_assets`, `total_assets`, `tangible_capital_assets`,
+> `accumulated_surplus`, `long_term_debt`, `cash_and_investments`) come from each agency's
+> **audited statement of financial position** — i.e. the **annual report PDF** (`annual_report_pdfs`,
+> Tier 2), same source class as `operating_expenses`. **TransLink** also publishes a *quarterly*
+> statement of financial position (`translink_quarterly`). **MiWay → City of Mississauga** and
+> **Burlington Transit → City of Burlington** appear only inside the municipality's **consolidated
+> annual financial statements** — extract the transit segment if broken out, otherwise record
+> nothing and flag the gap (never attribute the whole city's balance sheet to transit). Per-agency
+> source cells for these lines are **not yet enumerated** (treat as the agency's audited AFS until a
+> structured feed is found). `net_debt`/`debt_to_assets`/`net_debt_per_capita` are **CALC**.
+
 ---
 
 ## Source Catalog

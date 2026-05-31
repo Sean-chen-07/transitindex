@@ -4,6 +4,17 @@ A short, friendly guide to seeing what data we have, seeing what is missing, and
 adding numbers by hand. No coding required — just two commands you copy-paste
 into a terminal, and some typing in Excel.
 
+> **Heads-up (2026-05-31):** the workbook is being expanded to show a lot more —
+> a **Monthly** tab for ridership/revenue, a **Balance Sheet** tab for the
+> agencies' financial position, and a **Period** column so a row can be a month,
+> a quarter, or a year. The guide below still describes the **current** workbook
+> (one annual grid). It will be updated when the new tabs ship. The plan and the
+> new colour/blank rules are in
+> [balance-sheet-and-frequency-plan.md](../balance-sheet-and-frequency-plan.md) —
+> the one rule to remember: **leave a cell blank if you don't have the number;
+> the website carries the last known value forward for you, so you never type a
+> guess.**
+
 ## Before you start (one time)
 
 All the numbers live in a database (Supabase). The pipeline knows how to reach

@@ -109,7 +109,20 @@ transitindex/
 
 > Verify legal names against the agencies' own sites before public render (README working-style rule). Names above are well-established public facts but should be confirmed at build.
 
-### Seed — `metrics` (20: 14 sourced + 6 derived)
+### Seed — `metrics` (31: 22 sourced + 9 derived — expanded from 20 on 2026-05-31)
+
+> **Balance-sheet expansion ([balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-plan.md)).**
+> +11 rows beyond the original 20. **8 sourced** balance-sheet lines (all `CAD`/currency, native
+> cadence annual): `total_financial_assets`, `total_liabilities`, `total_non_financial_assets`,
+> `total_assets`, `tangible_capital_assets`, `accumulated_surplus`, `long_term_debt`,
+> `cash_and_investments`. **3 derived:** `net_debt` (= liabilities − financial assets; `false`),
+> `debt_to_assets` (%, `false`, **ranked**), `net_debt_per_capita` (CAD, `false`, **ranked**, ÷
+> `service_area_population`). Raw dollar lines seed with `comparable_flag = false` (never ranked).
+> **One new period primitive — `quarterly_period()` in `periods.py`** for TransLink; **no
+> `period_type` enum change** (uses the existing `quarterly`). Keep `refdata.METRICS` and
+> `db/seeds/04_metrics.sql` in parity.
+
+#### The original 20 metrics
 All `applicable_modes = NULL` at seed (system-wide); mode-level splits attach via `metric_values.mode_id` later, not via separate metric rows.
 
 | code | unit | unit_type | derived | formula | higher_is_better |
