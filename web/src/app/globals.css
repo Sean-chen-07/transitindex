@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens — the single source of truth, mirrored from DESIGN.md.
+ * Warm, low-chroma palette. One token layer drives BOTH moods (soft free
+ * directory + dense paid spreadsheet); the difference is radius + density,
+ * not two themes.
+ */
+:root {
+  --bg: #f4f0e7; /* warm cream canvas */
+  --card: #ffffff;
+  --card-2: #fbf9f4;
+  --ink: #2e2c28;
+  --ink-2: #726e66;
+  --ink-3: #a8a299;
+  --line: #ece6d9;
+  --line-2: #f3eee3;
+  --grid: #e7e1d4; /* spreadsheet rules */
+  --coral: #e2725b; /* primary action · paywall/upsell */
+  --coral-soft: #fbe9e3;
+  --teal: #3f9d92; /* interactive · "Free" · positive */
+  --teal-soft: #e1f0ed;
+  /* mode-group accents — color-CODE only, always paired with an icon + label */
+  --blue: #7ba7c7; /* commuter-rail */
+  --sage: #9dbf8e; /* light-rail */
+  --yellow: #e9b850; /* bus-only */
+}
+
+@layer base {
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-size: 16px; /* WCAG: body text >= 16px */
+  }
+  /* Numbers line up wherever figures align (rank grids, the spreadsheet). */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Visible focus ring (WCAG). */
+  :focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+  }
+}
