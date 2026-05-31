@@ -224,6 +224,14 @@ class PostgresRepository:
 
     # --- current-value reads -------------------------------------------------
 
+    def list_reporting_periods(self, agency_id: int) -> list[ReportingPeriod]:
+        rows = self._conn.execute(
+            "SELECT id, agency_id, period_type, start_date, end_date, label "
+            "FROM core.reporting_periods WHERE agency_id = %s ORDER BY start_date",
+            (agency_id,),
+        ).fetchall()
+        return [ReportingPeriod(*r) for r in rows]
+
     def get_current_metric_value(
         self,
         agency_id: int,
