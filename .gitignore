@@ -24,6 +24,12 @@ ingest/tests/fixtures/real/
 # Claude Code machine-local settings (per-user; shared config stays tracked)
 .claude/settings.local.json
 
+# Generated data workbooks (export-xlsx output; may hold real data — keep out of git)
+transitindex-data*.xlsx
+_roundtrip_smoke.xlsx
+# Office temp/lock files (created when a workbook is open in Excel)
+~$*
+
 # OS / editor
 .DS_Store
 Thumbs.db

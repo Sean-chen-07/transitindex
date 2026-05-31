@@ -115,6 +115,11 @@ class Repository(Protocol):
 
     # --- current-value reads -------------------------------------------------
 
+    def list_reporting_periods(self, agency_id: int) -> list[ReportingPeriod]:
+        """All core.reporting_periods rows for an agency, ordered by start_date
+        (used by the workbook export to enumerate an agency's periods)."""
+        ...
+
     def get_current_metric_value(
         self,
         agency_id: int,

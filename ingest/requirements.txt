@@ -8,3 +8,4 @@ pypdf>=4.0               # REQUIRED for the real PDF path (counts pages on every
 fastapi>=0.115           # review API
 httpx>=0.27              # source fetching
 python-dotenv>=1.0       # config.py .env loading (stdlib fallback exists)
+openpyxl>=3.1     # workbook export/import (xlsx round-trip)
