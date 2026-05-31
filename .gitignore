@@ -17,6 +17,10 @@ venv/
 # dbmate local artifacts
 /db/.dbmate/
 
+# Real PDFs used for manual extractor smoke tests (large binaries; offline
+# tests use synthetic PDFs, so these are never needed by CI).
+ingest/tests/fixtures/real/
+
 # Claude Code machine-local settings (per-user; shared config stays tracked)
 .claude/settings.local.json
 

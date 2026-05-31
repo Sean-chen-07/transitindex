@@ -98,13 +98,14 @@ def cmd_statcan(args) -> int:
 
 def cmd_pdf(args) -> int:
     """Tier 2: extract metrics from a PDF into the review queue (never promotes)."""
-    from .pdf.llm import AnthropicLLMClient
+    from .pdf.claude_pdf import ClaudePdfExtractor
     from .pdf.pipeline import SourceRefMeta, run_pdf
 
     cfg = load_config()
     if not cfg.anthropic_api_key:
         print(
-            "error: the PDF pipeline needs ANTHROPIC_API_KEY (set it in .env). "
+            "error: the PDF pipeline needs ANTHROPIC_API_KEY (set it in .env) and the "
+            "anthropic + pypdf packages (pip install anthropic pypdf). "
             "The extractor calls the Anthropic API.",
             file=sys.stderr,
         )
@@ -113,12 +114,131 @@ def cmd_pdf(args) -> int:
     repo, ephemeral = _build_repo()
     _note_ephemeral(ephemeral)
 
-    client = AnthropicLLMClient(api_key=cfg.anthropic_api_key)
+    common = {"prefilter": not args.no_prefilter, "max_pages": args.max_pages}
+    if args.dual:
+        from .pdf.ensemble import claude_dual
+
+        extractor = claude_dual(cfg.anthropic_api_key, **common)
+    else:
+        extractor = ClaudePdfExtractor(api_key=cfg.anthropic_api_key, **common)
     meta = SourceRefMeta(document_type=args.doc_type, title=args.title, source_url=args.url)
-    pending_ids = run_pdf(repo, args.pdf, args.agency, source_ref_meta=meta, llm_client=client)
+    try:
+        pending_ids = run_pdf(repo, args.pdf, args.agency, source_ref_meta=meta, extractor=extractor)
+    except ModuleNotFoundError:
+        print(
+            "error: the real PDF path needs pypdf and the anthropic SDK "
+            "(pip install anthropic pypdf).",
+            file=sys.stderr,
+        )
+        return 2
 
     print(f"extracted -> staged: {len(pending_ids)} pending (awaiting human review)")
     print("Tier 2: nothing is promoted until a reviewer approves it.")
+    return 0
+
+
+def cmd_pdf_smoke(args) -> int:
+    """Run ONLY the extractor on a PDF (no DB, no staging) and print results."""
+    from .pdf.claude_pdf import ClaudePdfExtractor
+    from .pdf.extractor import ExtractionRequest
+
+    # PDF text (source quotes) carries glyphs the Windows cp1252 console can't
+    # encode; print as UTF-8 and replace anything unmappable rather than crash.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
+    cfg = load_config()
+    if not cfg.anthropic_api_key:
+        print(
+            "error: pdf-smoke needs ANTHROPIC_API_KEY (set it in .env). "
+            "It calls the Anthropic API to read the PDF.",
+            file=sys.stderr,
+        )
+        return 2
+
+    if bool(args.pdf) == bool(args.url):
+        print("error: give exactly one of a PDF path or --url.", file=sys.stderr)
+        return 2
+
+    # Source the PDF bytes from a path or a URL.
+    if args.url:
+        try:
+            import httpx  # lazy: only when fetching
+        except ModuleNotFoundError:
+            print("error: fetching --url needs httpx (pip install httpx).", file=sys.stderr)
+            return 2
+        try:
+            resp = httpx.get(args.url, follow_redirects=True, timeout=60)
+            resp.raise_for_status()
+        except httpx.HTTPError as exc:
+            print(f"error: could not fetch {args.url}: {exc}", file=sys.stderr)
+            return 2
+        pdf_bytes = resp.content
+        if not pdf_bytes.startswith(b"%PDF"):
+            print(
+                f"error: {args.url} did not return a PDF "
+                f"(content-type: {resp.headers.get('content-type', 'unknown')}).",
+                file=sys.stderr,
+            )
+            return 2
+    else:
+        pdf_bytes = Path(args.pdf).read_bytes()
+
+    common = {"prefilter": not args.no_prefilter, "max_pages": args.max_pages}
+    if args.dual:
+        from .pdf.ensemble import claude_dual
+
+        extractor = claude_dual(cfg.anthropic_api_key, **common)
+    else:
+        model_kw = {"model": args.model} if args.model else {}
+        extractor = ClaudePdfExtractor(
+            api_key=cfg.anthropic_api_key, verify=not args.no_verify, **model_kw, **common
+        )
+    try:
+        result = extractor.extract(
+            ExtractionRequest(agency_slug=args.agency, pdf_bytes=pdf_bytes)
+        )
+    except ModuleNotFoundError:
+        print(
+            "error: the real PDF path needs pypdf and the anthropic SDK "
+            "(pip install anthropic pypdf httpx).",
+            file=sys.stderr,
+        )
+        return 2
+
+    print(f"{len(result.values)} value(s) extracted:\n")
+    for v in result.values:
+        period = (
+            f"{v.period_year}"
+            if v.period_kind == "annual"
+            else f"{v.period_year}-{v.period_month:02d}"
+        )
+        print(
+            f"  {v.metric_code} = {v.value} {v.unit}  "
+            f"[{v.period_kind} {period}]  p.{v.page_number}  conf={v.confidence}"
+        )
+        if v.source_quote:
+            print(f"      quote: {v.source_quote!r}")
+        if v.note:
+            print(f"      note:  {v.note}")
+    d = result.diagnostics
+    print("\ndiagnostics:")
+    if d.get("extractor") == "dual_model":
+        print(f"  models        : {', '.join(d.get('models', []))}")
+        print(f"  per-model     : {d.get('per_model_counts')}")
+        print(f"  reconciled    : {d.get('reconciled_count')}")
+        print(f"  needs_review  : {d.get('needs_review')} (flagged for a human)")
+        if d.get("errors"):
+            print(f"  model errors  : {d.get('errors')}")
+    else:
+        print(f"  model         : {d.get('model')}")
+        print(f"  page_count    : {d.get('page_count')}")
+        print(f"  pages_sent    : {d.get('pages_sent')} {d.get('pages_selected') or ''}")
+        print(f"  chunks        : {d.get('chunks')}")
+        print(f"  verify_dropped: {d.get('verify_dropped')}")
+    print(f"  est_cost_usd  : ~${d.get('est_cost_usd', 0):.4f}")
     return 0
 
 
@@ -207,7 +327,32 @@ def build_parser() -> argparse.ArgumentParser:
     )
     pp.add_argument("--title", default=None)
     pp.add_argument("--url", default=None)
+    pp.add_argument(
+        "--dual",
+        action="store_true",
+        help="Run Opus + Sonnet in parallel and reconcile (disagreements flagged for review).",
+    )
+    pp.add_argument("--no-prefilter", action="store_true", help="Send the whole PDF, not just metric-dense pages.")
+    pp.add_argument("--max-pages", dest="max_pages", type=int, default=15, help="Max pages sent to vision (default 15).")
     pp.set_defaults(func=cmd_pdf)
+
+    sm = sub.add_parser(
+        "pdf-smoke",
+        help="Run only the PDF extractor (no DB) and print values + diagnostics.",
+    )
+    sm.add_argument("pdf", nargs="?", default=None, help="Path to the PDF (or use --url).")
+    sm.add_argument("--url", default=None, help="Fetch the PDF from this URL instead of a path.")
+    sm.add_argument("--agency", required=True, help="Agency slug (e.g. ttc).")
+    sm.add_argument("--no-verify", action="store_true", help="Skip the verify second pass.")
+    sm.add_argument("--model", default=None, help="Claude model id (default: claude-sonnet-4-6).")
+    sm.add_argument(
+        "--dual",
+        action="store_true",
+        help="Run Opus + Sonnet in parallel and reconcile (disagreements flagged for review).",
+    )
+    sm.add_argument("--no-prefilter", action="store_true", help="Send the whole PDF, not just metric-dense pages.")
+    sm.add_argument("--max-pages", dest="max_pages", type=int, default=15, help="Max pages sent to vision (default 15).")
+    sm.set_defaults(func=cmd_pdf_smoke)
 
     rp = sub.add_parser("ranks", help="Refresh metric_ranks for a metric+period.")
     rp.add_argument("--metric", required=True)

@@ -16,7 +16,8 @@ from typing import Callable, Optional
 from ..contract import DocumentType, License, MetricValueRecord, SourceRef
 from ..db.repository import Repository
 from ..periods import annual_period, monthly_period
-from .extract import Page, extract_pages
+from .extract import Page
+from .extractor import Extractor, ExtractionRequest, LegacyTextExtractor
 from .llm import LOW_CONFIDENCE_THRESHOLD, EXTRACTION_SYSTEM_PROMPT, ExtractedValue, LLMClient
 
 # A validator inspects the record and returns the flag strings it earned
@@ -54,6 +55,14 @@ def _period_for(agency_slug: str, ev: ExtractedValue):
     raise ValueError(f"unsupported period_kind: {ev.period_kind!r}")
 
 
+def _notes_for(ev: ExtractedValue) -> Optional[str]:
+    """Combine the value's note and verbatim source_quote for the reviewer."""
+    if ev.source_quote:
+        quote = f'quote: "{ev.source_quote}"'
+        return f"{ev.note} | {quote}" if ev.note else quote
+    return ev.note
+
+
 def _to_record(agency_slug: str, ev: ExtractedValue, meta: SourceRefMeta) -> MetricValueRecord:
     """Map one ExtractedValue + document meta onto a MetricValueRecord."""
     period = _period_for(agency_slug, ev)
@@ -81,7 +90,7 @@ def _to_record(agency_slug: str, ev: ExtractedValue, meta: SourceRefMeta) -> Met
         unit=ev.unit,
         quality="preliminary",
         currency="CAD" if ev.unit == "CAD" else None,
-        notes=ev.note,
+        notes=_notes_for(ev),
         source=source,
     )
 
@@ -92,26 +101,41 @@ def run_pdf(
     agency_slug: str,
     *,
     source_ref_meta: SourceRefMeta,
-    llm_client: LLMClient,
+    extractor: Optional[Extractor] = None,
+    llm_client: Optional[LLMClient] = None,
     validator: Optional[Validator] = None,
 ) -> list[int]:
     """Run the Tier 2 pipeline; return the staged pending_value ids.
 
-    Accepts either a PDF path (extracted via pdfplumber) or pre-extracted pages
-    [(page_number, text), ...]. Resolves the agency up front so a bad slug fails
-    fast. Each extracted value becomes a 'pending' core.pending_values row,
-    carrying validator flags plus 'low_confidence' when confidence is below the
-    threshold. Nothing here promotes to metric_values.
+    Pass an `extractor=` (the default real path is ClaudePdfExtractor) or, for
+    the legacy text-only path, an `llm_client=` -- exactly one of the two. A PDF
+    path is read as raw bytes (handed to the extractor); a pre-extracted page
+    list [(page_number, text), ...] flows through as `pages`. Resolves the
+    agency up front so a bad slug fails fast. Each extracted value becomes a
+    'pending' core.pending_values row, carrying validator flags plus
+    'low_confidence' when confidence is below the threshold. Nothing here
+    promotes to metric_values.
     """
+    if extractor is not None and llm_client is not None:
+        raise ValueError("pass either extractor= or llm_client=, not both")
+    if extractor is None and llm_client is None:
+        raise ValueError("run_pdf needs an extractor= (or a legacy llm_client=)")
+    if extractor is None:
+        extractor = LegacyTextExtractor(llm_client, EXTRACTION_SYSTEM_PROMPT)
+
     repo.agency_id(agency_slug)  # fail fast on unknown agency
 
     if isinstance(pdf_path_or_pages, (str, Path)):
-        pages = extract_pages(pdf_path_or_pages)
+        pdf_bytes = Path(pdf_path_or_pages).read_bytes()
+        pages = None
     else:
-        pages = pdf_path_or_pages
-    document_text = "\n\n".join(text for _, text in pages)
+        pdf_bytes = None
+        pages = pdf_path_or_pages  # pre-extracted pages (offline / legacy)
 
-    extracted = llm_client.extract(EXTRACTION_SYSTEM_PROMPT, document_text, agency_slug)
+    request = ExtractionRequest(
+        agency_slug=agency_slug, pdf_bytes=pdf_bytes, pages=pages
+    )
+    extracted = extractor.extract(request).values
 
     pending_ids: list[int] = []
     for ev in extracted:

@@ -49,6 +49,7 @@ class ExtractedValue:
     confidence: Decimal
     period_month: Optional[int] = None
     note: Optional[str] = None
+    source_quote: Optional[str] = None  # verbatim snippet the number was read from (verify/review aid)
 
 
 @runtime_checkable
@@ -122,6 +123,10 @@ EXTRACTION_TOOL = {
                             "maximum": 1,
                         },
                         "note": {"type": ["string", "null"]},
+                        "source_quote": {
+                            "type": ["string", "null"],
+                            "description": "Exact on-page text the value was read from.",
+                        },
                     },
                     "required": [
                         "metric_code",
@@ -177,6 +182,7 @@ def _row_to_value(row: dict) -> ExtractedValue:
             int(row["period_month"]) if row.get("period_month") is not None else None
         ),
         note=row.get("note"),
+        source_quote=row.get("source_quote"),
     )
 
 
