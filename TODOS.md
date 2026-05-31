@@ -16,10 +16,8 @@ sequence in `phase-plan.md` and the approved office-hours design doc.
   redistribution restriction. CUTA = never a cited public source. See source-registry.md.
 - **Effort:** S (research, not code). **Priority:** P1. **Blocks:** public launch.
 
-### Pick ORM: Drizzle vs Prisma
-- **What:** Decide before the schema is written; the value contract is the spine.
-- **Why:** Reworking the ORM after adapters exist is expensive. Currently "open."
-- **Effort:** S. **Priority:** P1. **Blocks:** schema implementation.
+### ~~Pick ORM: Drizzle vs Prisma~~ ✓
+- **Completed v0.0.1.0 (2026-05-31):** Drizzle introspect (pull-only; no push/migrate).
 
 ### StatCan agency-code → slug mapping table
 - **What:** Map StatCan 23-10-0307 internal agency identifiers to TransitIndex slugs.
@@ -76,10 +74,8 @@ Full spec in phase-plan.md "Design" section + DESIGN.md. Items below are build/d
   "may be outdated"; normal reporting lag stays clean. Driven by the feed-health alert.
 - **Why:** Honest freshness is the trust story (invariants #2/#3).
 
-### Directory IA: search + province grouping + expand-in-place — P2/P3
-- **What:** Search hero, province-grouped listing, accordion expand-in-place (no back button),
-  agency card shown as soon as any metric is sourced ("not yet sourced" on gaps).
-- **Why:** Free directory is the only SEO surface (hard-ish gate); findability at 100+ agencies.
+### ~~Directory IA: search + province grouping + expand-in-place~~ ✓
+- **Completed v0.0.1.0 (2026-05-31):** Unified searchable table (province is a column + search term, not grouping), accordion expand-in-place, all 136 agencies crawlable in server HTML.
 
 ### Mobile 3-level (Bloomberg/Yahoo-iOS) — P3
 - **What:** L1 list (name + 1–2 ranks) → L2 full card → L3 tabbed paid sheet; sheet rows
@@ -207,12 +203,8 @@ audit trail in `phase-plan.md` (RE-REVIEW section); evidence in
 - **Add auth to the review `/approve` endpoint** (`review/app.py`). It is the only door into
   live `metric_values` and currently has none; localhost-default mitigates but a public bind
   defeats Invariant #1. Require auth on all mutating review endpoints.
-- **Reconcile DESIGN.md + the 3 wireframes to the account-gate model.** `DESIGN.md:65` + the
-  wireframes still spec the KILLED "1 free / used" cookie-meter paywall (superseded by D5).
-  Drop every "first view free" / meter string; add a first-class **"numbers gated
-  (anonymous)"** state to the interaction-states table.
-- **Paywall integrity is UNVERIFIED until `web/` ships** with a data-access layer that never
-  selects raw `value` for anonymous requests + the red→green A1 test. Don't treat it as built.
+- ~~**Reconcile DESIGN.md + the 3 wireframes to the account-gate model.**~~ ✓ **Completed v0.0.1.0 (2026-05-31):** DESIGN.md reconciled — meter language removed, "numbers gated (anonymous)" state added, 2026-05-31 status note recorded.
+- ~~**Paywall integrity is UNVERIFIED until `web/` ships**~~ ✓ **Completed v0.0.1.0 (2026-05-31):** `web/` shipped. Paywall enforced via server-only choke point + disjoint types + ESLint import restriction. A1 test structured (skipped until TEST_DATABASE_URL available).
 - **Period-comparability in `refresh_ranks`** — currently ranks only agencies in the one
   passed `period_id` (missing agency silently vanishes). Add "resolve latest comparable
   period per metric" + emit explicit "not ranked — latest FYxxxx" rows so the UI can render
