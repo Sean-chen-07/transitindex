@@ -91,7 +91,8 @@ export async function listAllAgencies(): Promise<AgencyListItem[]> {
       hasAnyRank: rankedIds.has(r.id),
     }))
     .sort((a, b) =>
-      (a.shortName ?? a.legalName).localeCompare(b.shortName ?? b.legalName),
+      (a.shortName ?? a.legalName).localeCompare(b.shortName ?? b.legalName) ||
+      a.legalName.localeCompare(b.legalName),
     );
 }
 

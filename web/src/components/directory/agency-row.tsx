@@ -58,15 +58,23 @@ function peekLabel(rank: AgencyRank): string {
   );
 }
 
-// Up to two safe-to-show ordinals, marquee metrics first.
+// Up to two safe-to-show ordinals, marquee metrics first. Deduplicated by label so
+// "annual ridership" and "monthly ridership" (both map to "ridership") never both appear.
 function pickPeek(ranks: AgencyRank[]): AgencyRank[] {
   const order = ["annual_ridership", "monthly_ridership", "farebox_recovery_ratio", "cost_per_rider"];
+  const seen = new Set<string>();
   return ranks
     .filter((r) => r.status === "ranked" && r.rank != null)
     .sort((a, b) => {
       const ai = order.indexOf(a.metricCode);
       const bi = order.indexOf(b.metricCode);
       return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    })
+    .filter((r) => {
+      const label = PEEK_LABELS[r.metricCode] ?? r.metricCode;
+      if (seen.has(label)) return false;
+      seen.add(label);
+      return true;
     })
     .slice(0, 2);
 }
@@ -153,7 +161,11 @@ export function AgencyRow({ item, ranks }: { item: AgencyListItem; ranks: Agency
           ))}
         </div>
 
-        {ranks.length > 0 ? <RankGrid ranks={ranks} /> : <PendingNotice slug={item.slug} />}
+        {item.hasAnyRank && ranks.length > 0 ? (
+          <RankGrid ranks={ranks} />
+        ) : (
+          <PendingNotice slug={item.slug} />
+        )}
 
         <div className="mt-4">
           <Link
