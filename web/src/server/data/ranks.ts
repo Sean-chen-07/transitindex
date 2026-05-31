@@ -97,7 +97,7 @@ async function getMetricMeta(): Promise<Map<number, MetricMeta>> {
  * batch home read) so the two paths can never diverge on the rank-safety logic. This is
  * the PRIMARY N<5 guard (the rank job does not suppress small pools).
  */
-function reconcileRanks(
+export function reconcileRanks(
   rows: RankRow[],
   latestByMetric: Map<number, CohortPeriod>,
   metaById: Map<number, MetricMeta>,
