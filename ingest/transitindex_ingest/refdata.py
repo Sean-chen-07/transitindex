@@ -167,11 +167,14 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
     }
 )
 
-# --- 8 source feeds (db/seeds/05_source_feeds.sql) ---------------------------
+# --- 9 source feeds (db/seeds/05_source_feeds.sql) ---------------------------
 # code -> tier, expected_cadence, enabled. Insertion order preserved.
 
 SOURCE_FEEDS: Mapping[str, Mapping] = MappingProxyType(
     {
+        "manual_entry": MappingProxyType(
+            {"tier": 0, "expected_cadence": None, "enabled": True}
+        ),
         "statcan_307": MappingProxyType(
             {"tier": 0, "expected_cadence": "monthly", "enabled": True}
         ),

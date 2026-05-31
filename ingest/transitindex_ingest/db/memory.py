@@ -250,6 +250,10 @@ class InMemoryRepository:
 
     # --- current-value reads -------------------------------------------------
 
+    def list_reporting_periods(self, agency_id: int) -> list[ReportingPeriod]:
+        rows = [p for p in self._periods.values() if p.agency_id == agency_id]
+        return sorted(rows, key=lambda p: p.start_date)
+
     def get_current_metric_value(
         self,
         agency_id: int,

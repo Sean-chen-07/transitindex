@@ -242,6 +242,53 @@ def cmd_pdf_smoke(args) -> int:
     return 0
 
 
+def cmd_export_xlsx(args) -> int:
+    """Build the editable .xlsx workbook (one row per agency per year)."""
+    from . import workbook
+
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+
+    years = _parse_years(args.years)
+    summary = workbook.export_workbook(repo, args.out, years)
+
+    print(f"workbook      : {summary['path']}")
+    print(f"rows          : {summary['rows']} ({summary['agencies']} agencies x {len(summary['years'])} years)")
+    print(f"filled cells  : {summary['filled_cells']} (pre-filled from the database)")
+    print(
+        "next step     : Open it, fill the white columns, then: "
+        f"python -m transitindex_ingest import-xlsx {summary['path']}"
+    )
+    return 0
+
+
+def cmd_import_xlsx(args) -> int:
+    """Read a filled-in workbook -> stage -> promote -> recompute derived -> rank."""
+    from . import workbook
+
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+
+    summary = workbook.import_workbook(repo, args.xlsx)
+
+    print(f"staged        : {summary['staged']} pending")
+    print(f"promoted      : {summary['promoted']} into metric_values")
+    print(f"derived       : {summary['derived']} ratio value(s)")
+    print(f"ranks         : refreshed for {summary['periods']} period(s)")
+    if summary["warnings"]:
+        print(f"sanity flags  : {len(summary['warnings'])}")
+        for w in summary["warnings"]:
+            print(f"  ! {w}")
+    return 0
+
+
+def _parse_years(spec: str) -> list[int]:
+    """Parse a '2019-2024' range (inclusive) into a list of ints."""
+    start_str, _, end_str = spec.partition("-")
+    start, end = int(start_str), int(end_str)
+    return list(range(start, end + 1))
+
+
 def cmd_ranks(args) -> int:
     """Refresh core.metric_ranks for one metric + period."""
     from .jobs.rank_refresh import refresh_ranks
@@ -353,6 +400,19 @@ def build_parser() -> argparse.ArgumentParser:
     sm.add_argument("--no-prefilter", action="store_true", help="Send the whole PDF, not just metric-dense pages.")
     sm.add_argument("--max-pages", dest="max_pages", type=int, default=15, help="Max pages sent to vision (default 15).")
     sm.set_defaults(func=cmd_pdf_smoke)
+
+    ep = sub.add_parser(
+        "export-xlsx", help="Export an editable .xlsx workbook for manual data entry."
+    )
+    ep.add_argument("--out", default="transitindex-data.xlsx", help="Output path (default: transitindex-data.xlsx).")
+    ep.add_argument("--years", default="2019-2024", help="Inclusive year range, e.g. 2019-2024 (default).")
+    ep.set_defaults(func=cmd_export_xlsx)
+
+    ip = sub.add_parser(
+        "import-xlsx", help="Import a filled-in workbook: stage, promote, recompute derived, rank."
+    )
+    ip.add_argument("xlsx", help="Path to the filled-in .xlsx workbook.")
+    ip.set_defaults(func=cmd_import_xlsx)
 
     rp = sub.add_parser("ranks", help="Refresh metric_ranks for a metric+period.")
     rp.add_argument("--metric", required=True)
