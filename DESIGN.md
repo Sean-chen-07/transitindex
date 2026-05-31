@@ -92,7 +92,9 @@ No purple/violet gradients. No decorative blobs. No icon-in-colored-circle featu
 - Preserve visited vs unvisited link distinction.
 
 ## Responsive
-- **Desktop:** expandable card list (search hero + province groups) → paid spreadsheet.
+- **Desktop:** ONE unified expandable row list (search hero + a single table of every
+  agency; province is a column/search term, **not** separate per-province grids — see the
+  2026-05-31 layout note below) → paid spreadsheet.
 - **Mobile (Bloomberg / Yahoo-Finance-iOS):** L1 list (name + 1–2 ranks) → L2 full card
   (all ranks, free) → L3 tabbed data sheet (paid). Sheet rows tap-to-expand for
   period / as-of / sparkline.
@@ -104,3 +106,18 @@ No purple/violet gradients. No decorative blobs. No icon-in-colored-circle featu
 - **wireframes-v5-expand.html** — expand-in-place directory (current home interaction)
 
 Superseded: v1 (terminal/IBM-Plex look) and v2 (inline per-number source chips) — rejected.
+
+## Status update 2026-05-31 — directory layout: one unified table, not province grids
+
+The home directory is now **one continuous, table-like list of every Canadian agency**, not
+the per-province card grids this file originally specced (Components #1 + the old Responsive
+line). Decision drivers: (a) the directory scaled from 10 launch agencies to the full
+~100+-agency census (`db/seeds/06_agencies_full.sql`), where separate per-province grids
+fragment the page; (b) the user asked for "all together in a table format." Each agency is a
+**full-width row** (mode-group color bar → name link → province column → 1–2 peek ranks →
+expand chevron) that **expands in place** to all ranks (the wireframes-v5 interaction,
+unchanged). Province is a **column + search term**, not a grouping. The interaction, tokens,
+expand-in-place behaviour, rank-only free payload, and N<5 suppression are all preserved —
+only the page-level arrangement (grids → single table) changed. wireframes-v5-expand.html
+remains the row/expand reference of record; the v3/v5 multi-column or province-grouped
+arrangements are superseded for the home by this single-table layout.

@@ -5,11 +5,13 @@
 DO $$
 DECLARE bad int;
 BEGIN
-  -- Counts (#2)
-  IF (SELECT count(*) FROM core.agencies)     <> 10 THEN RAISE EXCEPTION 'expected 10 agencies, got %',     (SELECT count(*) FROM core.agencies);     END IF;
+  -- Counts (#2). Agencies are now the full Canadian census (06_agencies_full.sql), a
+  -- growing set — assert the 10 launch agencies are still present (the floor), not an
+  -- exact count. primary_modes <-> agency_modes parity below covers every census row.
+  IF (SELECT count(*) FROM core.agencies)     <  10 THEN RAISE EXCEPTION 'expected >= 10 agencies, got %',  (SELECT count(*) FROM core.agencies);     END IF;
   IF (SELECT count(*) FROM core.modes)        <> 10 THEN RAISE EXCEPTION 'expected 10 modes, got %',        (SELECT count(*) FROM core.modes);        END IF;
   IF (SELECT count(*) FROM core.metrics)      <> 21 THEN RAISE EXCEPTION 'expected 21 metrics, got %',      (SELECT count(*) FROM core.metrics);      END IF;
-  IF (SELECT count(*) FROM core.source_feeds) <>  8 THEN RAISE EXCEPTION 'expected 8 source_feeds, got %',  (SELECT count(*) FROM core.source_feeds); END IF;
+  IF (SELECT count(*) FROM core.source_feeds) <>  9 THEN RAISE EXCEPTION 'expected 9 source_feeds, got %',  (SELECT count(*) FROM core.source_feeds); END IF;
 
   -- derived <-> formula presence (#8)
   IF (SELECT count(*) FROM core.metrics WHERE is_derived)                          <> 6

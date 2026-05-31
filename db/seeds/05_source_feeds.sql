@@ -8,5 +8,6 @@ INSERT INTO core.source_feeds (code, display_name, tier, expected_cadence, enabl
   ('ttc_ceo_report',     'TTC CEO Report',                    2, 'monthly',   false),
   ('oc_transpo_kpi',     'OC Transpo KPI scrape',             2, 'monthly',   false),
   ('metrolinx_ops',      'Metrolinx Operations Report',       2, 'quarterly', false),
-  ('annual_report_pdfs', 'Annual report PDFs (all agencies)', 2, 'annual',    false)
+  ('annual_report_pdfs', 'Annual report PDFs (all agencies)', 2, 'annual',    false),
+  ('manual_entry',       'Manual data entry (workbook)',      0, 'adhoc',     true)
 ON CONFLICT (code) DO NOTHING;

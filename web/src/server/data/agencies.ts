@@ -59,6 +59,42 @@ export async function listAgencies(): Promise<AgencyListGroup[]> {
     .sort((a, b) => a.provinceName.localeCompare(b.provinceName));
 }
 
+/**
+ * All agencies as ONE flat list, sorted by display name — the source for the unified
+ * directory table (no province grouping). Free-safe: identity + modes + a hasAnyRank
+ * flag only, never a raw value. At the seed-only DB every agency has hasAnyRank=false.
+ */
+export async function listAllAgencies(): Promise<AgencyListItem[]> {
+  const rows = await db
+    .select({
+      id: agencies.id,
+      slug: agencies.slug,
+      shortName: agencies.shortName,
+      legalName: agencies.legalName,
+      subdivision: agencies.subdivision,
+      primaryModes: agencies.primaryModes,
+    })
+    .from(agencies);
+
+  const ranked = await db
+    .selectDistinct({ agencyId: metricRanks.agencyId })
+    .from(metricRanks);
+  const rankedIds = new Set(ranked.map((r) => r.agencyId));
+
+  return rows
+    .map((r) => ({
+      slug: r.slug,
+      shortName: r.shortName,
+      legalName: r.legalName,
+      subdivision: r.subdivision,
+      primaryModes: r.primaryModes ?? [],
+      hasAnyRank: rankedIds.has(r.id),
+    }))
+    .sort((a, b) =>
+      (a.shortName ?? a.legalName).localeCompare(b.shortName ?? b.legalName),
+    );
+}
+
 export async function getAgencyBySlug(slug: string) {
   const [row] = await db
     .select({

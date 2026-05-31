@@ -56,7 +56,7 @@ export function ErrorNotice({ className }: { className?: string }) {
 export function EmptySearch({ query }: { query: string }) {
   return (
     <p className="py-8 text-center text-ink-2">
-      No agency matches &ldquo;{query}&rdquo;. Browse by province below ↓
+      No agency matches &ldquo;{query}&rdquo;. Try a different name or province.
     </p>
   );
 }
