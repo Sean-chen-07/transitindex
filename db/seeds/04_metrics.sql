@@ -1,8 +1,9 @@
--- Seed: the 20 universal metrics (14 sourced + 6 derived). applicable_modes = NULL
--- (system-wide) at seed. The 6 derived carry a formula; the 14 sourced carry NULL.
+-- Seed: the 21 universal metrics (15 sourced + 6 derived). applicable_modes = NULL
+-- (system-wide) at seed. The 6 derived carry a formula; the 15 sourced carry NULL.
 -- higher_is_better: NULL = neutral (no good/bad framing). Re-runnable.
 INSERT INTO core.metrics (code, display_name, unit, unit_type, is_derived, formula, higher_is_better) VALUES
   ('annual_ridership',         'Annual Ridership',          'count',    'count',    false, NULL,                                                              true),
+  ('monthly_ridership',        'Monthly Ridership',         'count',    'count',    false, NULL,                                                              true),
   ('revenue_service_hours',    'Revenue Service Hours',     'hours',    'time',     false, NULL,                                                              NULL),
   ('vehicle_revenue_km',       'Vehicle Revenue Kilometres','km',       'distance', false, NULL,                                                              NULL),
   ('average_fare',             'Average Fare',              'CAD',      'currency', true,  'operating_revenue / annual_ridership',                            NULL),

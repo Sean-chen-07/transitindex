@@ -8,7 +8,7 @@ BEGIN
   -- Counts (#2)
   IF (SELECT count(*) FROM core.agencies)     <> 10 THEN RAISE EXCEPTION 'expected 10 agencies, got %',     (SELECT count(*) FROM core.agencies);     END IF;
   IF (SELECT count(*) FROM core.modes)        <> 10 THEN RAISE EXCEPTION 'expected 10 modes, got %',        (SELECT count(*) FROM core.modes);        END IF;
-  IF (SELECT count(*) FROM core.metrics)      <> 20 THEN RAISE EXCEPTION 'expected 20 metrics, got %',      (SELECT count(*) FROM core.metrics);      END IF;
+  IF (SELECT count(*) FROM core.metrics)      <> 21 THEN RAISE EXCEPTION 'expected 21 metrics, got %',      (SELECT count(*) FROM core.metrics);      END IF;
   IF (SELECT count(*) FROM core.source_feeds) <>  8 THEN RAISE EXCEPTION 'expected 8 source_feeds, got %',  (SELECT count(*) FROM core.source_feeds); END IF;
 
   -- derived <-> formula presence (#8)

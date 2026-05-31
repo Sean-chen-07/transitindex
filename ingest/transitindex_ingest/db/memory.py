@@ -1,7 +1,7 @@
 """In-memory Repository implementation -- the offline workhorse for all tests.
 
 Backed by plain dicts with auto-increment ids. Seeded on construction from
-refdata (10 agencies, 20 metrics, 10 modes, 8 feeds) so slug/code lookups
+refdata (10 agencies, 21 metrics, 10 modes, 8 feeds) so slug/code lookups
 resolve exactly as against the live DB. Faithfully enforces the
 one_current_value invariant (mode_id None is a concrete key part), the
 supersede/restatement chain, and the audit trail on every metric_value write.
