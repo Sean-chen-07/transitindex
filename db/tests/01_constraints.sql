@@ -3,16 +3,17 @@
 BEGIN;
 
 INSERT INTO core.agencies (slug, legal_name, subdivision) VALUES ('__test_con__', 'Test', 'ZZ');
-INSERT INTO core.reporting_periods (agency_id, period_type, start_date, end_date, label)
-  SELECT id, 'annual_calendar', DATE '2024-01-01', DATE '2024-12-31', '2024'
-  FROM core.agencies WHERE slug = '__test_con__';
+-- reporting_periods is shared across agencies (migration 009): no agency_id, identity
+-- is (period_type, start_date, end_date). A throwaway period date avoids real-data collision.
+INSERT INTO core.reporting_periods (period_type, start_date, end_date, label)
+  VALUES ('annual_calendar', DATE '1900-01-01', DATE '1900-12-31', '__test_con__');
 
 DO $$
 DECLARE a bigint; p bigint; m bigint;
 BEGIN
-  SELECT id INTO a FROM core.agencies         WHERE slug = '__test_con__';
-  SELECT id INTO p FROM core.reporting_periods WHERE agency_id = a;
-  SELECT id INTO m FROM core.metrics          WHERE code = 'annual_ridership';
+  SELECT id INTO a FROM core.agencies          WHERE slug = '__test_con__';
+  SELECT id INTO p FROM core.reporting_periods WHERE label = '__test_con__';
+  SELECT id INTO m FROM core.metrics           WHERE code = 'annual_ridership';
 
   -- bad service_scope -> rejected
   BEGIN

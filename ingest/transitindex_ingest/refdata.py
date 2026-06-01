@@ -202,19 +202,19 @@ SOURCE_FEEDS: Mapping[str, Mapping] = MappingProxyType(
     }
 )
 
-# --- StatCan 23-10-0307 member-label -> agency slug --------------------------
-# Covers ONLY the 7 agencies in the table (not oc-transpo, miway,
-# burlington-transit). The keys below are PLACEHOLDER member labels: the EXACT
-# StatCan geography labels MUST be verified against the live download before
-# production use -- they often carry CMA/region suffixes that differ from these.
+# --- StatCan 23-10-0307 "Urban transit agency name" -> agency slug -----------
+# Covers ONLY the 7 agencies we track that appear in the table (not oc-transpo,
+# miway, burlington-transit). Keys are the EXACT agency-name labels in the live
+# 23-10-0307 download (verified 2026-06). Other agencies in the table (Halifax,
+# Winnipeg, Regina, Laval, Longueuil, ...) are intentionally absent -> skipped.
 STATCAN_AGENCY_MAP: Mapping[str, str] = MappingProxyType(
     {
-        "Toronto": "ttc",
-        "Montréal": "stm",
-        "Vancouver": "translink",
-        "Calgary": "calgary-transit",
-        "Edmonton": "edmonton-ets",
-        "Toronto (GO Transit / GTHA)": "metrolinx",
-        "Victoria": "bc-transit",
+        "Toronto transit commission (TTC)": "ttc",
+        "Société de transport de Montréal (STM)": "stm",
+        "South Coast British Columbia Transportation Authority (Translink)": "translink",
+        "Calgary Transit": "calgary-transit",
+        "Edmonton Transit Service (ETS)": "edmonton-ets",
+        "Metrolinx, Greater Toronto and Hamilton Area (GTHA)": "metrolinx",
+        "BC Transit (Victoria Regional Transit System)": "bc-transit",
     }
 )

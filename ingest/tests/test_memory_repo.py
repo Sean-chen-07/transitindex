@@ -40,7 +40,7 @@ def _insert(repo: InMemoryRepository, value: str, mode_id=None):
     a = repo.agency_id("ttc")
     m = repo.metric_id("annual_ridership")
     p = repo.get_or_create_reporting_period(
-        a, "monthly", _d(2026, 3, 1), _d(2026, 3, 31), "Mar 2026"
+        "monthly", _d(2026, 3, 1), _d(2026, 3, 31), "Mar 2026"
     )
     return repo.insert_metric_value(
         agency_id=a,
@@ -67,7 +67,7 @@ def test_second_current_value_supersedes_first(repo):
     a = repo.agency_id("ttc")
     m = repo.metric_id("annual_ridership")
     p = repo.get_or_create_reporting_period(
-        a, "monthly", _d(2026, 3, 1), _d(2026, 3, 31), "Mar 2026"
+        "monthly", _d(2026, 3, 1), _d(2026, 3, 31), "Mar 2026"
     )
     current = repo.get_current_metric_value(a, m, p, None, "system_wide")
 
@@ -100,7 +100,7 @@ def test_mode_id_participates_in_key(repo):
     a = repo.agency_id("ttc")
     m = repo.metric_id("annual_ridership")
     p = repo.get_or_create_reporting_period(
-        a, "monthly", _d(2026, 3, 1), _d(2026, 3, 31), "Mar 2026"
+        "monthly", _d(2026, 3, 1), _d(2026, 3, 31), "Mar 2026"
     )
     assert repo.get_current_metric_value(a, m, p, None, "system_wide").id == system_wide
     assert (
@@ -122,7 +122,7 @@ def test_promote_pending_supersedes_and_approves(repo, sample_record):
     a = repo.agency_id("ttc")
     m = repo.metric_id("annual_ridership")
     p = repo.get_or_create_reporting_period(
-        a, "monthly", _d(2026, 3, 1), _d(2026, 3, 31), "Mar 2026"
+        "monthly", _d(2026, 3, 1), _d(2026, 3, 31), "Mar 2026"
     )
     current = repo.get_current_metric_value(a, m, p, None, "system_wide")
     assert current.id == vid

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ypfSf6YYsQ4zuitXlj8Ob0B3ZV2mPNm2WaD6X0WgosRWEO4heigFdud9elHTmhV
+\restrict ZiJdnShJOsrSKfDlnV6kdXBJZan1Igs1zokFtqjGoh2x2QE6koldVxePzZtKVui
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.4
@@ -56,6 +56,25 @@ $$;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- Name: accounts; Type: TABLE; Schema: app; Owner: -
+--
+
+CREATE TABLE app.accounts (
+    user_id uuid NOT NULL,
+    type text NOT NULL,
+    provider text NOT NULL,
+    provider_account_id text NOT NULL,
+    refresh_token text,
+    access_token text,
+    expires_at integer,
+    token_type text,
+    scope text,
+    id_token text,
+    session_state text
+);
+
 
 --
 -- Name: agency_requests; Type: TABLE; Schema: app; Owner: -
@@ -113,6 +132,17 @@ ALTER TABLE app.conversion_events ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTI
 
 
 --
+-- Name: sessions; Type: TABLE; Schema: app; Owner: -
+--
+
+CREATE TABLE app.sessions (
+    session_token text NOT NULL,
+    user_id uuid NOT NULL,
+    expires timestamp with time zone NOT NULL
+);
+
+
+--
 -- Name: users; Type: TABLE; Schema: app; Owner: -
 --
 
@@ -123,6 +153,10 @@ CREATE TABLE app.users (
     subscription_status text,
     subscription_source text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    auth_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text,
+    image text,
+    email_verified timestamp with time zone,
     CONSTRAINT users_subscription_status_check CHECK ((subscription_status = ANY (ARRAY['active'::text, 'inactive'::text, 'trialing'::text, 'past_due'::text])))
 );
 
@@ -138,6 +172,17 @@ ALTER TABLE app.users ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     NO MINVALUE
     NO MAXVALUE
     CACHE 1
+);
+
+
+--
+-- Name: verification_token; Type: TABLE; Schema: app; Owner: -
+--
+
+CREATE TABLE app.verification_token (
+    identifier text NOT NULL,
+    token text NOT NULL,
+    expires timestamp with time zone NOT NULL
 );
 
 
@@ -469,7 +514,6 @@ ALTER TABLE core.pending_values ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY
 
 CREATE TABLE core.reporting_periods (
     id bigint NOT NULL,
-    agency_id bigint NOT NULL,
     period_type text NOT NULL,
     start_date date NOT NULL,
     end_date date NOT NULL,
@@ -558,6 +602,14 @@ ALTER TABLE core.source_feeds ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
 
 
 --
+-- Name: accounts accounts_pkey; Type: CONSTRAINT; Schema: app; Owner: -
+--
+
+ALTER TABLE ONLY app.accounts
+    ADD CONSTRAINT accounts_pkey PRIMARY KEY (provider, provider_account_id);
+
+
+--
 -- Name: agency_requests agency_requests_pkey; Type: CONSTRAINT; Schema: app; Owner: -
 --
 
@@ -574,6 +626,22 @@ ALTER TABLE ONLY app.conversion_events
 
 
 --
+-- Name: sessions sessions_pkey; Type: CONSTRAINT; Schema: app; Owner: -
+--
+
+ALTER TABLE ONLY app.sessions
+    ADD CONSTRAINT sessions_pkey PRIMARY KEY (session_token);
+
+
+--
+-- Name: users users_auth_id_key; Type: CONSTRAINT; Schema: app; Owner: -
+--
+
+ALTER TABLE ONLY app.users
+    ADD CONSTRAINT users_auth_id_key UNIQUE (auth_id);
+
+
+--
 -- Name: users users_email_key; Type: CONSTRAINT; Schema: app; Owner: -
 --
 
@@ -587,6 +655,14 @@ ALTER TABLE ONLY app.users
 
 ALTER TABLE ONLY app.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: verification_token verification_token_pkey; Type: CONSTRAINT; Schema: app; Owner: -
+--
+
+ALTER TABLE ONLY app.verification_token
+    ADD CONSTRAINT verification_token_pkey PRIMARY KEY (identifier, token);
 
 
 --
@@ -702,11 +778,11 @@ ALTER TABLE ONLY core.pending_values
 
 
 --
--- Name: reporting_periods reporting_periods_agency_id_period_type_start_date_key; Type: CONSTRAINT; Schema: core; Owner: -
+-- Name: reporting_periods reporting_periods_period_type_start_date_end_date_key; Type: CONSTRAINT; Schema: core; Owner: -
 --
 
 ALTER TABLE ONLY core.reporting_periods
-    ADD CONSTRAINT reporting_periods_agency_id_period_type_start_date_key UNIQUE (agency_id, period_type, start_date);
+    ADD CONSTRAINT reporting_periods_period_type_start_date_end_date_key UNIQUE (period_type, start_date, end_date);
 
 
 --
@@ -784,6 +860,14 @@ CREATE TRIGGER metric_values_audit AFTER INSERT OR UPDATE ON core.metric_values 
 
 
 --
+-- Name: accounts accounts_user_id_fkey; Type: FK CONSTRAINT; Schema: app; Owner: -
+--
+
+ALTER TABLE ONLY app.accounts
+    ADD CONSTRAINT accounts_user_id_fkey FOREIGN KEY (user_id) REFERENCES app.users(auth_id) ON DELETE CASCADE;
+
+
+--
 -- Name: agency_requests agency_requests_agency_id_fkey; Type: FK CONSTRAINT; Schema: app; Owner: -
 --
 
@@ -805,6 +889,14 @@ ALTER TABLE ONLY app.conversion_events
 
 ALTER TABLE ONLY app.conversion_events
     ADD CONSTRAINT conversion_events_user_id_fkey FOREIGN KEY (user_id) REFERENCES app.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: sessions sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: app; Owner: -
+--
+
+ALTER TABLE ONLY app.sessions
+    ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES app.users(auth_id) ON DELETE CASCADE;
 
 
 --
@@ -992,14 +1084,6 @@ ALTER TABLE ONLY core.pending_values
 
 
 --
--- Name: reporting_periods reporting_periods_agency_id_fkey; Type: FK CONSTRAINT; Schema: core; Owner: -
---
-
-ALTER TABLE ONLY core.reporting_periods
-    ADD CONSTRAINT reporting_periods_agency_id_fkey FOREIGN KEY (agency_id) REFERENCES core.agencies(id) ON DELETE CASCADE;
-
-
---
 -- Name: source_documents source_documents_agency_id_fkey; Type: FK CONSTRAINT; Schema: core; Owner: -
 --
 
@@ -1022,6 +1106,13 @@ GRANT USAGE ON SCHEMA core TO web_reader;
 
 
 --
+-- Name: TABLE accounts; Type: ACL; Schema: app; Owner: -
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE app.accounts TO web_reader;
+
+
+--
 -- Name: TABLE agency_requests; Type: ACL; Schema: app; Owner: -
 --
 
@@ -1036,10 +1127,24 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE app.conversion_events TO web_reader;
 
 
 --
+-- Name: TABLE sessions; Type: ACL; Schema: app; Owner: -
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE app.sessions TO web_reader;
+
+
+--
 -- Name: TABLE users; Type: ACL; Schema: app; Owner: -
 --
 
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE app.users TO web_reader;
+
+
+--
+-- Name: TABLE verification_token; Type: ACL; Schema: app; Owner: -
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE app.verification_token TO web_reader;
 
 
 --
@@ -1078,13 +1183,6 @@ GRANT SELECT ON TABLE core.metric_ranks TO web_reader;
 
 
 --
--- Name: TABLE metric_value_audit; Type: ACL; Schema: core; Owner: -
---
-
-GRANT SELECT ON TABLE core.metric_value_audit TO web_reader;
-
-
---
 -- Name: TABLE metric_value_sources; Type: ACL; Schema: core; Owner: -
 --
 
@@ -1113,13 +1211,6 @@ GRANT SELECT ON TABLE core.modes TO web_reader;
 
 
 --
--- Name: TABLE pending_values; Type: ACL; Schema: core; Owner: -
---
-
-GRANT SELECT ON TABLE core.pending_values TO web_reader;
-
-
---
 -- Name: TABLE reporting_periods; Type: ACL; Schema: core; Owner: -
 --
 
@@ -1144,5 +1235,5 @@ GRANT SELECT ON TABLE core.source_feeds TO web_reader;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ypfSf6YYsQ4zuitXlj8Ob0B3ZV2mPNm2WaD6X0WgosRWEO4heigFdud9elHTmhV
+\unrestrict ZiJdnShJOsrSKfDlnV6kdXBJZan1Igs1zokFtqjGoh2x2QE6koldVxePzZtKVui
 

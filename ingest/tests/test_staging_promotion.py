@@ -28,7 +28,6 @@ def _current(repo, record):
         repo.agency_id(record.agency_slug),
         repo.metric_id(record.metric_code),
         repo.get_or_create_reporting_period(
-            repo.agency_id(record.agency_slug),
             record.period_type,
             record.period_start,
             record.period_end,

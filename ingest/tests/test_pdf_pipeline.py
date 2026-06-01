@@ -83,7 +83,7 @@ def test_values_land_as_pending_and_never_reach_metric_values(repo):
     # Invariant #1: nothing was promoted -- no metric_values, no audit entries.
     metric_id = repo.metric_id("annual_ridership")
     period_id = repo.get_or_create_reporting_period(
-        repo.agency_id("ttc"), "annual_calendar", date(2024, 1, 1), date(2024, 12, 31), "2024"
+        "annual_calendar", date(2024, 1, 1), date(2024, 12, 31), "2024"
     )
     assert repo.list_current_values_for_metric_period(metric_id, period_id) == []
     assert repo.iter_audit() == []
@@ -133,7 +133,7 @@ def test_annual_calendar_period_mapping(repo):
     assert p.currency == "CAD"
     # ttc fiscal_year_end_month == 12 -> annual_calendar, Jan1..Dec31, label '2024'
     period = repo.get_or_create_reporting_period(
-        repo.agency_id("ttc"), "annual_calendar", date(2024, 1, 1), date(2024, 12, 31), "2024"
+        "annual_calendar", date(2024, 1, 1), date(2024, 12, 31), "2024"
     )
     assert p.reporting_period_id == period
 
@@ -163,7 +163,6 @@ def test_fiscal_year_period_mapping_for_metrolinx():
     p = repo.get_pending_value(pid)
     # metrolinx FYE month 3 -> fiscal year 2024-04-01..2025-03-31, label 'FY2024-25'
     period = repo.get_or_create_reporting_period(
-        repo.agency_id("metrolinx"),
         "annual_fiscal",
         date(2024, 4, 1),
         date(2025, 3, 31),
@@ -188,7 +187,7 @@ def test_monthly_period_mapping(repo):
     (pid,) = _run(repo, values)
     p = repo.get_pending_value(pid)
     period = repo.get_or_create_reporting_period(
-        repo.agency_id("ttc"), "monthly", date(2026, 3, 1), date(2026, 3, 31), "Mar 2026"
+        "monthly", date(2026, 3, 1), date(2026, 3, 31), "Mar 2026"
     )
     assert p.reporting_period_id == period
 

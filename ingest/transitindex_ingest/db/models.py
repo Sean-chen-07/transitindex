@@ -29,10 +29,15 @@ class Metric:
 
 @dataclass(frozen=True)
 class ReportingPeriod:
-    """A row of core.reporting_periods."""
+    """A row of core.reporting_periods.
+
+    Shared across agencies (migration 009): a period is identified by
+    (period_type, start_date, end_date), so one row serves every agency that
+    reports for that calendar period — this is what lets agencies be ranked
+    against each other within a period.
+    """
 
     id: int
-    agency_id: int
     period_type: str
     start_date: date
     end_date: date

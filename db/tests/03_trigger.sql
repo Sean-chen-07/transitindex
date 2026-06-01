@@ -4,16 +4,17 @@
 BEGIN;
 
 INSERT INTO core.agencies (slug, legal_name, subdivision) VALUES ('__test_trg__', 'Test', 'ZZ');
-INSERT INTO core.reporting_periods (agency_id, period_type, start_date, end_date, label)
-  SELECT id, 'annual_calendar', DATE '2024-01-01', DATE '2024-12-31', '2024'
-  FROM core.agencies WHERE slug = '__test_trg__';
+-- reporting_periods is shared across agencies (migration 009): no agency_id, identity
+-- is (period_type, start_date, end_date). A throwaway period date avoids real-data collision.
+INSERT INTO core.reporting_periods (period_type, start_date, end_date, label)
+  VALUES ('annual_calendar', DATE '1900-03-01', DATE '1900-12-31', '__test_trg__');
 
 DO $$
 DECLARE a bigint; p bigint; m bigint; v bigint; n int; ov numeric; nv numeric;
 BEGIN
-  SELECT id INTO a FROM core.agencies         WHERE slug = '__test_trg__';
-  SELECT id INTO p FROM core.reporting_periods WHERE agency_id = a;
-  SELECT id INTO m FROM core.metrics          WHERE code = 'annual_ridership';
+  SELECT id INTO a FROM core.agencies          WHERE slug = '__test_trg__';
+  SELECT id INTO p FROM core.reporting_periods WHERE label = '__test_trg__';
+  SELECT id INTO m FROM core.metrics           WHERE code = 'annual_ridership';
 
   INSERT INTO core.metric_values (agency_id, metric_id, reporting_period_id, service_scope, value, unit, quality)
   VALUES (a, m, p, 'total', 1000, 'count', 'verified')

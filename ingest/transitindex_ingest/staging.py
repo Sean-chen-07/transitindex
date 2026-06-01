@@ -71,7 +71,6 @@ def stage_records(
             source_document_id = None
 
         repo.get_or_create_reporting_period(
-            agency_id,
             record.period_type,
             record.period_start,
             record.period_end,

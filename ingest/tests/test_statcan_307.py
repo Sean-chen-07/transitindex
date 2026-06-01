@@ -2,7 +2,7 @@
 
 Offline + pure stdlib (csv via the stdlib module). The fixture mirrors the real
 table shape: 3 mapped systems x 2 measures x 2 months, plus one unmapped system
-(Winnipeg) that must land in `.skipped` and never reach the output.
+(Winnipeg Transit) that must land in `.skipped` and never reach the output.
 """
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ def test_scalar_factor_applied():
     rev = _one(records, "ttc", "operating_revenue", date(2026, 1, 1))
     assert rev.value == Decimal("52000") * Decimal(1000)
     assert rev.value == Decimal("52000000")
-    # Ridership uses 'units' -> unchanged.
+    # Ridership: VALUE 45000 with SCALAR_FACTOR 'thousands' -> x1000.
     trips = _one(records, "ttc", "monthly_ridership", date(2026, 1, 1))
     assert trips.value == Decimal("45000000")
 
@@ -102,7 +102,7 @@ def test_status_marks_preliminary():
 def test_unmapped_system_skipped():
     adapter, records = _parse()
     assert len(adapter.skipped) == 1
-    assert adapter.skipped[0]["geo"] == "Winnipeg"
+    assert adapter.skipped[0]["agency"] == "Winnipeg Transit"
     # And it is absent from the emitted records.
     assert all(r.agency_slug in {"ttc", "stm", "calgary-transit"} for r in records)
 

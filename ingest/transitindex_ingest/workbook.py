@@ -182,9 +182,12 @@ def _read_current_values(repo) -> dict[tuple[str, int], dict[str, object]]:
     """
     metric_code = {m.id: m.code for m in repo.list_metrics()}
     out: dict[tuple[str, int], dict[str, object]] = {}
+    # Periods are shared across agencies (migration 009); list_reporting_periods()
+    # returns every period and the inner read filters to this agency's own values,
+    # so periods where the agency has no values simply contribute nothing.
     for slug in AGENCY_NAMES:
         agency_id = repo.agency_id(slug)
-        for period in repo.list_reporting_periods(agency_id):
+        for period in repo.list_reporting_periods():
             year = period.start_date.year
             for v in repo.list_current_values_for_agency_period(agency_id, period.id):
                 if v.mode_id is not None:
@@ -526,9 +529,8 @@ def import_workbook(repo, path: str) -> dict:
     periods: set[int] = set()
     agency_periods: set[tuple[str, int]] = set()
     for r in records:
-        aid = repo.agency_id(r.agency_slug)
         pid = repo.get_or_create_reporting_period(
-            aid, r.period_type, r.period_start, r.period_end, r.period_label
+            r.period_type, r.period_start, r.period_end, r.period_label
         )
         periods.add(pid)
         agency_periods.add((r.agency_slug, pid))

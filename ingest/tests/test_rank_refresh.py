@@ -18,10 +18,10 @@ from transitindex_ingest.jobs.rank_refresh import compute_ranks, refresh_ranks
 # --- helpers ----------------------------------------------------------------
 
 
-def _period(repo, agency_slug: str = "ttc") -> int:
-    """A shared reporting period id all agencies' values point at."""
+def _period(repo) -> int:
+    """The shared reporting period id all agencies' values point at (one row per
+    calendar period since migration 009 — this is what makes a cross-agency cohort)."""
     return repo.get_or_create_reporting_period(
-        repo.agency_id(agency_slug),
         "annual_calendar",
         date(2024, 1, 1),
         date(2024, 12, 31),
@@ -189,7 +189,6 @@ def test_refresh_ranks_ignores_other_periods(repo):
     """A value in a different period must not leak into this period's ranks."""
     pid = _period(repo)
     other_pid = repo.get_or_create_reporting_period(
-        repo.agency_id("ttc"),
         "annual_calendar",
         date(2023, 1, 1),
         date(2023, 12, 31),
