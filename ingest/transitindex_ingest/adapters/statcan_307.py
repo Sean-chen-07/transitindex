@@ -4,10 +4,11 @@
 subsidies) per transit system. This adapter reads the table's CSV export and
 yields one `MetricValueRecord` per (system, measure, month):
 
-  * GEO / transit-system label -> agency slug via refdata.STATCAN_AGENCY_MAP.
-    A label that is not in the map is SKIPPED (collected in `.skipped`) rather
-    than crashing -- it usually means a system we do not track, or a renamed
-    geography that needs the map updated.
+  * "Urban transit agency name" -> agency slug via refdata.STATCAN_AGENCY_MAP.
+    (In this table GEO is always "Canada"; the transit agency is its own
+    dimension.) A name that is not in the map is SKIPPED (collected in
+    `.skipped`) rather than crashing -- it usually means a system we do not
+    track, or a renamed agency that needs the map updated.
   * the measure label -> metric_code (monthly_ridership / operating_revenue).
     NB: 23-10-0307 trips are a MONTHLY count, so they map to monthly_ridership;
     annual_ridership is fed only by true annual sources (or a month->year rollup).
@@ -40,7 +41,7 @@ STATCAN_307_URL = "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2310030
 #: ingest are listed; any other measure row is ignored.
 _MEASURE_TO_METRIC: dict[str, str] = {
     "Total passenger trips": "monthly_ridership",
-    "Total operating revenue (excluding subsidies)": "operating_revenue",
+    "Total revenue, excluding subsidies": "operating_revenue",
 }
 
 #: SCALAR_FACTOR label -> multiplier applied to VALUE.
@@ -66,15 +67,17 @@ class StatCan23100307Adapter:
         self.skipped = []
         records: list[MetricValueRecord] = []
 
+        # cli.py reads the StatCan CSV as utf-8-sig, so any leading BOM is already
+        # stripped and the first column parses as "REF_DATE".
         reader = csv.DictReader(io.StringIO(raw_csv_text))
         for row in reader:
-            geo = (row.get("GEO") or "").strip()
-            measure = (row.get("Transit measures") or "").strip()
+            agency = (row.get("Urban transit agency name") or "").strip()
+            measure = (row.get("Total revenue and total passenger trips") or "").strip()
             ref_date = (row.get("REF_DATE") or "").strip()
 
-            slug = STATCAN_AGENCY_MAP.get(geo)
+            slug = STATCAN_AGENCY_MAP.get(agency)
             if slug is None:
-                self.skipped.append({"geo": geo, "ref_date": ref_date, "measure": measure})
+                self.skipped.append({"agency": agency, "ref_date": ref_date, "measure": measure})
                 continue
 
             metric_code = _MEASURE_TO_METRIC.get(measure)

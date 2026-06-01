@@ -65,14 +65,14 @@ class Repository(Protocol):
 
     def get_or_create_reporting_period(
         self,
-        agency_id: int,
         period_type: str,
         start_date,
         end_date,
         label: str,
     ) -> int:
         """Return the id of the matching core.reporting_periods row, creating it
-        if absent. Identity is (agency_id, period_type, start_date)."""
+        if absent. Identity is (period_type, start_date, end_date) — periods are
+        shared across agencies (migration 009)."""
         ...
 
     def get_or_create_source_document(self, source: SourceRef, agency_id: Optional[int]) -> int:
@@ -115,9 +115,10 @@ class Repository(Protocol):
 
     # --- current-value reads -------------------------------------------------
 
-    def list_reporting_periods(self, agency_id: int) -> list[ReportingPeriod]:
-        """All core.reporting_periods rows for an agency, ordered by start_date
-        (used by the workbook export to enumerate an agency's periods)."""
+    def list_reporting_periods(self) -> list[ReportingPeriod]:
+        """All core.reporting_periods rows, ordered by start_date. Periods are
+        shared across agencies (migration 009); the workbook export pairs each
+        with an agency's own values via list_current_values_for_agency_period."""
         ...
 
     def get_current_metric_value(

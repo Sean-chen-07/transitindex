@@ -49,20 +49,23 @@ def cmd_statcan(args) -> int:
     repo, ephemeral = _build_repo()
     _note_ephemeral(ephemeral)
 
-    text = Path(args.csv).read_text(encoding="utf-8")
+    # utf-8-sig: StatCan's CSV export is UTF-8 with a leading BOM; this strips it so
+    # the first column header parses as "REF_DATE" rather than a BOM-prefixed key.
+    text = Path(args.csv).read_text(encoding="utf-8-sig")
     adapter = StatCan23100307Adapter()
     records = adapter.parse(text)
 
     pending_ids = stage_records(repo, records, tier=0, feed_code="statcan_307")
     promoted = promote_approved(repo)
 
-    # The (agency, period) and period set the batch touched.
+    # The (agency, period) and period set the batch touched. Periods are shared
+    # across agencies (migration 009), so the same calendar period dedupes to one
+    # pid here and all agencies' values rank together in that single cohort.
     periods: set[int] = set()
     agency_periods: set[tuple[str, int]] = set()
     for r in records:
-        aid = repo.agency_id(r.agency_slug)
         pid = repo.get_or_create_reporting_period(
-            aid, r.period_type, r.period_start, r.period_end, r.period_label
+            r.period_type, r.period_start, r.period_end, r.period_label
         )
         periods.add(pid)
         agency_periods.add((r.agency_slug, pid))
@@ -82,9 +85,9 @@ def cmd_statcan(args) -> int:
             refresh_ranks(repo, code, pid, service_scope="total")
 
     print(f"parsed        : {len(records)} records")
-    print(f"skipped (geo) : {len(adapter.skipped)} unmapped system row(s)")
+    print(f"skipped       : {len(adapter.skipped)} unmapped agency row(s)")
     for s in adapter.skipped:
-        print(f"  - {s['geo']!r} ({s['measure']}, {s['ref_date']})")
+        print(f"  - {s['agency']!r} ({s['measure']}, {s['ref_date']})")
     print(f"staged        : {len(pending_ids)} pending")
     print(f"promoted      : {len(promoted)} into metric_values")
     print(f"derived       : {derived} ratio value(s)")

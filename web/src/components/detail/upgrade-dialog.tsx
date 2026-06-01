@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Lock, Check } from "lucide-react";
 import {
   Dialog,
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { logConversion } from "@/app/actions/log-conversion";
+import { createCheckoutSession } from "@/server/billing/checkout";
 
 /**
  * The account-gate upgrade dialog — replaces the KILLED "1 free / used" cookie meter.
@@ -18,8 +20,8 @@ import { logConversion } from "@/app/actions/log-conversion";
  * Dialog is focus-trapped, ESC-closable, with an aria-hidden background. Opening it logs
  * a `gate_view` conversion event (the funnel instrumentation).
  *
- * NOTE: the $20/yr checkout + sign-in links are wired in steps 7-8 (auth + Stripe). In
- * this free-app build the CTA is a visual placeholder.
+ * The CTA posts to the createCheckoutSession server action (auth-gated; it redirects an
+ * anonymous caller to /sign-in and logs `checkout_start` itself, so we don't log it here).
  */
 export function UpgradeDialog({ agencyId }: { agencyId?: number | null }) {
   const [open, setOpen] = React.useState(false);
@@ -59,12 +61,17 @@ export function UpgradeDialog({ agencyId }: { agencyId?: number | null }) {
             </li>
           ))}
         </ul>
-        {/* TODO(step 8): wire to createCheckoutSession() + log checkout_start. */}
-        <Button variant="primary" className="w-full" type="button">
-          Continue — $20/year
-        </Button>
+        {/* createCheckoutSession logs checkout_start + redirects to Stripe (or /sign-in). */}
+        <form action={createCheckoutSession}>
+          <Button variant="primary" className="w-full" type="submit">
+            Continue — $20/year
+          </Button>
+        </form>
         <p className="mt-3 text-center text-xs text-ink-3">
-          Already a member? Sign in {/* TODO(step 7): /sign-in */}
+          Already a member?{" "}
+          <Link href="/sign-in" className="text-teal underline-offset-2 hover:underline">
+            Sign in
+          </Link>
         </p>
       </DialogContent>
     </Dialog>

@@ -31,8 +31,32 @@ class PostgresRepository:
     def __init__(self, dsn: str) -> None:
         import psycopg  # lazy: importing this module must not require psycopg
 
-        self._conn = psycopg.connect(dsn)
+        # Supabase's connection pooler does not support server-side prepared
+        # statements; psycopg auto-prepares a statement after a few reuses, which
+        # over the pooler surfaces as "server closed the connection unexpectedly"
+        # partway through a multi-hundred-row load. Disabling preparation is the
+        # psycopg equivalent of the web app's `prepare: false` (web/src/server/db.ts).
+        # TCP keepalives keep the pooler/NAT from dropping an otherwise-busy session.
+        # autocommit=True is REQUIRED here, not a tuning choice. Every write method
+        # wraps its work in `with self._conn.transaction()` (a real BEGIN/COMMIT under
+        # autocommit). Without autocommit, the bare statements below (SET search_path,
+        # the cached id SELECTs) open an implicit outer transaction, which turns every
+        # `transaction()` block into a nested SAVEPOINT — so the work is only released,
+        # never committed, and is rolled back when the process exits. (That is exactly
+        # why a load could report "promoted N" yet leave the tables empty.)
+        self._conn = psycopg.connect(
+            dsn,
+            autocommit=True,
+            prepare_threshold=None,
+            keepalives=1,
+            keepalives_idle=30,
+            keepalives_interval=10,
+            keepalives_count=5,
+        )
         self._conn.execute("SET search_path TO core, public")
+        # Memoize immutable reference-data id lookups (agencies/metrics/modes/feeds)
+        # so a multi-hundred-row load isn't ~3 extra round-trips per row.
+        self._id_cache: dict[tuple[str, tuple], int] = {}
 
     # --- id resolution -------------------------------------------------------
 
@@ -69,25 +93,27 @@ class PostgresRepository:
 
     def get_or_create_reporting_period(
         self,
-        agency_id: int,
         period_type: str,
         start_date: date,
         end_date: date,
         label: str,
     ) -> int:
+        # Periods are shared across agencies (migration 009): identity is
+        # (period_type, start_date, end_date). The same calendar period is one row,
+        # so all agencies' values for it land in a single rank cohort.
         with self._conn.transaction():
             row = self._conn.execute(
                 "SELECT id FROM core.reporting_periods "
-                "WHERE agency_id = %s AND period_type = %s AND start_date = %s",
-                (agency_id, period_type, start_date),
+                "WHERE period_type = %s AND start_date = %s AND end_date = %s",
+                (period_type, start_date, end_date),
             ).fetchone()
             if row is not None:
                 return row[0]
             return self._conn.execute(
                 "INSERT INTO core.reporting_periods "
-                "(agency_id, period_type, start_date, end_date, label) "
-                "VALUES (%s, %s, %s, %s, %s) RETURNING id",
-                (agency_id, period_type, start_date, end_date, label),
+                "(period_type, start_date, end_date, label) "
+                "VALUES (%s, %s, %s, %s) RETURNING id",
+                (period_type, start_date, end_date, label),
             ).fetchone()[0]
 
     def get_or_create_source_document(
@@ -132,7 +158,6 @@ class PostgresRepository:
         metric_id = self.metric_id(record.metric_code)
         mode_id = self.mode_id(record.mode_code)
         period_id = self.get_or_create_reporting_period(
-            agency_id,
             record.period_type,
             record.period_start,
             record.period_end,
@@ -224,11 +249,12 @@ class PostgresRepository:
 
     # --- current-value reads -------------------------------------------------
 
-    def list_reporting_periods(self, agency_id: int) -> list[ReportingPeriod]:
+    def list_reporting_periods(self) -> list[ReportingPeriod]:
+        # Periods are shared across agencies (migration 009); the workbook pairs
+        # each with an agency's own values via list_current_values_for_agency_period.
         rows = self._conn.execute(
-            "SELECT id, agency_id, period_type, start_date, end_date, label "
-            "FROM core.reporting_periods WHERE agency_id = %s ORDER BY start_date",
-            (agency_id,),
+            "SELECT id, period_type, start_date, end_date, label "
+            "FROM core.reporting_periods ORDER BY start_date"
         ).fetchall()
         return [ReportingPeriod(*r) for r in rows]
 
@@ -467,9 +493,16 @@ class PostgresRepository:
     # --- helpers -------------------------------------------------------------
 
     def _scalar_id(self, sql: str, params: tuple, what: str) -> int:
+        # Reference data (agencies/metrics/modes/feeds) is immutable within a run,
+        # so cache the lookup to avoid repeating it once per staged row.
+        key = (sql, params)
+        cached = self._id_cache.get(key)
+        if cached is not None:
+            return cached
         row = self._conn.execute(sql, params).fetchone()
         if row is None:
             raise ValueError(f"unknown {what}")
+        self._id_cache[key] = row[0]
         return row[0]
 
 

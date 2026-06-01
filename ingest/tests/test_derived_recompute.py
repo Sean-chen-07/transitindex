@@ -18,7 +18,6 @@ from transitindex_ingest.jobs.derived_recompute import (
 def _period(repo: InMemoryRepository, agency_slug: str) -> int:
     """A reporting period to hang the inputs/derived values off of."""
     return repo.get_or_create_reporting_period(
-        repo.agency_id(agency_slug),
         "annual_calendar",
         date(2024, 1, 1),
         date(2024, 12, 31),

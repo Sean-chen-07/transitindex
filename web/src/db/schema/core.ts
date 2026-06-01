@@ -71,8 +71,9 @@ export const metrics = core.table("metrics", {
 });
 
 export const reportingPeriods = core.table("reporting_periods", {
+  // Shared across agencies (migration 009): identity is (period_type, start_date,
+  // end_date), so one row per calendar period serves every agency's values + ranks.
   id: bigint("id", { mode: "number" }).primaryKey(),
-  agencyId: bigint("agency_id", { mode: "number" }).notNull(),
   periodType: text("period_type").notNull(),
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),

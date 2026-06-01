@@ -27,7 +27,7 @@ def _current(repo, agency_slug: str, year: int, code: str):
     period = annual_period(agency_slug, year)
     agency_id = repo.agency_id(agency_slug)
     period_id = repo.get_or_create_reporting_period(
-        agency_id, period.period_type, period.start, period.end, period.label
+        period.period_type, period.start, period.end, period.label
     )
     return repo.get_current_metric_value(
         agency_id, repo.metric_id(code), period_id, None, "total"

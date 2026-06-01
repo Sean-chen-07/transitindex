@@ -125,23 +125,22 @@ class InMemoryRepository:
 
     def get_or_create_reporting_period(
         self,
-        agency_id: int,
         period_type: str,
         start_date: date,
         end_date: date,
         label: str,
     ) -> int:
+        # Shared across agencies (migration 009): identity (period_type, start_date, end_date).
         for period in self._periods.values():
             if (
-                period.agency_id == agency_id
-                and period.period_type == period_type
+                period.period_type == period_type
                 and period.start_date == start_date
+                and period.end_date == end_date
             ):
                 return period.id
         pid = self._next("period")
         self._periods[pid] = ReportingPeriod(
             id=pid,
-            agency_id=agency_id,
             period_type=period_type,
             start_date=start_date,
             end_date=end_date,
@@ -186,7 +185,6 @@ class InMemoryRepository:
         metric_id = self.metric_id(record.metric_code)
         mode_id = self.mode_id(record.mode_code)
         period_id = self.get_or_create_reporting_period(
-            agency_id,
             record.period_type,
             record.period_start,
             record.period_end,
@@ -250,9 +248,10 @@ class InMemoryRepository:
 
     # --- current-value reads -------------------------------------------------
 
-    def list_reporting_periods(self, agency_id: int) -> list[ReportingPeriod]:
-        rows = [p for p in self._periods.values() if p.agency_id == agency_id]
-        return sorted(rows, key=lambda p: p.start_date)
+    def list_reporting_periods(self) -> list[ReportingPeriod]:
+        # Shared across agencies (migration 009); the workbook pairs each period
+        # with an agency's own values via list_current_values_for_agency_period.
+        return sorted(self._periods.values(), key=lambda p: p.start_date)
 
     def get_current_metric_value(
         self,

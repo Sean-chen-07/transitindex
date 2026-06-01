@@ -29,5 +29,5 @@ describe.skipIf(!TEST_DB)("A1: paywall integrity (Postgres)", () => {
     const gated = await getDetailMetrics("stm", null); // a non-demo agency, anonymous
     expect(gated.reveal).toBe(false);
     for (const m of gated.metrics) expect("value" in m).toBe(false);
-  });
+  }, 30_000); // network DB: allow for a cold Supabase pooler + TLS handshake
 });
