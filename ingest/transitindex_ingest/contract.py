@@ -33,6 +33,7 @@ License = Literal[
     "ogl_montreal",
     "ogl_metrovancouver",
     "ogl_mississauga",
+    "ogl_hamilton",
     "public_document",
 ]
 DocumentType = Literal[

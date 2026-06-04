@@ -70,6 +70,51 @@ AGENCIES: Mapping[str, Mapping] = MappingProxyType(
             {"subdivision": "ON", "fiscal_year_end_month": 12,
              "primary_modes": ("bus",)}
         ),
+        # --- expansion agencies (data-collection targets beyond launch 10) ----
+        "winnipeg-transit": MappingProxyType(
+            {"subdivision": "MB", "fiscal_year_end_month": 12,
+             "primary_modes": ("bus", "brt")}
+        ),
+        "hamilton-street-railway": MappingProxyType(
+            {"subdivision": "ON", "fiscal_year_end_month": 12,
+             "primary_modes": ("bus",)}
+        ),
+        "brampton-transit": MappingProxyType(
+            {"subdivision": "ON", "fiscal_year_end_month": 12,
+             "primary_modes": ("bus", "brt")}
+        ),
+        "grand-river-transit": MappingProxyType(
+            {"subdivision": "ON", "fiscal_year_end_month": 12,
+             "primary_modes": ("bus", "light_rail")}
+        ),
+        "stl-laval": MappingProxyType(
+            {"subdivision": "QC", "fiscal_year_end_month": 12,
+             "primary_modes": ("bus",)}
+        ),
+        "rtl-longueuil": MappingProxyType(
+            {"subdivision": "QC", "fiscal_year_end_month": 12,
+             "primary_modes": ("bus",)}
+        ),
+        "york-region-transit": MappingProxyType(
+            {"subdivision": "ON", "fiscal_year_end_month": 12,
+             "primary_modes": ("bus", "brt")}
+        ),
+        "halifax-transit": MappingProxyType(
+            {"subdivision": "NS", "fiscal_year_end_month": 12,
+             "primary_modes": ("bus", "ferry")}
+        ),
+        "durham-region-transit": MappingProxyType(
+            {"subdivision": "ON", "fiscal_year_end_month": 12,
+             "primary_modes": ("bus",)}
+        ),
+        "saskatoon-transit": MappingProxyType(
+            {"subdivision": "SK", "fiscal_year_end_month": 12,
+             "primary_modes": ("bus",)}
+        ),
+        "regina-transit": MappingProxyType(
+            {"subdivision": "SK", "fiscal_year_end_month": 12,
+             "primary_modes": ("bus",)}
+        ),
     }
 )
 
@@ -199,14 +244,18 @@ SOURCE_FEEDS: Mapping[str, Mapping] = MappingProxyType(
         "annual_report_pdfs": MappingProxyType(
             {"tier": 2, "expected_cadence": "annual", "enabled": False}
         ),
+        "hamilton_open_data": MappingProxyType(
+            {"tier": 1, "expected_cadence": "monthly", "enabled": True}
+        ),
     }
 )
 
 # --- StatCan 23-10-0307 "Urban transit agency name" -> agency slug -----------
-# Covers ONLY the 7 agencies we track that appear in the table (not oc-transpo,
-# miway, burlington-transit). Keys are the EXACT agency-name labels in the live
-# 23-10-0307 download (verified 2026-06). Other agencies in the table (Halifax,
-# Winnipeg, Regina, Laval, Longueuil, ...) are intentionally absent -> skipped.
+# Keys are the EXACT agency-name labels in the live 23-10-0307 CSV download.
+# Strings for Winnipeg/Halifax/RTL/Regina confirmed via the StatCan variable
+# reference page (https://www23.statcan.gc.ca/imdb/p3VD.pl?Function=getVD&TVD=1552440).
+# Note: OC Transpo, MiWay, and Burlington Transit do NOT appear in this table.
+# STL Laval / GRT strings are unconfirmed — download the CSV to verify before adding.
 STATCAN_AGENCY_MAP: Mapping[str, str] = MappingProxyType(
     {
         "Toronto transit commission (TTC)": "ttc",
@@ -216,5 +265,9 @@ STATCAN_AGENCY_MAP: Mapping[str, str] = MappingProxyType(
         "Edmonton Transit Service (ETS)": "edmonton-ets",
         "Metrolinx, Greater Toronto and Hamilton Area (GTHA)": "metrolinx",
         "BC Transit (Victoria Regional Transit System)": "bc-transit",
+        "Winnipeg Transit": "winnipeg-transit",
+        "Halifax transit": "halifax-transit",
+        "Réseau de transport de Longueuil": "rtl-longueuil",
+        "Regina Transit": "regina-transit",
     }
 )

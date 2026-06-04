@@ -1,8 +1,9 @@
 """Proves the StatCan 23-10-0307 adapter: mapping, scaling, periods, skip path.
 
 Offline + pure stdlib (csv via the stdlib module). The fixture mirrors the real
-table shape: 3 mapped systems x 2 measures x 2 months, plus one unmapped system
-(Winnipeg Transit) that must land in `.skipped` and never reach the output.
+table shape: 3 mapped systems x 2 measures x 2 months, plus one partially-mapped
+system (Winnipeg Transit, ridership only — now in STATCAN_AGENCY_MAP). A row with
+an agency name not in the map must land in `.skipped` and never reach the output.
 """
 
 from __future__ import annotations
@@ -33,10 +34,11 @@ def test_filefetcher_and_protocols():
     assert isinstance(StatCan23100307Adapter(), Adapter)
 
 
-def test_count_excludes_unmapped_row():
-    # 12 mapped data rows (3 systems x 2 measures x 2 months); Winnipeg dropped.
+def test_count_includes_winnipeg():
+    # 12 rows for TTC/STM/Calgary (3 systems x 2 measures x 2 months)
+    # + 1 Winnipeg ridership row = 13 total; Winnipeg is now in the map.
     _, records = _parse()
-    assert len(records) == 12
+    assert len(records) == 13
 
 
 def test_all_records_valid():
@@ -47,7 +49,7 @@ def test_all_records_valid():
 def test_slug_mapping():
     _, records = _parse()
     slugs = {r.agency_slug for r in records}
-    assert slugs == {"ttc", "stm", "calgary-transit"}
+    assert slugs == {"ttc", "stm", "calgary-transit", "winnipeg-transit"}
 
 
 def test_measure_to_metric_code():
@@ -100,19 +102,24 @@ def test_status_marks_preliminary():
 
 
 def test_unmapped_system_skipped():
+    # Winnipeg Transit is now in STATCAN_AGENCY_MAP so nothing should be skipped
+    # from this fixture (all agency names are mapped or have empty values).
     adapter, records = _parse()
-    assert len(adapter.skipped) == 1
-    assert adapter.skipped[0]["agency"] == "Winnipeg Transit"
-    # And it is absent from the emitted records.
-    assert all(r.agency_slug in {"ttc", "stm", "calgary-transit"} for r in records)
+    assert len(adapter.skipped) == 0
+    assert any(r.agency_slug == "winnipeg-transit" for r in records)
 
 
 def test_skipped_reset_between_parses():
+    # Skipped list must reset on each call, not accumulate.
+    unmapped_row = (
+        '"2026-01","Canada","","Unknown Agency","Urban transit systems",'
+        '"Total passenger trips","Number","223","units","0","v1","1.1","5000","","","","1"\n'
+    )
+    header = FIXTURE.read_text(encoding="utf-8").splitlines()[0] + "\n"
     adapter = StatCan23100307Adapter()
-    raw = FIXTURE.read_text(encoding="utf-8")
-    adapter.parse(raw)
-    adapter.parse(raw)
-    assert len(adapter.skipped) == 1  # not accumulated across calls
+    adapter.parse(header + unmapped_row)
+    adapter.parse(header + unmapped_row)
+    assert len(adapter.skipped) == 1  # not 2 — reset each call
 
 
 def _one(records, slug, code, start) -> MetricValueRecord:

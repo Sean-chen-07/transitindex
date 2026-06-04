@@ -99,6 +99,60 @@ def cmd_statcan(args) -> int:
     return 0
 
 
+def cmd_hamilton(args) -> int:
+    """Hamilton HSR: parse CSV -> stage (tier 1) -> promote -> recompute derived -> rank."""
+    from .adapters.hamilton_hsr import HamiltonHSRAdapter
+    from .jobs.derived_recompute import recompute_derived
+    from .jobs.rank_refresh import refresh_ranks
+    from .promotion import promote_approved
+    from .refdata import METRICS
+    from .staging import stage_records
+
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+
+    text = Path(args.csv).read_text(encoding="utf-8")
+    adapter = HamiltonHSRAdapter()
+    records = adapter.parse(text)
+
+    pending_ids = stage_records(repo, records, tier=1, feed_code="hamilton_open_data")
+    promoted = promote_approved(repo)
+
+    periods: set[int] = set()
+    agency_periods: set[tuple[str, int]] = set()
+    for r in records:
+        pid = repo.get_or_create_reporting_period(
+            r.period_type, r.period_start, r.period_end, r.period_label
+        )
+        periods.add(pid)
+        agency_periods.add((r.agency_slug, pid))
+
+    derived = 0
+    warnings: list[str] = []
+    for agency_slug, pid in sorted(agency_periods):
+        res = recompute_derived(repo, agency_slug, pid)
+        derived += len(res.ids)
+        warnings.extend(res.warnings)
+
+    for pid in periods:
+        for code in METRICS:
+            refresh_ranks(repo, code, pid, service_scope="total")
+
+    print(f"parsed        : {len(records)} records")
+    print(f"skipped       : {len(adapter.skipped)} row(s) with missing/bad data")
+    for s in adapter.skipped:
+        print(f"  - {s}")
+    print(f"staged        : {len(pending_ids)} pending")
+    print(f"promoted      : {len(promoted)} into metric_values")
+    print(f"derived       : {derived} ratio value(s)")
+    if warnings:
+        print(f"sanity flags  : {len(warnings)}")
+        for w in warnings:
+            print(f"  ! {w}")
+    print(f"ranks         : refreshed for {len(periods)} period(s)")
+    return 0
+
+
 def cmd_pdf(args) -> int:
     """Tier 2: extract metrics from a PDF into the review queue (never promotes)."""
     from .pdf.claude_pdf import ClaudePdfExtractor
@@ -373,6 +427,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sp.add_argument("csv", help="Path to the 23-10-0307 CSV export.")
     sp.set_defaults(func=cmd_statcan)
+
+    hp = sub.add_parser(
+        "hamilton", help="Parse a Hamilton HSR ArcGIS CSV, stage, promote, rank, derive."
+    )
+    hp.add_argument("csv", help="Path to the Hamilton HSR CSV export.")
+    hp.set_defaults(func=cmd_hamilton)
 
     pp = sub.add_parser(
         "pdf", help="Extract metrics from a PDF (annual report/budget) into the review queue."
