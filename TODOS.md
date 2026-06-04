@@ -19,11 +19,11 @@ sequence in `phase-plan.md` and the approved office-hours design doc.
 ### ~~Pick ORM: Drizzle vs Prisma~~ ✓
 - **Completed v0.0.1.0 (2026-05-31):** Drizzle introspect (pull-only; no push/migrate).
 
-### StatCan agency-code → slug mapping table
-- **What:** Map StatCan 23-10-0307 internal agency identifiers to TransitIndex slugs.
-- **Why:** The adapter can't write `metric_values` without resolving agencies; unmapped
-  rows must be skipped + alerted, not silently dropped.
-- **Effort:** S. **Priority:** P1. **Blocks:** StatCan adapter.
+### ~~StatCan agency-code → slug mapping table~~ ✓
+- **Already implemented (verified 2026-06-04):** `STATCAN_AGENCY_MAP` in `refdata.py` maps
+  all 7 tracked agencies (keyed by the exact 23-10-0307 "Urban transit agency name" labels).
+  The adapter resolves via it and collects unmapped rows in `.skipped`, which the CLI prints
+  as an alert; untracked systems are skipped, not silently dropped.
 
 ## P2 — should land in the MVP branch
 
@@ -200,15 +200,19 @@ audit trail in `phase-plan.md` (RE-REVIEW section); evidence in
   until a month→year rollup or annual sources exist — M1 ranks on `monthly_ridership`.
 
 ### P1 — before M1 ships
-- **Add auth to the review `/approve` endpoint** (`review/app.py`). It is the only door into
-  live `metric_values` and currently has none; localhost-default mitigates but a public bind
-  defeats Invariant #1. Require auth on all mutating review endpoints.
+- ~~**Add auth to the review `/approve` endpoint** (`review/app.py`).~~ ✓ **Completed
+  2026-06-04:** mutating endpoints (approve/reject/edit) require an `Authorization: Bearer
+  <token>` header matching `REVIEW_API_TOKEN`; read endpoints stay open. The `review` CLI
+  fails closed — it refuses to serve without a token. Covered by `test_review_api.py`.
 - ~~**Reconcile DESIGN.md + the 3 wireframes to the account-gate model.**~~ ✓ **Completed v0.0.1.0 (2026-05-31):** DESIGN.md reconciled — meter language removed, "numbers gated (anonymous)" state added, 2026-05-31 status note recorded.
 - ~~**Paywall integrity is UNVERIFIED until `web/` ships**~~ ✓ **Completed v0.0.1.0 (2026-05-31):** `web/` shipped. Paywall enforced via server-only choke point + disjoint types + ESLint import restriction. A1 test structured (skipped until TEST_DATABASE_URL available).
-- **Period-comparability in `refresh_ranks`** — currently ranks only agencies in the one
-  passed `period_id` (missing agency silently vanishes). Add "resolve latest comparable
-  period per metric" + emit explicit "not ranked — latest FYxxxx" rows so the UI can render
-  the committed state. Pairs with the N<5 minimum-denominator suppression.
+- ~~**Period-comparability in `refresh_ranks`**~~ ✓ **Done in the web read-layer (verified
+  2026-06-04):** `web/src/server/data/ranks.ts` (`getLatestRankedPeriodPerMetric` +
+  `reconcileRanks`) resolves each metric's latest comparable period and emits "not ranked —
+  latest <label>" for any agency missing it, plus the N<5 suppression. The Python
+  `refresh_ranks` job is intentionally single-period only (proven by
+  `test_refresh_ranks_ignores_other_periods`); `web/CLAUDE.md` documents the web layer as the
+  guard by design.
 
 ### P2
 - **Reconcile the scope-guard contradiction.** Schema DECISION 3 dropped the scope-caveat

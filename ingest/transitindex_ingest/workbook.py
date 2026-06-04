@@ -40,7 +40,13 @@ from .refdata import AGENCIES, METRICS
 # --- Public metric ordering, names, and agency names -------------------------
 
 # The 14 sourced and 6 derived metric codes, in refdata.METRICS display order.
-SOURCED_METRICS: list[str] = [c for c, m in METRICS.items() if not m["is_derived"]]
+# monthly_ridership is excluded: it is a MONTHLY figure (fed by StatCan 23-10-0307),
+# but this workbook is annual -- one row per (agency, year) -- so it has no column here
+# and must never be imported under an annual period.
+_NON_ANNUAL_METRICS: frozenset[str] = frozenset({"monthly_ridership"})
+SOURCED_METRICS: list[str] = [
+    c for c, m in METRICS.items() if not m["is_derived"] and c not in _NON_ANNUAL_METRICS
+]
 DERIVED_METRICS: list[str] = [c for c, m in METRICS.items() if m["is_derived"]]
 
 # Metric code -> human display name (the names a non-technical user reads).

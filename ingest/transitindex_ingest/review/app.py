@@ -11,6 +11,7 @@ directly (Invariant #1: an unreviewed value never reaches metric_values).
 
 from __future__ import annotations
 
+import secrets
 from decimal import Decimal, InvalidOperation
 from typing import Optional
 
@@ -68,11 +69,26 @@ def _detail(repo: Repository, p: PendingValue) -> dict:
     return row
 
 
-def create_app(repo: Repository):
-    """Build the FastAPI review app over `repo`."""
-    from fastapi import Body, FastAPI, HTTPException
+def create_app(repo: Repository, *, token: Optional[str] = None):
+    """Build the FastAPI review app over `repo`.
+
+    Mutating endpoints (approve/reject/edit) require an
+    ``Authorization: Bearer <token>`` header matching `token` -- they are the
+    only door into live metric_values (Invariant #1), so they are never open.
+    Read endpoints stay open. When `token` is None every mutating request is
+    rejected (fail closed); the CLI refuses to serve without a configured token.
+    """
+    from fastapi import Body, Depends, FastAPI, Header, HTTPException
 
     app = FastAPI(title="TransitIndex review queue")
+
+    def require_token(authorization: Optional[str] = Header(default=None)) -> None:
+        """Reject a mutating request lacking a valid bearer token."""
+        provided = ""
+        if authorization and authorization.startswith("Bearer "):
+            provided = authorization[len("Bearer ") :]
+        if not token or not secrets.compare_digest(provided, token):
+            raise HTTPException(status_code=401, detail="invalid or missing API token")
 
     def _require_pending(pending_id: int) -> PendingValue:
         p = repo.get_pending_value(pending_id)
@@ -88,20 +104,20 @@ def create_app(repo: Repository):
     def get_pending(pending_id: int) -> dict:
         return _detail(repo, _require_pending(pending_id))
 
-    @app.post("/pending/{pending_id}/approve")
+    @app.post("/pending/{pending_id}/approve", dependencies=[Depends(require_token)])
     def approve(pending_id: int) -> dict:
         _require_pending(pending_id)
         repo.update_pending(pending_id, review_status="approved")
         metric_value_id = promote_one(repo, pending_id)
         return {"pending_id": pending_id, "metric_value_id": metric_value_id}
 
-    @app.post("/pending/{pending_id}/reject")
+    @app.post("/pending/{pending_id}/reject", dependencies=[Depends(require_token)])
     def reject(pending_id: int, reason: Optional[str] = Body(default=None, embed=True)) -> dict:
         _require_pending(pending_id)
         repo.update_pending(pending_id, review_status="rejected", reviewer_notes=reason)
         return _detail(repo, _require_pending(pending_id))
 
-    @app.patch("/pending/{pending_id}")
+    @app.patch("/pending/{pending_id}", dependencies=[Depends(require_token)])
     def edit(
         pending_id: int,
         value: Optional[str] = Body(default=None, embed=True),

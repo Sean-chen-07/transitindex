@@ -333,6 +333,16 @@ def cmd_pending(args) -> int:
 
 def cmd_review(args) -> int:
     """Serve the FastAPI human review queue."""
+    cfg = load_config()
+    if not cfg.review_api_token:
+        print(
+            "error: the review server needs REVIEW_API_TOKEN (set it in .env). "
+            "Approving or editing writes straight into live metric_values, so the "
+            "mutating endpoints require a bearer token -- refusing to serve an open door.",
+            file=sys.stderr,
+        )
+        return 2
+
     repo, ephemeral = _build_repo()
     _note_ephemeral(ephemeral)
     if ephemeral:
@@ -348,7 +358,7 @@ def cmd_review(args) -> int:
         return 2
     from .review.app import create_app
 
-    uvicorn.run(create_app(repo), host=args.host, port=args.port)
+    uvicorn.run(create_app(repo, token=cfg.review_api_token), host=args.host, port=args.port)
     return 0
 
 
