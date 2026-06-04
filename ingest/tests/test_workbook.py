@@ -42,8 +42,8 @@ def test_export_creates_file_with_four_sheets_and_header(repo, tmp_path):
     summary = workbook.export_workbook(repo, out, [2023, 2024])
 
     assert summary["path"] == out
-    assert summary["agencies"] == 10
-    assert summary["rows"] == 20  # 10 agencies x 2 years
+    assert summary["agencies"] == 21
+    assert summary["rows"] == 42  # 21 agencies x 2 years
 
     wb = openpyxl.load_workbook(out, data_only=False)
     assert wb.sheetnames == [

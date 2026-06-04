@@ -85,6 +85,18 @@ AGENCY_NAMES: dict[str, str] = {
     "miway": "MiWay",
     "bc-transit": "BC Transit",
     "burlington-transit": "Burlington Transit",
+    # expansion agencies
+    "winnipeg-transit": "Winnipeg Transit",
+    "hamilton-street-railway": "HSR",
+    "brampton-transit": "Brampton Transit",
+    "grand-river-transit": "GRT",
+    "stl-laval": "STL",
+    "rtl-longueuil": "RTL",
+    "york-region-transit": "YRT",
+    "halifax-transit": "Halifax Transit",
+    "durham-region-transit": "DRT",
+    "saskatoon-transit": "Saskatoon Transit",
+    "regina-transit": "Regina Transit",
 }
 
 # Plain-language gloss per metric for the Data Dictionary "Plain meaning" column.

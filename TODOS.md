@@ -20,10 +20,10 @@ sequence in `phase-plan.md` and the approved office-hours design doc.
 - **Completed v0.0.1.0 (2026-05-31):** Drizzle introspect (pull-only; no push/migrate).
 
 ### ~~StatCan agency-code → slug mapping table~~ ✓
-- **Already implemented (verified 2026-06-04):** `STATCAN_AGENCY_MAP` in `refdata.py` maps
-  all 7 tracked agencies (keyed by the exact 23-10-0307 "Urban transit agency name" labels).
-  The adapter resolves via it and collects unmapped rows in `.skipped`, which the CLI prints
-  as an alert; untracked systems are skipped, not silently dropped.
+- **Expanded 2026-06-04:** `STATCAN_AGENCY_MAP` now covers 11 agencies. Added Winnipeg Transit,
+  `"Halifax transit"` (lowercase t — verify on next CSV download), `"Réseau de transport de
+  Longueuil"` (RTL), and Regina Transit. Strings for STL Laval and Grand River Transit are NOT
+  confirmed from the live CSV — download 23-10-0307 and search for them before adding.
 
 ## P2 — should land in the MVP branch
 
