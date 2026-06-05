@@ -23,6 +23,7 @@ class Config:
 
     database_url: Optional[str]
     anthropic_api_key: Optional[str]
+    review_api_token: Optional[str]
 
 
 def load_config(env_path: Optional[Path] = None) -> Config:
@@ -35,6 +36,9 @@ def load_config(env_path: Optional[Path] = None) -> Config:
         database_url=os.environ.get("DATABASE_URL") or file_values.get("DATABASE_URL"),
         anthropic_api_key=(
             os.environ.get("ANTHROPIC_API_KEY") or file_values.get("ANTHROPIC_API_KEY")
+        ),
+        review_api_token=(
+            os.environ.get("REVIEW_API_TOKEN") or file_values.get("REVIEW_API_TOKEN")
         ),
     )
 

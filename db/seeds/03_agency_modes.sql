@@ -14,6 +14,18 @@ WHERE (a.slug, m.code) IN (VALUES
   ('edmonton-ets','bus'), ('edmonton-ets','light_rail'),
   ('miway','bus'),
   ('bc-transit','bus'),
-  ('burlington-transit','bus')
+  ('burlington-transit','bus'),
+  -- expansion agencies
+  ('winnipeg-transit','bus'), ('winnipeg-transit','brt'),
+  ('hamilton-street-railway','bus'),
+  ('brampton-transit','bus'), ('brampton-transit','brt'),
+  ('grand-river-transit','bus'), ('grand-river-transit','light_rail'),
+  ('stl-laval','bus'),
+  ('rtl-longueuil','bus'),
+  ('york-region-transit','bus'), ('york-region-transit','brt'),
+  ('halifax-transit','bus'), ('halifax-transit','ferry'),
+  ('durham-region-transit','bus'),
+  ('saskatoon-transit','bus'),
+  ('regina-transit','bus')
 )
 ON CONFLICT (agency_id, mode_id) DO NOTHING;

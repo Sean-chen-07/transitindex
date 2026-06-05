@@ -99,6 +99,60 @@ def cmd_statcan(args) -> int:
     return 0
 
 
+def cmd_hamilton(args) -> int:
+    """Hamilton HSR: parse CSV -> stage (tier 1) -> promote -> recompute derived -> rank."""
+    from .adapters.hamilton_hsr import HamiltonHSRAdapter
+    from .jobs.derived_recompute import recompute_derived
+    from .jobs.rank_refresh import refresh_ranks
+    from .promotion import promote_approved
+    from .refdata import METRICS
+    from .staging import stage_records
+
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+
+    text = Path(args.csv).read_text(encoding="utf-8")
+    adapter = HamiltonHSRAdapter()
+    records = adapter.parse(text)
+
+    pending_ids = stage_records(repo, records, tier=1, feed_code="hamilton_open_data")
+    promoted = promote_approved(repo)
+
+    periods: set[int] = set()
+    agency_periods: set[tuple[str, int]] = set()
+    for r in records:
+        pid = repo.get_or_create_reporting_period(
+            r.period_type, r.period_start, r.period_end, r.period_label
+        )
+        periods.add(pid)
+        agency_periods.add((r.agency_slug, pid))
+
+    derived = 0
+    warnings: list[str] = []
+    for agency_slug, pid in sorted(agency_periods):
+        res = recompute_derived(repo, agency_slug, pid)
+        derived += len(res.ids)
+        warnings.extend(res.warnings)
+
+    for pid in periods:
+        for code in METRICS:
+            refresh_ranks(repo, code, pid, service_scope="total")
+
+    print(f"parsed        : {len(records)} records")
+    print(f"skipped       : {len(adapter.skipped)} row(s) with missing/bad data")
+    for s in adapter.skipped:
+        print(f"  - {s}")
+    print(f"staged        : {len(pending_ids)} pending")
+    print(f"promoted      : {len(promoted)} into metric_values")
+    print(f"derived       : {derived} ratio value(s)")
+    if warnings:
+        print(f"sanity flags  : {len(warnings)}")
+        for w in warnings:
+            print(f"  ! {w}")
+    print(f"ranks         : refreshed for {len(periods)} period(s)")
+    return 0
+
+
 def cmd_pdf(args) -> int:
     """Tier 2: extract metrics from a PDF into the review queue (never promotes)."""
     from .pdf.claude_pdf import ClaudePdfExtractor
@@ -333,6 +387,16 @@ def cmd_pending(args) -> int:
 
 def cmd_review(args) -> int:
     """Serve the FastAPI human review queue."""
+    cfg = load_config()
+    if not cfg.review_api_token:
+        print(
+            "error: the review server needs REVIEW_API_TOKEN (set it in .env). "
+            "Approving or editing writes straight into live metric_values, so the "
+            "mutating endpoints require a bearer token -- refusing to serve an open door.",
+            file=sys.stderr,
+        )
+        return 2
+
     repo, ephemeral = _build_repo()
     _note_ephemeral(ephemeral)
     if ephemeral:
@@ -348,8 +412,40 @@ def cmd_review(args) -> int:
         return 2
     from .review.app import create_app
 
-    uvicorn.run(create_app(repo), host=args.host, port=args.port)
+    uvicorn.run(create_app(repo, token=cfg.review_api_token), host=args.host, port=args.port)
     return 0
+
+
+def cmd_statcan_load(args) -> int:
+    """Fast bulk load of StatCan 23-10-0307 (replaces the slow cmd_statcan)."""
+    import json as _json
+    from .jobs.bulk_load import load_statcan
+
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+
+    result = load_statcan(repo, Path(args.csv), reset=getattr(args, "reset", False))
+
+    result_path = Path(getattr(args, "result", "load_statcan_result.json"))
+    result_path.write_text(_json.dumps(result.to_dict(), indent=2), encoding="utf-8")
+    print(f"result written to {result_path} (ok={result.ok})", flush=True)
+    return 0 if result.ok else 1
+
+
+def cmd_hamilton_load(args) -> int:
+    """Fast bulk load of Hamilton HSR (replaces the slow cmd_hamilton)."""
+    import json as _json
+    from .jobs.bulk_load import load_hamilton
+
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+
+    result = load_hamilton(repo, Path(args.csv), reset=getattr(args, "reset", False))
+
+    result_path = Path(getattr(args, "result", "load_hamilton_result.json"))
+    result_path.write_text(_json.dumps(result.to_dict(), indent=2), encoding="utf-8")
+    print(f"result written to {result_path} (ok={result.ok})", flush=True)
+    return 0 if result.ok else 1
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -358,11 +454,45 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = p.add_subparsers(dest="command", required=True)
 
-    sp = sub.add_parser(
-        "statcan", help="Parse a StatCan 23-10-0307 CSV, stage, promote, rank, derive."
-    )
-    sp.add_argument("csv", help="Path to the 23-10-0307 CSV export.")
-    sp.set_defaults(func=cmd_statcan)
+    # statcan and statcan-load are the same fast path. statcan is kept for
+    # backwards compatibility; statcan-load adds --reset and --result flags.
+    for name, help_str in [
+        ("statcan", "Fast bulk load of StatCan 23-10-0307 CSV."),
+        ("statcan-load", "Fast bulk load of StatCan 23-10-0307 CSV (full options)."),
+    ]:
+        sp = sub.add_parser(name, help=help_str)
+        sp.add_argument("csv", help="Path to the 23-10-0307 CSV export.")
+        sp.add_argument(
+            "--reset",
+            action="store_true",
+            default=False,
+            help="Wipe all existing StatCan data before loading (initial/forced reload).",
+        )
+        sp.add_argument(
+            "--result",
+            default="load_statcan_result.json",
+            help="Path to write the JSON result summary.",
+        )
+        sp.set_defaults(func=cmd_statcan_load)
+
+    for name, help_str in [
+        ("hamilton", "Fast bulk load of Hamilton HSR ArcGIS CSV."),
+        ("hamilton-load", "Fast bulk load of Hamilton HSR ArcGIS CSV (full options)."),
+    ]:
+        hp = sub.add_parser(name, help=help_str)
+        hp.add_argument("csv", help="Path to the Hamilton HSR CSV export.")
+        hp.add_argument(
+            "--reset",
+            action="store_true",
+            default=False,
+            help="Wipe all existing Hamilton data before loading.",
+        )
+        hp.add_argument(
+            "--result",
+            default="load_hamilton_result.json",
+            help="Path to write the JSON result summary.",
+        )
+        hp.set_defaults(func=cmd_hamilton_load)
 
     pp = sub.add_parser(
         "pdf", help="Extract metrics from a PDF (annual report/budget) into the review queue."

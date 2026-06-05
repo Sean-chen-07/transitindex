@@ -62,9 +62,16 @@ def loaded_repo() -> InMemoryRepository:
     return repo
 
 
+#: Bearer token the test app is built with; the client sends it by default.
+TOKEN = "test-secret-token"
+
+
 @pytest.fixture
 def client(loaded_repo) -> TestClient:
-    return TestClient(create_app(loaded_repo))
+    return TestClient(
+        create_app(loaded_repo, token=TOKEN),
+        headers={"Authorization": f"Bearer {TOKEN}"},
+    )
 
 
 def test_list_returns_pending_rows(client):
@@ -154,3 +161,25 @@ def test_edit_then_approve_uses_corrected_value(loaded_repo, client):
 
     mv_id = client.post(f"/pending/{pid}/approve").json()["metric_value_id"]
     assert loaded_repo._values[mv_id].value == Decimal("7777")  # noqa: SLF001
+
+
+def test_mutations_require_token(loaded_repo):
+    """Mutating endpoints reject a missing/wrong token; reads stay open; nothing
+    reaches metric_values without a valid token (the door that defeats Invariant #1)."""
+    app = create_app(loaded_repo, token=TOKEN)
+    anon = TestClient(app)  # no Authorization header
+
+    # Reads are open: discovering a pending id needs no token.
+    pid = anon.get("/pending").json()[0]["id"]
+
+    # Each mutating verb is rejected without a token...
+    assert anon.post(f"/pending/{pid}/approve").status_code == 401
+    assert anon.post(f"/pending/{pid}/reject", json={"reason": "x"}).status_code == 401
+    assert anon.patch(f"/pending/{pid}", json={"value": "1"}).status_code == 401
+
+    # ...and with the wrong token.
+    bad = TestClient(app, headers={"Authorization": "Bearer wrong"})
+    assert bad.post(f"/pending/{pid}/approve").status_code == 401
+
+    # No rejected request promoted anything.
+    assert len(loaded_repo._values) == 0  # noqa: SLF001

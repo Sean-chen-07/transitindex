@@ -19,11 +19,11 @@ sequence in `phase-plan.md` and the approved office-hours design doc.
 ### ~~Pick ORM: Drizzle vs Prisma~~ ✓
 - **Completed v0.0.1.0 (2026-05-31):** Drizzle introspect (pull-only; no push/migrate).
 
-### StatCan agency-code → slug mapping table
-- **What:** Map StatCan 23-10-0307 internal agency identifiers to TransitIndex slugs.
-- **Why:** The adapter can't write `metric_values` without resolving agencies; unmapped
-  rows must be skipped + alerted, not silently dropped.
-- **Effort:** S. **Priority:** P1. **Blocks:** StatCan adapter.
+### ~~StatCan agency-code → slug mapping table~~ ✓
+- **Expanded 2026-06-04:** `STATCAN_AGENCY_MAP` now covers 11 agencies. Added Winnipeg Transit,
+  `"Halifax transit"` (lowercase t — verify on next CSV download), `"Réseau de transport de
+  Longueuil"` (RTL), and Regina Transit. Strings for STL Laval and Grand River Transit are NOT
+  confirmed from the live CSV — download 23-10-0307 and search for them before adding.
 
 ## P2 — should land in the MVP branch
 
@@ -116,6 +116,38 @@ Resolutions captured in phase-plan.md "Architecture — eng re-review" + data-mo
 - **What:** Both jobs recompute only the affected metric/period/agency cohort, not full rebuilds.
 - **Why:** A monthly StatCan update shouldn't re-rank all 100+ agencies × all metrics.
 
+## Data population — completed in 2026-06-04 session (feat/data-population branch)
+
+### ✓ Done
+- **StatCan 23-10-0307 expanded to 11 agencies.** Added Winnipeg Transit,
+  `"Halifax transit"` (lowercase t — verify on next CSV download), RTL Longueuil
+  (`"Réseau de transport de Longueuil"`), and Regina Transit to `STATCAN_AGENCY_MAP`.
+  Next step: download the actual CSV and confirm all 11 strings; STL Laval / GRT / OC Transpo
+  strings are unconfirmed (OC Transpo likely absent from this table).
+- **11 expansion agencies seeded** in `02_agencies.sql`, `03_agency_modes.sql`, `refdata.py`,
+  and migration 010. Slugs: winnipeg-transit, hamilton-street-railway, brampton-transit,
+  grand-river-transit, stl-laval, rtl-longueuil, york-region-transit, halifax-transit,
+  durham-region-transit, saskatoon-transit, regina-transit.
+- **Hamilton HSR adapter built** (`adapters/hamilton_hsr.py`): reads ArcGIS JSON API
+  (the f=csv endpoint returns 400; the JSON endpoint works). 144 months (Jan 2014–Apr 2025)
+  staged to `pending_values`. CLI command: `python -m transitindex_ingest hamilton <csv>`.
+  Fetch script: `run_hamilton.py` at project root.
+- **ogl_hamilton** added to `contract.py` + DB migration 011 (CHECK constraint).
+- **Workbook updated**: `AGENCY_NAMES` now includes all 21 tracked agencies (105 rows × 5 years).
+
+### Next session: to-do for data population
+- **Download the actual StatCan 23-10-0307 CSV** (from statcan.gc.ca) and run
+  `python -m transitindex_ingest statcan <path>` to populate monthly_ridership + operating_revenue
+  for 11 agencies. This is the highest-value single action.
+- **Verify Halifax transit string** — the StatCan variable reference shows lowercase "t"; if
+  the actual CSV differs, update STATCAN_AGENCY_MAP.
+- **PDF extraction** (annual reports) for MiWay, Halifax Transit, York Region, Brampton, Metrolinx,
+  BC Transit, OC Transpo: run `python -m transitindex_ingest pdf-smoke --url <pdf_url> --agency <slug>`
+  then approve clean values via the review API.
+- **Fill the workbook** for annual metrics: run `export-xlsx`, open the .xlsx, enter values from
+  agency annual reports (TTC 2023/2024, STM, TransLink, Calgary, Edmonton, MiWay, BC Transit),
+  then `import-xlsx`. Priority columns: annual_ridership, operating_expenses, operating_revenue.
+
 ## Data expansion — balance sheets + native frequency (2026-05-31)
 Full plan: [balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-plan.md). Additive —
 **no `db/migrations/` change** (the existing tables absorb it). Build tasks, roughly in order:
@@ -200,15 +232,19 @@ audit trail in `phase-plan.md` (RE-REVIEW section); evidence in
   until a month→year rollup or annual sources exist — M1 ranks on `monthly_ridership`.
 
 ### P1 — before M1 ships
-- **Add auth to the review `/approve` endpoint** (`review/app.py`). It is the only door into
-  live `metric_values` and currently has none; localhost-default mitigates but a public bind
-  defeats Invariant #1. Require auth on all mutating review endpoints.
+- ~~**Add auth to the review `/approve` endpoint** (`review/app.py`).~~ ✓ **Completed
+  2026-06-04:** mutating endpoints (approve/reject/edit) require an `Authorization: Bearer
+  <token>` header matching `REVIEW_API_TOKEN`; read endpoints stay open. The `review` CLI
+  fails closed — it refuses to serve without a token. Covered by `test_review_api.py`.
 - ~~**Reconcile DESIGN.md + the 3 wireframes to the account-gate model.**~~ ✓ **Completed v0.0.1.0 (2026-05-31):** DESIGN.md reconciled — meter language removed, "numbers gated (anonymous)" state added, 2026-05-31 status note recorded.
 - ~~**Paywall integrity is UNVERIFIED until `web/` ships**~~ ✓ **Completed v0.0.1.0 (2026-05-31):** `web/` shipped. Paywall enforced via server-only choke point + disjoint types + ESLint import restriction. A1 test structured (skipped until TEST_DATABASE_URL available).
-- **Period-comparability in `refresh_ranks`** — currently ranks only agencies in the one
-  passed `period_id` (missing agency silently vanishes). Add "resolve latest comparable
-  period per metric" + emit explicit "not ranked — latest FYxxxx" rows so the UI can render
-  the committed state. Pairs with the N<5 minimum-denominator suppression.
+- ~~**Period-comparability in `refresh_ranks`**~~ ✓ **Done in the web read-layer (verified
+  2026-06-04):** `web/src/server/data/ranks.ts` (`getLatestRankedPeriodPerMetric` +
+  `reconcileRanks`) resolves each metric's latest comparable period and emits "not ranked —
+  latest <label>" for any agency missing it, plus the N<5 suppression. The Python
+  `refresh_ranks` job is intentionally single-period only (proven by
+  `test_refresh_ranks_ignores_other_periods`); `web/CLAUDE.md` documents the web layer as the
+  guard by design.
 
 ### P2
 - **Reconcile the scope-guard contradiction.** Schema DECISION 3 dropped the scope-caveat

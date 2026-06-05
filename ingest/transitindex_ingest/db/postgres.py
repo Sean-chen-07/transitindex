@@ -22,6 +22,9 @@ from .models import (
     PendingValue,
     ReportingPeriod,
     SourceDocument,
+    BulkPendingRow,
+    BulkPromoteResult,
+    BulkMetricRankRow,
 )
 
 
@@ -52,6 +55,8 @@ class PostgresRepository:
             keepalives_idle=30,
             keepalives_interval=10,
             keepalives_count=5,
+            connect_timeout=10,                    # fail fast if pooler is dead
+            options="-c statement_timeout=30000",  # 30 s cap; kills a half-dead socket
         )
         self._conn.execute("SET search_path TO core, public")
         # Memoize immutable reference-data id lookups (agencies/metrics/modes/feeds)
@@ -489,6 +494,216 @@ class PostgresRepository:
             }
             for r in rows
         ]
+
+    # --- bulk operations (fast path for trusted feeds) ----------------------
+
+    _BULK_BATCH = 100  # rows per multi-row INSERT statement
+
+    def bulk_insert_pending(self, rows: list[BulkPendingRow]) -> list[int]:
+        if not rows:
+            return []
+        all_ids: list[int] = []
+        with self._conn.transaction():
+            for i in range(0, len(rows), self._BULK_BATCH):
+                batch = rows[i : i + self._BULK_BATCH]
+                ph = ",".join(
+                    ["(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"] * len(batch)
+                )
+                params: list = []
+                for r in batch:
+                    params.extend([
+                        r.agency_id, r.metric_id, r.reporting_period_id, r.mode_id,
+                        r.service_scope, r.value, r.unit, r.currency, r.quality,
+                        r.comparable_flag, r.crosscheck_value, r.source_document_id,
+                        r.page_number, r.table_reference, r.extraction_method,
+                        r.confidence, r.review_status, r.flags,
+                    ])
+                batch_ids = self._conn.execute(
+                    "INSERT INTO core.pending_values "
+                    "(agency_id, metric_id, reporting_period_id, mode_id, service_scope, "
+                    "value, unit, currency, quality, comparable_flag, crosscheck_value, "
+                    "source_document_id, page_number, table_reference, extraction_method, "
+                    f"confidence, review_status, flags) VALUES {ph} RETURNING id",
+                    tuple(params),
+                ).fetchall()
+                all_ids.extend(r[0] for r in batch_ids)
+        return all_ids
+
+    def promote_approved_bulk(
+        self,
+        pending_ids: list[int],
+        *,
+        feed_id: int,
+        agency_ids: list[int],
+        metric_ids: list[int],
+    ) -> BulkPromoteResult:
+        if not pending_ids:
+            return BulkPromoteResult(inserted=0, superseded=0, skipped=0, metric_value_ids=[])
+
+        with self._conn.transaction():
+            # (1) Advisory lock: serializes concurrent runs of the same feed.
+            self._conn.execute("SELECT pg_advisory_xact_lock(%s)", (feed_id,))
+
+            # (2) Fetch all pending rows we are about to promote in one SELECT.
+            pending_rows = self._conn.execute(
+                "SELECT id, agency_id, metric_id, reporting_period_id, mode_id, "
+                "service_scope, value, unit, currency, quality, comparable_flag, "
+                "crosscheck_value, source_document_id, page_number, table_reference, "
+                "extraction_method, confidence "
+                "FROM core.pending_values WHERE id = ANY(%s)",
+                (pending_ids,),
+            ).fetchall()
+            # idx: 0=id 1=agency 2=metric 3=period 4=mode 5=scope 6=value 7=unit
+            #      8=currency 9=quality 10=comparable 11=crosscheck 12=source_doc
+            #      13=page 14=table_ref 15=extract_method 16=confidence
+            pending_map = {r[0]: r for r in pending_rows}
+
+            # (3) Read current cohort for touched agencies+metrics in one SELECT.
+            current_rows = self._conn.execute(
+                "SELECT id, agency_id, metric_id, reporting_period_id, mode_id, "
+                "service_scope, value, quality "
+                "FROM core.metric_values "
+                "WHERE is_current AND agency_id = ANY(%s) AND metric_id = ANY(%s)",
+                (agency_ids, metric_ids),
+            ).fetchall()
+            # current_map: natural key → (metric_value_id, value, quality)
+            current_map: dict[tuple, tuple] = {
+                (r[1], r[2], r[3], r[4], r[5]): (r[0], r[6], r[7])
+                for r in current_rows
+            }
+
+            # (4) Classify each pending row.
+            to_supersede_old_ids: list[int] = []
+            to_insert: list[tuple] = []   # (pending_row, restatement_of_id | None)
+            to_skip_pids: list[int] = []
+            to_promote_pids: list[int] = []  # pending ids actually written
+
+            for pid in pending_ids:
+                r = pending_map.get(pid)
+                if r is None:
+                    continue
+                key = (r[1], r[2], r[3], r[4], r[5])
+                current = current_map.get(key)
+                if current is None:
+                    to_insert.append((r, None))
+                else:
+                    old_id, old_val, old_qual = current
+                    if r[6] != old_val or r[9] != old_qual:
+                        to_supersede_old_ids.append(old_id)
+                        to_insert.append((r, old_id))
+                    else:
+                        to_skip_pids.append(pid)
+
+            # (5) Supersede changed current rows.
+            if to_supersede_old_ids:
+                self._conn.execute(
+                    "UPDATE core.metric_values SET is_current = false, updated_at = now() "
+                    "WHERE id = ANY(%s)",
+                    (to_supersede_old_ids,),
+                )
+
+            # (6) Bulk INSERT new current rows; collect RETURNING ids for source links.
+            new_metric_value_ids: list[int] = []
+            source_link_rows: list[tuple] = []
+
+            for i in range(0, len(to_insert), self._BULK_BATCH):
+                batch = to_insert[i : i + self._BULK_BATCH]
+                ph = ",".join(
+                    ["(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,true,NULL)"] * len(batch)
+                )
+                params = []
+                for r, restatement_id in batch:
+                    params.extend([
+                        r[1], r[2], r[3], r[4], r[5],   # agency..scope
+                        r[6], r[7], r[8], r[9],          # value, unit, currency, quality
+                        r[10], r[11],                    # comparable_flag, crosscheck_value
+                        restatement_id,                  # restatement_of_id
+                    ])
+                batch_mv_ids = self._conn.execute(
+                    "INSERT INTO core.metric_values "
+                    "(agency_id, metric_id, reporting_period_id, mode_id, service_scope, "
+                    "value, unit, currency, quality, comparable_flag, crosscheck_value, "
+                    f"restatement_of_id, is_current, notes) VALUES {ph} RETURNING id",
+                    tuple(params),
+                ).fetchall()
+
+                for j, (r, _) in enumerate(batch):
+                    new_mv_id = batch_mv_ids[j][0]
+                    new_metric_value_ids.append(new_mv_id)
+                    to_promote_pids.append(r[0])
+                    if r[12] is not None:  # source_document_id
+                        source_link_rows.append((new_mv_id, r[12], r[13], r[14], r[15], r[16]))
+
+            # (7) Bulk INSERT provenance links.
+            if source_link_rows:
+                ph = ",".join(["(%s,%s,%s,%s,%s,%s)"] * len(source_link_rows))
+                params = []
+                for row in source_link_rows:
+                    params.extend(row)
+                self._conn.execute(
+                    "INSERT INTO core.metric_value_sources "
+                    "(metric_value_id, source_document_id, page_number, table_reference, "
+                    f"extraction_method, confidence) VALUES {ph} "
+                    "ON CONFLICT (metric_value_id, source_document_id) DO NOTHING",
+                    tuple(params),
+                )
+
+            # (8) Mark all resolved pending rows as approved.
+            all_resolved = to_promote_pids + to_skip_pids
+            if all_resolved:
+                self._conn.execute(
+                    "UPDATE core.pending_values SET review_status = 'approved', "
+                    "updated_at = now() WHERE id = ANY(%s)",
+                    (all_resolved,),
+                )
+
+        n_inserted = sum(1 for _, rid in to_insert if rid is None)
+        n_superseded = len(to_insert) - n_inserted
+        return BulkPromoteResult(
+            inserted=n_inserted,
+            superseded=n_superseded,
+            skipped=len(to_skip_pids),
+            metric_value_ids=new_metric_value_ids,
+        )
+
+    def list_current_values_for_metrics_periods(
+        self, metric_ids: list[int], period_ids: list[int]
+    ) -> list[MetricValue]:
+        if not metric_ids or not period_ids:
+            return []
+        rows = self._conn.execute(
+            "SELECT " + _MV_COLS + " FROM core.metric_values "
+            "WHERE is_current AND metric_id = ANY(%s) AND reporting_period_id = ANY(%s)",
+            (metric_ids, period_ids),
+        ).fetchall()
+        return [MetricValue(*r) for r in rows]
+
+    def replace_ranks_bulk(
+        self,
+        metric_ids: list[int],
+        period_ids: list[int],
+        rank_rows: list[BulkMetricRankRow],
+    ) -> None:
+        with self._conn.transaction():
+            self._conn.execute(
+                "DELETE FROM core.metric_ranks "
+                "WHERE metric_id = ANY(%s) AND reporting_period_id = ANY(%s)",
+                (metric_ids, period_ids),
+            )
+            if rank_rows:
+                ph = ",".join(["(%s,%s,%s,%s,%s,%s,%s)"] * len(rank_rows))
+                params: list = []
+                for r in rank_rows:
+                    params.extend([
+                        r.agency_id, r.metric_id, r.reporting_period_id,
+                        r.comparison_set, r.rank, r.denominator, r.direction,
+                    ])
+                self._conn.execute(
+                    "INSERT INTO core.metric_ranks "
+                    "(agency_id, metric_id, reporting_period_id, comparison_set, "
+                    f"rank, denominator, direction) VALUES {ph}",
+                    tuple(params),
+                )
 
     # --- helpers -------------------------------------------------------------
 

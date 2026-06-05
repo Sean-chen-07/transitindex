@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from ..db.models import MetricRankRow
+from ..db.models import BulkMetricRankRow, MetricRankRow
 from ..refdata import AGENCIES, METRICS
 
 
@@ -104,6 +104,76 @@ def refresh_ranks(
                 )
             )
     repo.replace_metric_ranks(metric_id, period_id, "subdivision", subdivision_rows)
+
+
+def bulk_refresh_ranks(
+    repo,
+    metric_codes: list[str],
+    period_ids: list[int],
+    service_scope: str = "total",
+) -> int:
+    """Refresh ranks for multiple (metric, period) pairs in minimal round-trips.
+
+    One cohort read (all touched metrics+periods in a single SELECT), rank
+    computation in Python, then one set-based DELETE + one multi-row INSERT via
+    repo.replace_ranks_bulk. Returns the number of (metric, period, comparison_set)
+    triples written.
+    """
+    if not metric_codes or not period_ids:
+        return 0
+
+    metric_id_map = {code: repo.metric_id(code) for code in metric_codes}
+    metric_ids = list(metric_id_map.values())
+
+    all_values = repo.list_current_values_for_metrics_periods(metric_ids, period_ids)
+
+    # Group by (metric_id, period_id) for rank computation.
+    from collections import defaultdict
+
+    cohort: dict[tuple[int, int], list] = defaultdict(list)
+    for v in all_values:
+        if v.comparable_flag and v.service_scope == service_scope:
+            cohort[(v.metric_id, v.reporting_period_id)].append(v)
+
+    all_rank_rows: list[BulkMetricRankRow] = []
+    cohort_count = 0
+
+    for code in metric_codes:
+        mid = metric_id_map[code]
+        higher_is_better = METRICS[code]["higher_is_better"]
+        direction = _direction(higher_is_better)
+
+        for period_id in period_ids:
+            values = cohort[(mid, period_id)]
+
+            for agency_id, rank, denom in compute_ranks(values, higher_is_better):
+                all_rank_rows.append(BulkMetricRankRow(
+                    agency_id=agency_id,
+                    metric_id=mid,
+                    reporting_period_id=period_id,
+                    comparison_set="all",
+                    rank=rank,
+                    denominator=denom,
+                    direction=direction,
+                ))
+            cohort_count += 1
+
+            by_subdivision = _group_by_subdivision(repo, values)
+            for group in by_subdivision.values():
+                for agency_id, rank, denom in compute_ranks(group, higher_is_better):
+                    all_rank_rows.append(BulkMetricRankRow(
+                        agency_id=agency_id,
+                        metric_id=mid,
+                        reporting_period_id=period_id,
+                        comparison_set="subdivision",
+                        rank=rank,
+                        denominator=denom,
+                        direction=direction,
+                    ))
+            cohort_count += 1
+
+    repo.replace_ranks_bulk(metric_ids, period_ids, all_rank_rows)
+    return cohort_count
 
 
 def _group_by_subdivision(repo, values):

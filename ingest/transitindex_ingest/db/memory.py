@@ -23,6 +23,9 @@ from .models import (
     PendingValue,
     ReportingPeriod,
     SourceDocument,
+    BulkPendingRow,
+    BulkPromoteResult,
+    BulkMetricRankRow,
 )
 
 # Tuple key for the one_current_value index. mode_id None is a real key part.
@@ -436,6 +439,145 @@ class InMemoryRepository:
             }
         )
         return run_id
+
+    # --- bulk operations (fast path for trusted feeds) ----------------------
+
+    def bulk_insert_pending(self, rows: list[BulkPendingRow]) -> list[int]:
+        ids: list[int] = []
+        for r in rows:
+            pid = self._next("pending")
+            self._pending[pid] = PendingValue(
+                id=pid,
+                agency_id=r.agency_id,
+                metric_id=r.metric_id,
+                reporting_period_id=r.reporting_period_id,
+                mode_id=r.mode_id,
+                service_scope=r.service_scope,
+                value=r.value,
+                unit=r.unit,
+                currency=r.currency,
+                quality=r.quality,
+                comparable_flag=r.comparable_flag,
+                crosscheck_value=r.crosscheck_value,
+                source_document_id=r.source_document_id,
+                page_number=r.page_number,
+                table_reference=r.table_reference,
+                extraction_method=r.extraction_method,
+                confidence=r.confidence,
+                review_status=r.review_status,
+                flags=list(r.flags),
+                reviewer_notes=None,
+            )
+            ids.append(pid)
+        return ids
+
+    def promote_approved_bulk(
+        self,
+        pending_ids: list[int],
+        *,
+        feed_id: int,
+        agency_ids: list[int],
+        metric_ids: list[int],
+    ) -> BulkPromoteResult:
+        agency_id_set = set(agency_ids)
+        metric_id_set = set(metric_ids)
+        # Snapshot the current index for the touched agencies+metrics so we can
+        # classify each incoming row (absent / changed / identical).
+        current_snap: dict[tuple, int] = {
+            k: v
+            for k, v in self._current_index.items()
+            if k[0] in agency_id_set and k[1] in metric_id_set
+        }
+
+        inserted = superseded = skipped = 0
+        new_ids: list[int] = []
+
+        for pid in pending_ids:
+            pending = self._pending.get(pid)
+            if pending is None:
+                continue
+            key = (
+                pending.agency_id, pending.metric_id, pending.reporting_period_id,
+                pending.mode_id, pending.service_scope,
+            )
+            current_vid = current_snap.get(key)
+            if current_vid is not None:
+                cv = self._values[current_vid]
+                if pending.value == cv.value and pending.quality == cv.quality:
+                    skipped += 1
+                    self.update_pending(pid, review_status="approved")
+                    continue
+                else:
+                    superseded += 1
+            else:
+                inserted += 1
+
+            vid = self._write_metric_value(
+                agency_id=pending.agency_id,
+                metric_id=pending.metric_id,
+                reporting_period_id=pending.reporting_period_id,
+                mode_id=pending.mode_id,
+                service_scope=pending.service_scope,
+                value=pending.value,
+                unit=pending.unit,
+                quality=pending.quality,
+                currency=pending.currency,
+                comparable_flag=pending.comparable_flag,
+                crosscheck_value=pending.crosscheck_value,
+                notes=None,
+            )
+            if pending.source_document_id is not None:
+                self._value_sources[(vid, pending.source_document_id)] = {
+                    "metric_value_id": vid,
+                    "source_document_id": pending.source_document_id,
+                    "page_number": pending.page_number,
+                    "table_reference": pending.table_reference,
+                    "extraction_method": pending.extraction_method,
+                    "confidence": pending.confidence,
+                }
+            self.update_pending(pid, review_status="approved")
+            new_ids.append(vid)
+            # Keep local snapshot current so subsequent rows see the new state.
+            current_snap[key] = vid
+
+        return BulkPromoteResult(
+            inserted=inserted,
+            superseded=superseded,
+            skipped=skipped,
+            metric_value_ids=new_ids,
+        )
+
+    def list_current_values_for_metrics_periods(
+        self, metric_ids: list[int], period_ids: list[int]
+    ) -> list[MetricValue]:
+        mid_set = set(metric_ids)
+        pid_set = set(period_ids)
+        return [
+            v
+            for v in self._values.values()
+            if v.is_current and v.metric_id in mid_set and v.reporting_period_id in pid_set
+        ]
+
+    def replace_ranks_bulk(
+        self,
+        metric_ids: list[int],
+        period_ids: list[int],
+        rank_rows: list[BulkMetricRankRow],
+    ) -> None:
+        mid_set = set(metric_ids)
+        pid_set = set(period_ids)
+        for key in [k for k in self._ranks if k[0] in mid_set and k[1] in pid_set]:
+            del self._ranks[key]
+        for r in rank_rows:
+            key = (r.metric_id, r.reporting_period_id, r.comparison_set)
+            self._ranks.setdefault(key, []).append(
+                MetricRankRow(
+                    agency_id=r.agency_id,
+                    rank=r.rank,
+                    denominator=r.denominator,
+                    direction=r.direction,
+                )
+            )
 
     # --- test introspection --------------------------------------------------
 

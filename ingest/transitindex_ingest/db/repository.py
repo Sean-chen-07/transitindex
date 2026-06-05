@@ -32,6 +32,9 @@ from .models import (
     PendingValue,
     ReportingPeriod,
     SourceDocument,
+    BulkPendingRow,
+    BulkPromoteResult,
+    BulkMetricRankRow,
 )
 
 
@@ -195,6 +198,59 @@ class Repository(Protocol):
         message: Optional[str] = None,
     ) -> int:
         """Insert a core.feed_runs row for the feed; return its id."""
+        ...
+
+    # --- bulk operations (fast path for trusted feeds) ----------------------
+
+    def bulk_insert_pending(self, rows: list[BulkPendingRow]) -> list[int]:
+        """Multi-row INSERT of pre-resolved rows into pending_values.
+        Returns the new pending ids in input order. All id fields in each row
+        must already be resolved (no further DB lookups). Unlike
+        insert_pending_value, this issues a single batched statement per chunk
+        rather than one per row."""
+        ...
+
+    def promote_approved_bulk(
+        self,
+        pending_ids: list[int],
+        *,
+        feed_id: int,
+        agency_ids: list[int],
+        metric_ids: list[int],
+    ) -> BulkPromoteResult:
+        """Diff-aware bulk promotion of approved pending rows into metric_values.
+
+        Runs inside a single transaction guarded by pg_advisory_xact_lock(feed_id)
+        so concurrent invocations of the same feed serialize, never corrupt.
+
+        For each pending row the current cohort is read once and classified:
+          - absent         → INSERT (restatement_of_id = NULL)
+          - value or quality changed → supersede old + INSERT new
+          - identical      → skip (idempotent re-run produces zero audit rows)
+
+        Invariants upheld: one_current_value partial index, restatement_of_id
+        chain, audit trigger fires per-row on INSERT, metric_value_sources link
+        inserted for rows that have a source_document_id.
+        """
+        ...
+
+    def list_current_values_for_metrics_periods(
+        self, metric_ids: list[int], period_ids: list[int]
+    ) -> list[MetricValue]:
+        """All is_current values for a set of metrics across a set of periods.
+        One query instead of N×M individual list_current_values_for_metric_period
+        calls; used by bulk_refresh_ranks."""
+        ...
+
+    def replace_ranks_bulk(
+        self,
+        metric_ids: list[int],
+        period_ids: list[int],
+        rank_rows: list[BulkMetricRankRow],
+    ) -> None:
+        """Set-based rank replacement: one DELETE for all (metric, period) pairs
+        then one multi-row INSERT of all computed ranks. Replaces the per-cohort
+        replace_metric_ranks loop used by the slow path."""
         ...
 
     # --- test introspection --------------------------------------------------
