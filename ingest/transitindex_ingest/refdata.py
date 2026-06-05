@@ -252,10 +252,12 @@ SOURCE_FEEDS: Mapping[str, Mapping] = MappingProxyType(
 
 # --- StatCan 23-10-0307 "Urban transit agency name" -> agency slug -----------
 # Keys are the EXACT agency-name labels in the live 23-10-0307 CSV download.
-# Strings for Winnipeg/Halifax/RTL/Regina confirmed via the StatCan variable
-# reference page (https://www23.statcan.gc.ca/imdb/p3VD.pl?Function=getVD&TVD=1552440).
-# Note: OC Transpo, MiWay, and Burlington Transit do NOT appear in this table.
-# STL Laval / GRT strings are unconfirmed — download the CSV to verify before adding.
+# All 12 keys verified character-for-character against the live 23-10-0307 bulk CSV
+# download (statcan_23100307.csv, verified 2026-06-04). The table also contains 6
+# small systems we do not track (Codiac/Moncton, Leduc, Saint John, T3/PEI,
+# Whitehorse, Yellowknife) — those are intentionally absent and the adapter
+# collects them in `.skipped`. Note: OC Transpo, MiWay, Burlington, and Grand
+# River Transit do NOT appear in this table (they need other sources).
 STATCAN_AGENCY_MAP: Mapping[str, str] = MappingProxyType(
     {
         "Toronto transit commission (TTC)": "ttc",
@@ -269,5 +271,6 @@ STATCAN_AGENCY_MAP: Mapping[str, str] = MappingProxyType(
         "Halifax transit": "halifax-transit",
         "Réseau de transport de Longueuil": "rtl-longueuil",
         "Regina Transit": "regina-transit",
+        "Société de transport de Laval": "stl-laval",
     }
 )

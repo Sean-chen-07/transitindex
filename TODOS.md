@@ -116,6 +116,38 @@ Resolutions captured in phase-plan.md "Architecture — eng re-review" + data-mo
 - **What:** Both jobs recompute only the affected metric/period/agency cohort, not full rebuilds.
 - **Why:** A monthly StatCan update shouldn't re-rank all 100+ agencies × all metrics.
 
+## Data population — completed in 2026-06-04 session (feat/data-population branch)
+
+### ✓ Done
+- **StatCan 23-10-0307 expanded to 11 agencies.** Added Winnipeg Transit,
+  `"Halifax transit"` (lowercase t — verify on next CSV download), RTL Longueuil
+  (`"Réseau de transport de Longueuil"`), and Regina Transit to `STATCAN_AGENCY_MAP`.
+  Next step: download the actual CSV and confirm all 11 strings; STL Laval / GRT / OC Transpo
+  strings are unconfirmed (OC Transpo likely absent from this table).
+- **11 expansion agencies seeded** in `02_agencies.sql`, `03_agency_modes.sql`, `refdata.py`,
+  and migration 010. Slugs: winnipeg-transit, hamilton-street-railway, brampton-transit,
+  grand-river-transit, stl-laval, rtl-longueuil, york-region-transit, halifax-transit,
+  durham-region-transit, saskatoon-transit, regina-transit.
+- **Hamilton HSR adapter built** (`adapters/hamilton_hsr.py`): reads ArcGIS JSON API
+  (the f=csv endpoint returns 400; the JSON endpoint works). 144 months (Jan 2014–Apr 2025)
+  staged to `pending_values`. CLI command: `python -m transitindex_ingest hamilton <csv>`.
+  Fetch script: `run_hamilton.py` at project root.
+- **ogl_hamilton** added to `contract.py` + DB migration 011 (CHECK constraint).
+- **Workbook updated**: `AGENCY_NAMES` now includes all 21 tracked agencies (105 rows × 5 years).
+
+### Next session: to-do for data population
+- **Download the actual StatCan 23-10-0307 CSV** (from statcan.gc.ca) and run
+  `python -m transitindex_ingest statcan <path>` to populate monthly_ridership + operating_revenue
+  for 11 agencies. This is the highest-value single action.
+- **Verify Halifax transit string** — the StatCan variable reference shows lowercase "t"; if
+  the actual CSV differs, update STATCAN_AGENCY_MAP.
+- **PDF extraction** (annual reports) for MiWay, Halifax Transit, York Region, Brampton, Metrolinx,
+  BC Transit, OC Transpo: run `python -m transitindex_ingest pdf-smoke --url <pdf_url> --agency <slug>`
+  then approve clean values via the review API.
+- **Fill the workbook** for annual metrics: run `export-xlsx`, open the .xlsx, enter values from
+  agency annual reports (TTC 2023/2024, STM, TransLink, Calgary, Edmonton, MiWay, BC Transit),
+  then `import-xlsx`. Priority columns: annual_ridership, operating_expenses, operating_revenue.
+
 ## Data expansion — balance sheets + native frequency (2026-05-31)
 Full plan: [balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-plan.md). Additive —
 **no `db/migrations/` change** (the existing tables absorb it). Build tasks, roughly in order:

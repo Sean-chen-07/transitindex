@@ -114,3 +114,54 @@ class MetricRankRow:
     rank: int
     denominator: int
     direction: str
+
+
+@dataclass(frozen=True)
+class BulkPendingRow:
+    """Pre-resolved row ready for bulk INSERT into pending_values.
+
+    All foreign-key ids have already been resolved by the caller; no further
+    DB lookups are needed at insert time.
+    """
+
+    agency_id: int
+    metric_id: int
+    reporting_period_id: int
+    mode_id: Optional[int]
+    service_scope: str
+    value: Decimal
+    unit: str
+    currency: Optional[str]
+    quality: str
+    comparable_flag: bool
+    crosscheck_value: Optional[Decimal]
+    source_document_id: Optional[int]
+    page_number: Optional[int]
+    table_reference: Optional[str]
+    extraction_method: Optional[str]
+    confidence: Optional[Decimal]
+    review_status: str
+    flags: list
+
+
+@dataclass(frozen=True)
+class BulkPromoteResult:
+    """Summary of a diff-aware bulk promotion run."""
+
+    inserted: int         # rows with no prior current value (brand-new)
+    superseded: int       # rows that changed value or quality vs current
+    skipped: int          # rows identical to current (idempotent re-run)
+    metric_value_ids: list  # new metric_value ids for inserted + superseded rows
+
+
+@dataclass(frozen=True)
+class BulkMetricRankRow:
+    """A rank row with full context for bulk INSERT into metric_ranks."""
+
+    agency_id: int
+    metric_id: int
+    reporting_period_id: int
+    comparison_set: str
+    rank: int
+    denominator: int
+    direction: str

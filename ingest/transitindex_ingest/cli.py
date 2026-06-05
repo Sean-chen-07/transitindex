@@ -416,23 +416,83 @@ def cmd_review(args) -> int:
     return 0
 
 
+def cmd_statcan_load(args) -> int:
+    """Fast bulk load of StatCan 23-10-0307 (replaces the slow cmd_statcan)."""
+    import json as _json
+    from .jobs.bulk_load import load_statcan
+
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+
+    result = load_statcan(repo, Path(args.csv), reset=getattr(args, "reset", False))
+
+    result_path = Path(getattr(args, "result", "load_statcan_result.json"))
+    result_path.write_text(_json.dumps(result.to_dict(), indent=2), encoding="utf-8")
+    print(f"result written to {result_path} (ok={result.ok})", flush=True)
+    return 0 if result.ok else 1
+
+
+def cmd_hamilton_load(args) -> int:
+    """Fast bulk load of Hamilton HSR (replaces the slow cmd_hamilton)."""
+    import json as _json
+    from .jobs.bulk_load import load_hamilton
+
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+
+    result = load_hamilton(repo, Path(args.csv), reset=getattr(args, "reset", False))
+
+    result_path = Path(getattr(args, "result", "load_hamilton_result.json"))
+    result_path.write_text(_json.dumps(result.to_dict(), indent=2), encoding="utf-8")
+    print(f"result written to {result_path} (ok={result.ok})", flush=True)
+    return 0 if result.ok else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="transitindex_ingest", description="TransitIndex ingestion pipeline."
     )
     sub = p.add_subparsers(dest="command", required=True)
 
-    sp = sub.add_parser(
-        "statcan", help="Parse a StatCan 23-10-0307 CSV, stage, promote, rank, derive."
-    )
-    sp.add_argument("csv", help="Path to the 23-10-0307 CSV export.")
-    sp.set_defaults(func=cmd_statcan)
+    # statcan and statcan-load are the same fast path. statcan is kept for
+    # backwards compatibility; statcan-load adds --reset and --result flags.
+    for name, help_str in [
+        ("statcan", "Fast bulk load of StatCan 23-10-0307 CSV."),
+        ("statcan-load", "Fast bulk load of StatCan 23-10-0307 CSV (full options)."),
+    ]:
+        sp = sub.add_parser(name, help=help_str)
+        sp.add_argument("csv", help="Path to the 23-10-0307 CSV export.")
+        sp.add_argument(
+            "--reset",
+            action="store_true",
+            default=False,
+            help="Wipe all existing StatCan data before loading (initial/forced reload).",
+        )
+        sp.add_argument(
+            "--result",
+            default="load_statcan_result.json",
+            help="Path to write the JSON result summary.",
+        )
+        sp.set_defaults(func=cmd_statcan_load)
 
-    hp = sub.add_parser(
-        "hamilton", help="Parse a Hamilton HSR ArcGIS CSV, stage, promote, rank, derive."
-    )
-    hp.add_argument("csv", help="Path to the Hamilton HSR CSV export.")
-    hp.set_defaults(func=cmd_hamilton)
+    for name, help_str in [
+        ("hamilton", "Fast bulk load of Hamilton HSR ArcGIS CSV."),
+        ("hamilton-load", "Fast bulk load of Hamilton HSR ArcGIS CSV (full options)."),
+    ]:
+        hp = sub.add_parser(name, help=help_str)
+        hp.add_argument("csv", help="Path to the Hamilton HSR CSV export.")
+        hp.add_argument(
+            "--reset",
+            action="store_true",
+            default=False,
+            help="Wipe all existing Hamilton data before loading.",
+        )
+        hp.add_argument(
+            "--result",
+            default="load_hamilton_result.json",
+            help="Path to write the JSON result summary.",
+        )
+        hp.set_defaults(func=cmd_hamilton_load)
 
     pp = sub.add_parser(
         "pdf", help="Extract metrics from a PDF (annual report/budget) into the review queue."
