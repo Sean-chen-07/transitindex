@@ -51,6 +51,29 @@ set page_number to the PDF page you saw it on and put the exact on-page text you
 read it from (a cell, label, or sentence) in source_quote.
 """
 
+_vision_prompt_cache: Optional[str] = None
+
+
+def _vision_system_prompt() -> str:
+    """VISION_EXTRACTION_SYSTEM_PROMPT enriched with per-metric guidance from the
+    data dictionary (definitions, EN+FR labels, where each figure lives, common
+    confusions). Built lazily -- the dictionary needs PyYAML -- and cached; falls
+    back to the base prompt if the dictionary can't be loaded. Only the real
+    (Anthropic) path calls this, never the offline suite's fakes."""
+    global _vision_prompt_cache
+    if _vision_prompt_cache is None:
+        try:
+            from ..dictionary import extraction_guidance
+
+            _vision_prompt_cache = (
+                VISION_EXTRACTION_SYSTEM_PROMPT
+                + "\n\nMetric guide — map each figure to the right code and mind the "
+                "confusions:\n" + extraction_guidance()
+            )
+        except Exception:
+            _vision_prompt_cache = VISION_EXTRACTION_SYSTEM_PROMPT
+    return _vision_prompt_cache
+
 # Verify-pass tool: the model re-checks each candidate against the cached PDF.
 VERIFY_TOOL = {
     "name": "verify_metrics",
@@ -241,7 +264,7 @@ class ClaudePdfExtractor:
             system=[
                 {
                     "type": "text",
-                    "text": VISION_EXTRACTION_SYSTEM_PROMPT,
+                    "text": _vision_system_prompt(),
                     "cache_control": {"type": "ephemeral"},
                 }
             ],
@@ -293,7 +316,7 @@ class ClaudePdfExtractor:
             system=[
                 {
                     "type": "text",
-                    "text": VISION_EXTRACTION_SYSTEM_PROMPT,
+                    "text": _vision_system_prompt(),
                     "cache_control": {"type": "ephemeral"},
                 }
             ],

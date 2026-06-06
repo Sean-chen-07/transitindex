@@ -15,14 +15,14 @@ from transitindex_ingest.db.memory import InMemoryRepository
 
 
 def test_seed_lookups_resolve(repo):
-    # 10 agencies, 21 metrics, 10 modes, 8 feeds all resolve.
+    # 10 agencies, 31 metrics, 10 modes, 8 feeds all resolve.
     assert repo.agency_id("ttc") > 0
     assert repo.agency_id("burlington-transit") > 0
     assert repo.metric_id("subsidy_per_rider") > 0
     assert repo.mode_id("subway") > 0
     assert repo.mode_id(None) is None
     assert repo.feed_id("statcan_307") > 0
-    assert len(repo.list_metrics()) == 21
+    assert len(repo.list_metrics()) == 31
 
 
 def test_unknown_lookups_raise(repo):
@@ -38,7 +38,7 @@ def test_unknown_lookups_raise(repo):
 
 def _insert(repo: InMemoryRepository, value: str, mode_id=None):
     a = repo.agency_id("ttc")
-    m = repo.metric_id("annual_ridership")
+    m = repo.metric_id("ridership")
     p = repo.get_or_create_reporting_period(
         "monthly", _d(2026, 3, 1), _d(2026, 3, 31), "Mar 2026"
     )
@@ -65,7 +65,7 @@ def test_second_current_value_supersedes_first(repo):
     second = _insert(repo, "200")
 
     a = repo.agency_id("ttc")
-    m = repo.metric_id("annual_ridership")
+    m = repo.metric_id("ridership")
     p = repo.get_or_create_reporting_period(
         "monthly", _d(2026, 3, 1), _d(2026, 3, 31), "Mar 2026"
     )
@@ -98,7 +98,7 @@ def test_mode_id_participates_in_key(repo):
     subway = _insert(repo, "120", mode_id=repo.mode_id("subway"))
 
     a = repo.agency_id("ttc")
-    m = repo.metric_id("annual_ridership")
+    m = repo.metric_id("ridership")
     p = repo.get_or_create_reporting_period(
         "monthly", _d(2026, 3, 1), _d(2026, 3, 31), "Mar 2026"
     )
@@ -120,7 +120,7 @@ def test_promote_pending_supersedes_and_approves(repo, sample_record):
     assert repo.get_pending_value(pid).review_status == "approved"
 
     a = repo.agency_id("ttc")
-    m = repo.metric_id("annual_ridership")
+    m = repo.metric_id("ridership")
     p = repo.get_or_create_reporting_period(
         "monthly", _d(2026, 3, 1), _d(2026, 3, 31), "Mar 2026"
     )

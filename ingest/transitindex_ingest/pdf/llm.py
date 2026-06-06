@@ -41,7 +41,7 @@ class ExtractedValue:
     """
 
     metric_code: str
-    value: Decimal
+    value: Decimal  # final value: raw-as-printed * scale * sign (applied in _row_to_value)
     unit: str
     period_kind: str  # 'annual' | 'monthly' | ...
     period_year: int
@@ -50,6 +50,8 @@ class ExtractedValue:
     period_month: Optional[int] = None
     note: Optional[str] = None
     source_quote: Optional[str] = None  # verbatim snippet the number was read from (verify/review aid)
+    printed_scale: str = "units"  # 'units' | 'thousands' | 'millions' (the table's stated units)
+    printed_sign: str = "positive"  # 'negative' for accounting parentheses, e.g. (1,234)
 
 
 @runtime_checkable
@@ -75,11 +77,15 @@ else, and NEVER compute ratios or per-rider figures -- those are derived later):
 Rules:
 - One result per (metric, reporting period). Use the period the figure reports
   on (period_kind 'annual' with period_year, or 'monthly' with period_month).
-- Report the number in the document's own unit (e.g. count, hours, km, %, CAD).
-  Convert "millions"/"thousands" wording into the full number.
-- Canadian/French documents write numbers with spaces or non-breaking spaces as
-  thousands separators (e.g. "1 234 567" = 1234567) and a comma decimal
-  ("12,5" = 12.5). Normalize these to a plain number.
+- Report the number EXACTLY AS PRINTED, as a plain number (no thousands
+  separators). Do NOT scale it yourself: set `printed_scale` to the table's
+  stated units ('units'|'thousands'|'millions') and the code applies the
+  multiplier. This splits the labour -- you read the digits + the units header
+  (reliable); the code does the long-number arithmetic (exact, auditable).
+- Set `printed_sign` to 'negative' for an accounting-bracketed figure like
+  "(1,234)"; otherwise 'positive'.
+- Canadian/French documents write a comma decimal ("12,5" = 12.5) and spaces as
+  thousands separators ("1 234 567"); report the plain magnitude (e.g. 12.5).
 - confidence is 0..1. If you are NOT sure a figure maps to one of the codes,
   emit it with LOW confidence (below 0.7) rather than guessing or omitting it --
   do not silently drop uncertain figures. Never fabricate a value.
@@ -127,6 +133,16 @@ EXTRACTION_TOOL = {
                             "type": ["string", "null"],
                             "description": "Exact on-page text the value was read from.",
                         },
+                        "printed_scale": {
+                            "type": "string",
+                            "enum": ["units", "thousands", "millions"],
+                            "description": "The table's stated units; code multiplies by 1/1e3/1e6.",
+                        },
+                        "printed_sign": {
+                            "type": "string",
+                            "enum": ["positive", "negative"],
+                            "description": "'negative' for accounting parentheses, e.g. (1,234).",
+                        },
                     },
                     "required": [
                         "metric_code",
@@ -156,6 +172,11 @@ def parse_number(raw: object) -> Decimal:
     if isinstance(raw, int):  # bool excluded: handled by Decimal path below
         return Decimal(raw)
     text = str(raw).strip()
+    # Accounting negative: "(1,234)" -> negative. A safety net for when the model
+    # forgets printed_sign; strip the parentheses and negate at the end.
+    negative = text.startswith("(") and text.endswith(")")
+    if negative:
+        text = text[1:-1].strip()
     # Strip space-family thousands separators (regular, non-breaking, narrow nbsp).
     for sep in (" ", " ", " "):
         text = text.replace(sep, "")
@@ -163,16 +184,39 @@ def parse_number(raw: object) -> Decimal:
     if "," in text and "." not in text:
         text = text.replace(",", ".")
     try:
-        return Decimal(text)
+        value = Decimal(text)
     except InvalidOperation as exc:
         raise ValueError(f"could not parse number: {raw!r}") from exc
+    return -value if negative else value
+
+
+# Multiplier for the model-declared printed_scale; code applies it (not the model).
+_SCALE_FACTOR = {
+    "units": Decimal(1),
+    "thousands": Decimal(1000),
+    "millions": Decimal(1_000_000),
+}
+
+
+def apply_scale_sign(raw: Decimal, printed_scale: str, printed_sign: str) -> Decimal:
+    """Final value = raw-as-printed * scale-multiplier * sign. Keeping this in code
+    (not the model) makes every scaling/sign decision deterministic and auditable."""
+    factor = _SCALE_FACTOR.get(printed_scale, Decimal(1))
+    sign = Decimal(-1) if printed_sign == "negative" else Decimal(1)
+    return raw * factor * sign
 
 
 def _row_to_value(row: dict) -> ExtractedValue:
-    """Build an ExtractedValue from one structured-output row (tool input)."""
+    """Build an ExtractedValue from one structured-output row (tool input).
+
+    The model reports the number as printed plus printed_scale/printed_sign; the
+    final value applies the scale multiplier and sign here in code."""
+    printed_scale = row.get("printed_scale") or "units"
+    printed_sign = row.get("printed_sign") or "positive"
+    value = apply_scale_sign(parse_number(row["value"]), printed_scale, printed_sign)
     return ExtractedValue(
         metric_code=row["metric_code"],
-        value=parse_number(row["value"]),
+        value=value,
         unit=row["unit"],
         period_kind=row["period_kind"],
         period_year=int(row["period_year"]),
@@ -183,6 +227,8 @@ def _row_to_value(row: dict) -> ExtractedValue:
         ),
         note=row.get("note"),
         source_quote=row.get("source_quote"),
+        printed_scale=printed_scale,
+        printed_sign=printed_sign,
     )
 
 

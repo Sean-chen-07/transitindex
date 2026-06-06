@@ -105,7 +105,7 @@ def _stub_split(ext):
 def test_parses_tool_output_into_values():
     rows = [
         {
-            "metric_code": "annual_ridership",
+            "metric_code": "ridership",
             "value": "250000000",
             "unit": "count",
             "period_kind": "annual",
@@ -129,7 +129,7 @@ def test_parses_tool_output_into_values():
     result = ext.extract(_request())
 
     assert [v.metric_code for v in result.values] == [
-        "annual_ridership",
+        "ridership",
         "operating_expenses",
     ]
     assert result.values[0].value == Decimal("250000000")
@@ -141,7 +141,7 @@ def test_parses_tool_output_into_values():
 def test_verify_lowers_confidence():
     rows = [
         {
-            "metric_code": "annual_ridership",
+            "metric_code": "ridership",
             "value": "250000000",
             "unit": "count",
             "period_kind": "annual",
@@ -166,7 +166,7 @@ def test_verify_lowers_confidence():
 def test_verify_drops_unsupported():
     rows = [
         {
-            "metric_code": "annual_ridership",
+            "metric_code": "ridership",
             "value": "250000000",
             "unit": "count",
             "period_kind": "annual",
@@ -190,7 +190,7 @@ def test_verify_drops_unsupported():
 def test_verify_corrects_value_and_records_note():
     rows = [
         {
-            "metric_code": "annual_ridership",
+            "metric_code": "ridership",
             "value": "250000000",
             "unit": "count",
             "period_kind": "annual",
@@ -224,7 +224,7 @@ def test_verify_corrects_value_and_records_note():
 def test_french_numbers_parse():
     rows = [
         {
-            "metric_code": "annual_ridership",
+            "metric_code": "ridership",
             "value": "1 234 567",
             "unit": "count",
             "period_kind": "annual",
@@ -247,7 +247,7 @@ def test_french_numbers_parse():
 def test_verify_false_disables_second_call():
     rows = [
         {
-            "metric_code": "annual_ridership",
+            "metric_code": "ridership",
             "value": "250000000",
             "unit": "count",
             "period_kind": "annual",
@@ -268,7 +268,7 @@ def test_verify_false_disables_second_call():
 def test_document_block_uses_base64_and_cache_control():
     rows = [
         {
-            "metric_code": "annual_ridership",
+            "metric_code": "ridership",
             "value": "1",
             "unit": "count",
             "period_kind": "annual",
@@ -351,7 +351,7 @@ def test_split_chunks_and_reoffsets_pages(monkeypatch):
     assert [offset for _, offset in chunks] == [0, 1]
     # _reoffset re-bases a chunk-local page 1 onto the whole document.
     v = ExtractedValue(
-        metric_code="annual_ridership",
+        metric_code="ridership",
         value=Decimal("1"),
         unit="count",
         period_kind="annual",
@@ -379,7 +379,7 @@ class _StubExtractor:
 def test_run_pdf_through_extractor_seam(repo):
     values = [
         ExtractedValue(
-            metric_code="annual_ridership",
+            metric_code="ridership",
             value=Decimal("250000000"),
             unit="count",
             period_kind="annual",
@@ -402,7 +402,7 @@ def test_source_quote_threaded_into_record_notes():
     from transitindex_ingest.pdf.pipeline import _to_record
 
     ev = ExtractedValue(
-        metric_code="annual_ridership",
+        metric_code="ridership",
         value=Decimal("250000000"),
         unit="count",
         period_kind="annual",
@@ -498,7 +498,7 @@ def test_select_page_indices_falls_back_when_nothing_scores():
 def test_remap_page_back_to_original():
     ext = _make_extractor([], verify=False)
     v = ExtractedValue(
-        metric_code="annual_ridership", value=Decimal("1"), unit="count",
+        metric_code="ridership", value=Decimal("1"), unit="count",
         period_kind="annual", period_year=2024, page_number=2, confidence=Decimal("0.9"),
     )
     assert ext._remap_page(v, {1: 4, 2: 9}).page_number == 9   # filtered p2 -> original p9
@@ -531,8 +531,8 @@ def _ev(metric, value, conf=0.9, year=2024, unit="count"):
 
 def test_reconcile_agreement_is_trusted():
     (v,) = reconcile({
-        "opus": [_ev("annual_ridership", 250000000, 0.9)],
-        "sonnet": [_ev("annual_ridership", 250000000, 0.8)],
+        "opus": [_ev("ridership", 250000000, 0.9)],
+        "sonnet": [_ev("ridership", 250000000, 0.8)],
     })
     assert v.value == Decimal("250000000")
     assert v.confidence == Decimal("0.9")  # higher of the two; not lowered
@@ -541,8 +541,8 @@ def test_reconcile_agreement_is_trusted():
 
 def test_reconcile_disagreement_flagged_with_both_values():
     (v,) = reconcile({
-        "opus": [_ev("annual_ridership", 250000000, 0.9)],
-        "sonnet": [_ev("annual_ridership", 251000000, 0.9)],
+        "opus": [_ev("ridership", 250000000, 0.9)],
+        "sonnet": [_ev("ridership", 251000000, 0.9)],
     })
     assert v.confidence <= Decimal("0.5")  # surfaces in review queue
     assert "250000000" in v.note and "251000000" in v.note
@@ -560,8 +560,8 @@ def test_reconcile_single_model_find_flagged():
 
 def test_dual_extractor_runs_both_and_reconciles():
     dual = DualModelExtractor({
-        "opus": FakeExtractor([_ev("annual_ridership", 250000000, 0.9)]),
-        "sonnet": FakeExtractor([_ev("annual_ridership", 250000000, 0.8)]),
+        "opus": FakeExtractor([_ev("ridership", 250000000, 0.9)]),
+        "sonnet": FakeExtractor([_ev("ridership", 250000000, 0.8)]),
     })
     result = dual.extract(ExtractionRequest(agency_slug="ttc", pdf_bytes=b"x"))
     assert len(result.values) == 1
@@ -576,7 +576,7 @@ def test_dual_extractor_survives_one_model_error():
 
     dual = DualModelExtractor({
         "opus": _Boom(),
-        "sonnet": FakeExtractor([_ev("annual_ridership", 250000000, 0.9)]),
+        "sonnet": FakeExtractor([_ev("ridership", 250000000, 0.9)]),
     })
     result = dual.extract(ExtractionRequest(agency_slug="ttc", pdf_bytes=b"x"))
     assert len(result.values) == 1                       # sonnet's find survives

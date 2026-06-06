@@ -29,7 +29,7 @@ from transitindex_ingest.jobs.rank_refresh import bulk_refresh_ranks
 # ---------------------------------------------------------------------------
 
 SLUG = "ttc"
-METRIC = "monthly_ridership"
+METRIC = "ridership"
 SCOPE = "total"
 SOURCE = SourceRef(
     document_type="statcan_table",
@@ -261,7 +261,7 @@ def test_bulk_refresh_ranks_writes_both_comparison_sets():
     pid = repo3.get_or_create_reporting_period("monthly", date(2024, 1, 1), date(2024, 1, 31), "2024-01")
     all_ranks = repo3._ranks.get((mid, pid, "all"), [])
     assert len(all_ranks) == 2
-    # Higher value should rank 1st (monthly_ridership: higher_is_better=True).
+    # Higher value should rank 1st (ridership: higher_is_better=True).
     rank1 = next(r for r in all_ranks if r.rank == 1)
     assert rank1.agency_id == repo3.agency_id("ttc")
 

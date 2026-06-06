@@ -58,7 +58,7 @@ def test_record_is_frozen(sample_record):
 def test_flags_default_is_independent():
     a = MetricValueRecord(
         agency_slug="ttc",
-        metric_code="annual_ridership",
+        metric_code="ridership",
         period_type="monthly",
         period_start=date(2026, 3, 1),
         period_end=date(2026, 3, 31),
@@ -70,7 +70,7 @@ def test_flags_default_is_independent():
     )
     b = MetricValueRecord(
         agency_slug="stm",
-        metric_code="annual_ridership",
+        metric_code="ridership",
         period_type="monthly",
         period_start=date(2026, 3, 1),
         period_end=date(2026, 3, 31),
@@ -93,7 +93,7 @@ def test_to_dict_round_trips_serializable(sample_record):
     # JSON-serializable end to end
     import json
 
-    assert json.loads(json.dumps(d))["metric_code"] == "annual_ridership"
+    assert json.loads(json.dumps(d))["metric_code"] == "ridership"
 
 
 def test_sourceref_validation():

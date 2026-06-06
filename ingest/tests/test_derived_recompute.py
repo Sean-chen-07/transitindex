@@ -1,4 +1,4 @@
-"""Tests for the derived-ratio recompute job (pure stdlib + pytest)."""
+"""Tests for the solver-based derived recompute job (pure stdlib + pytest)."""
 
 from __future__ import annotations
 
@@ -6,250 +6,167 @@ from datetime import date
 from decimal import Decimal
 
 from transitindex_ingest.db.memory import InMemoryRepository
-from transitindex_ingest.jobs.derived_recompute import (
-    compute_derived,
-    recompute_derived,
-)
+from transitindex_ingest.jobs.derived_recompute import recompute_derived, weakest_quality
 
 
 # --- helpers ----------------------------------------------------------------
 
 
-def _period(repo: InMemoryRepository, agency_slug: str) -> int:
-    """A reporting period to hang the inputs/derived values off of."""
+def _period(repo: InMemoryRepository) -> int:
     return repo.get_or_create_reporting_period(
-        "annual_calendar",
-        date(2024, 1, 1),
-        date(2024, 12, 31),
-        "2024",
+        "annual_calendar", date(2024, 1, 1), date(2024, 12, 31), "2024"
     )
 
 
-def _seed_input(
-    repo: InMemoryRepository,
-    agency_slug: str,
-    period_id: int,
-    code: str,
-    value: Decimal,
-    scope: str = "system_wide",
-) -> None:
-    """Seed one current source metric value the job will read as input."""
-    repo.insert_metric_value(
-        agency_id=repo.agency_id(agency_slug),
+def _seed(repo, period_id, code, value, *, scope="system_wide", quality="verified") -> int:
+    return repo.insert_metric_value(
+        agency_id=repo.agency_id("ttc"),
         metric_id=repo.metric_id(code),
         reporting_period_id=period_id,
         mode_id=None,
         service_scope=scope,
-        value=value,
+        value=Decimal(value),
         unit="x",
-        quality="verified",
+        quality=quality,
     )
 
 
-def _current_value(
-    repo: InMemoryRepository, agency_slug: str, period_id: int, code: str, scope: str
-) -> Decimal:
-    mv = repo.get_current_metric_value(
-        repo.agency_id(agency_slug),
-        repo.metric_id(code),
-        period_id,
-        None,
-        scope,
+def _current(repo, period_id, code, scope="system_wide"):
+    return repo.get_current_metric_value(
+        repo.agency_id("ttc"), repo.metric_id(code), period_id, None, scope
     )
-    assert mv is not None
-    return mv.value
 
 
-# --- compute_derived: pure math --------------------------------------------
+# --- forward derivation + provenance ----------------------------------------
 
 
-def test_compute_derived_all_ratios():
-    inputs = {
-        "annual_ridership": Decimal("1000"),
-        "operating_revenue": Decimal("2500"),
-        "operating_expenses": Decimal("5000"),
-        "revenue_service_hours": Decimal("200"),
-    }
-    out = compute_derived(inputs)
-
-    assert out["average_fare"] == Decimal("2.5")  # 2500 / 1000
-    assert out["trips_per_revenue_hour"] == Decimal("5")  # 1000 / 200
-    assert out["farebox_recovery_ratio"] == Decimal("0.5")  # 2500 / 5000
-    assert out["cost_per_rider"] == Decimal("5")  # 5000 / 1000
-    assert out["cost_per_hour"] == Decimal("25")  # 5000 / 200
-    assert out["subsidy_per_rider"] == Decimal("2.5")  # (5000 - 2500) / 1000
-
-
-def test_compute_derived_skips_on_missing_input():
-    # No operating_revenue -> average_fare, farebox, subsidy all skipped.
-    inputs = {
-        "annual_ridership": Decimal("1000"),
-        "operating_expenses": Decimal("5000"),
-        "revenue_service_hours": Decimal("200"),
-    }
-    out = compute_derived(inputs)
-
-    assert "average_fare" not in out
-    assert "farebox_recovery_ratio" not in out
-    assert "subsidy_per_rider" not in out
-    # The ones not needing revenue still compute.
-    assert out["cost_per_rider"] == Decimal("5")
-    assert out["cost_per_hour"] == Decimal("25")
-    assert out["trips_per_revenue_hour"] == Decimal("5")
-
-
-def test_compute_derived_skips_on_zero_denominator():
-    inputs = {
-        "annual_ridership": Decimal("0"),  # denominator for several ratios
-        "operating_revenue": Decimal("2500"),
-        "operating_expenses": Decimal("5000"),
-        "revenue_service_hours": Decimal("200"),
-    }
-    out = compute_derived(inputs)
-
-    # Ratios dividing by ridership are skipped, not zero-division errors.
-    assert "average_fare" not in out
-    assert "cost_per_rider" not in out
-    assert "subsidy_per_rider" not in out
-    # Ratios with a non-zero denominator still compute.
-    assert out["cost_per_hour"] == Decimal("25")
-    assert out["farebox_recovery_ratio"] == Decimal("0.5")
-
-
-# --- recompute_derived: repo-backed ----------------------------------------
-
-
-def test_recompute_writes_all_six_as_current():
+def test_recompute_writes_ratios_and_backsolved_subsidy_with_provenance():
     repo = InMemoryRepository()
-    period_id = _period(repo, "ttc")
-    _seed_input(repo, "ttc", period_id, "annual_ridership", Decimal("1000"))
-    _seed_input(repo, "ttc", period_id, "operating_revenue", Decimal("2500"))
-    _seed_input(repo, "ttc", period_id, "operating_expenses", Decimal("5000"))
-    _seed_input(repo, "ttc", period_id, "revenue_service_hours", Decimal("200"))
+    pid = _period(repo)
+    rev = _seed(repo, pid, "operating_revenue", "2500")
+    _seed(repo, pid, "operating_expenses", "5000")
+    rid = _seed(repo, pid, "ridership", "1000")
+    _seed(repo, pid, "revenue_service_hours", "200")
 
-    result = recompute_derived(repo, "ttc", period_id)
+    res = recompute_derived(repo, "ttc", pid)
 
-    assert len(result.ids) == 6
-    assert result.warnings == []
-    assert _current_value(repo, "ttc", period_id, "average_fare", "system_wide") == Decimal("2.5")
-    assert _current_value(repo, "ttc", period_id, "cost_per_rider", "system_wide") == Decimal("5")
-    assert _current_value(
-        repo, "ttc", period_id, "farebox_recovery_ratio", "system_wide"
-    ) == Decimal("0.5")
+    # 6 ratios + back-solved total_operating_subsidy = 7 written.
+    assert len(res.ids) == 7
+    assert _current(repo, pid, "average_fare").value == Decimal("2.5")
+    assert _current(repo, pid, "subsidy_per_rider").value == Decimal("2.5")
+    assert _current(repo, pid, "total_operating_subsidy").value == Decimal("2500")
+
+    # average_fare carries provenance: its equation + the exact input value rows.
+    af = _current(repo, pid, "average_fare")
+    deriv = repo.get_derivation(af.id)
+    assert deriv["equation_code"] == "average_fare_def"
+    assert set(deriv["input_value_ids"]) == {rev, rid}
 
 
-def test_recompute_skips_derived_when_input_missing():
+def test_sourced_inputs_have_no_derivation():
     repo = InMemoryRepository()
-    period_id = _period(repo, "ttc")
-    # No operating_revenue seeded.
-    _seed_input(repo, "ttc", period_id, "annual_ridership", Decimal("1000"))
-    _seed_input(repo, "ttc", period_id, "operating_expenses", Decimal("5000"))
-    _seed_input(repo, "ttc", period_id, "revenue_service_hours", Decimal("200"))
+    pid = _period(repo)
+    rev = _seed(repo, pid, "operating_revenue", "2500")
+    recompute_derived(repo, "ttc", pid)
+    assert repo.get_derivation(rev) is None  # sourced -> not derived
 
-    result = recompute_derived(repo, "ttc", period_id)
 
-    # Revenue-dependent ratios are absent; only 3 written.
-    assert len(result.ids) == 3
-    assert (
-        repo.get_current_metric_value(
-            repo.agency_id("ttc"),
-            repo.metric_id("average_fare"),
-            period_id,
-            None,
-            "system_wide",
-        )
-        is None
-    )
-    assert _current_value(repo, "ttc", period_id, "cost_per_rider", "system_wide") == Decimal("5")
+# --- back-solving via the job (flagship goal) -------------------------------
+
+
+def test_recompute_backsolves_a_sourced_metric():
+    repo = InMemoryRepository()
+    pid = _period(repo)
+    rev = _seed(repo, pid, "operating_revenue", "2500")
+    fb = _seed(repo, pid, "farebox_recovery_ratio", "0.5")  # published ratio
+
+    recompute_derived(repo, "ttc", pid)
+
+    exp = _current(repo, pid, "operating_expenses")
+    assert exp.value == Decimal("5000")  # back-solved: 2500 / 0.5
+    deriv = repo.get_derivation(exp.id)
+    assert deriv["equation_code"] == "farebox_recovery_def"
+    assert set(deriv["input_value_ids"]) == {rev, fb}
+
+
+# --- quality inheritance ----------------------------------------------------
+
+
+def test_derived_quality_inherits_weakest_input():
+    repo = InMemoryRepository()
+    pid = _period(repo)
+    _seed(repo, pid, "operating_revenue", "2500", quality="preliminary")
+    _seed(repo, pid, "ridership", "1000", quality="verified")
+
+    recompute_derived(repo, "ttc", pid)
+
+    af = _current(repo, pid, "average_fare")
+    assert af.quality == "preliminary"  # never stronger than the weakest input
+
+
+def test_weakest_quality_ordering():
+    assert weakest_quality(["verified", "preliminary"]) == "preliminary"
+    assert weakest_quality(["verified", "estimated", "preliminary"]) == "estimated"
+    assert weakest_quality([]) == "verified"
+
+
+# --- restatement on corrected input -----------------------------------------
 
 
 def test_recompute_restates_after_corrected_input():
     repo = InMemoryRepository()
-    period_id = _period(repo, "ttc")
-    _seed_input(repo, "ttc", period_id, "annual_ridership", Decimal("1000"))
-    _seed_input(repo, "ttc", period_id, "operating_revenue", Decimal("2500"))
-    _seed_input(repo, "ttc", period_id, "operating_expenses", Decimal("5000"))
-    _seed_input(repo, "ttc", period_id, "revenue_service_hours", Decimal("200"))
-
-    recompute_derived(repo, "ttc", period_id)
-    first = repo.get_current_metric_value(
-        repo.agency_id("ttc"),
-        repo.metric_id("average_fare"),
-        period_id,
-        None,
-        "system_wide",
-    )
+    pid = _period(repo)
+    _seed(repo, pid, "operating_revenue", "2500")
+    _seed(repo, pid, "ridership", "1000")
+    recompute_derived(repo, "ttc", pid)
+    first = _current(repo, pid, "average_fare")
     assert first.value == Decimal("2.5")
 
-    # Correct operating_revenue upward, then recompute.
-    _seed_input(repo, "ttc", period_id, "operating_revenue", Decimal("3000"))
-    recompute_derived(repo, "ttc", period_id)
+    _seed(repo, pid, "operating_revenue", "3000")  # correction supersedes the old revenue
+    recompute_derived(repo, "ttc", pid)
+    current = _current(repo, pid, "average_fare")
 
-    current = repo.get_current_metric_value(
-        repo.agency_id("ttc"),
-        repo.metric_id("average_fare"),
-        period_id,
-        None,
-        "system_wide",
-    )
-    # New current ratio reflects the corrected input...
     assert current.value == Decimal("3")  # 3000 / 1000
-    assert current.is_current is True
-    # ...and supersedes the old one (restatement chain), which is now stale.
     assert current.id != first.id
     assert current.restatement_of_id == first.id
     assert repo._values[first.id].is_current is False
-
-    # Exactly one current average_fare remains -- no stale ratio.
     currents = [
         v
-        for v in repo.list_current_values_for_agency_period(repo.agency_id("ttc"), period_id)
+        for v in repo.list_current_values_for_agency_period(repo.agency_id("ttc"), pid)
         if v.metric_id == repo.metric_id("average_fare")
     ]
     assert len(currents) == 1
 
 
-def test_recompute_warns_on_farebox_over_100pct():
+def test_recompute_is_idempotent():
     repo = InMemoryRepository()
-    period_id = _period(repo, "ttc")
-    # Revenue exceeds expenses -> farebox_recovery_ratio > 1.0.
-    _seed_input(repo, "ttc", period_id, "annual_ridership", Decimal("1000"))
-    _seed_input(repo, "ttc", period_id, "operating_revenue", Decimal("6000"))
-    _seed_input(repo, "ttc", period_id, "operating_expenses", Decimal("5000"))
-    _seed_input(repo, "ttc", period_id, "revenue_service_hours", Decimal("200"))
+    pid = _period(repo)
+    _seed(repo, pid, "operating_revenue", "2500")
+    _seed(repo, pid, "ridership", "1000")
+    recompute_derived(repo, "ttc", pid)
 
-    result = recompute_derived(repo, "ttc", period_id)
+    recompute_derived(repo, "ttc", pid)  # re-run, no input change
+    currents = [
+        v
+        for v in repo.list_current_values_for_agency_period(repo.agency_id("ttc"), pid)
+        if v.metric_id == repo.metric_id("average_fare")
+    ]
+    assert len(currents) == 1
+    assert currents[0].value == Decimal("2.5")
 
-    assert any("farebox_recovery_ratio>1.0" in w for w in result.warnings)
-    # Still written, not rejected.
-    assert _current_value(
-        repo, "ttc", period_id, "farebox_recovery_ratio", "system_wide"
-    ) == Decimal("1.2")
+
+# --- scope partitioning -----------------------------------------------------
 
 
-def test_recompute_currency_metrics_carry_cad():
+def test_scopes_solve_independently():
     repo = InMemoryRepository()
-    period_id = _period(repo, "ttc")
-    _seed_input(repo, "ttc", period_id, "annual_ridership", Decimal("1000"))
-    _seed_input(repo, "ttc", period_id, "operating_revenue", Decimal("2500"))
-    _seed_input(repo, "ttc", period_id, "operating_expenses", Decimal("5000"))
-    _seed_input(repo, "ttc", period_id, "revenue_service_hours", Decimal("200"))
+    pid = _period(repo)
+    _seed(repo, pid, "operating_revenue", "2500", scope="total")
+    _seed(repo, pid, "ridership", "1000", scope="total")
+    _seed(repo, pid, "operating_revenue", "6000", scope="system_wide")
+    _seed(repo, pid, "ridership", "2000", scope="system_wide")
 
-    recompute_derived(repo, "ttc", period_id)
+    recompute_derived(repo, "ttc", pid)
 
-    fare = repo.get_current_metric_value(
-        repo.agency_id("ttc"),
-        repo.metric_id("average_fare"),
-        period_id,
-        None,
-        "system_wide",
-    )
-    assert fare.currency == "CAD"  # currency-typed derived metric
-    tph = repo.get_current_metric_value(
-        repo.agency_id("ttc"),
-        repo.metric_id("trips_per_revenue_hour"),
-        period_id,
-        None,
-        "system_wide",
-    )
-    assert tph.currency is None  # ratio-typed derived metric
+    assert _current(repo, pid, "average_fare", "total").value == Decimal("2.5")
+    assert _current(repo, pid, "average_fare", "system_wide").value == Decimal("3")

@@ -22,11 +22,12 @@ derived columns -- those are recomputed downstream) and pushes them through the
 exact same orchestration as the StatCan importer: stage (tier 0, auto-approve
 clean rows) -> promote -> recompute the 6 derived ratios -> refresh ranks.
 
-The derived-column definitions are driven off the SAME `{numerator codes,
-denominator code}` structure as jobs.derived_recompute._DERIVED, so the Excel
-formulas and the server-side recompute can never drift apart: blank out when
-any input is missing OR the denominator is zero (never divide by zero, never
-fabricate a value).
+The derived-column Excel formulas are driven off the SAME equation catalog
+(`equations.py`) the server-side solver uses, so the spreadsheet and the server
+can never drift apart: blank out when any input is missing OR the denominator is
+zero (never divide by zero, never fabricate a value). These forward formulas are
+a display/entry aid only -- the server's bidirectional solver is the source of
+truth for derived (and back-solved) values.
 
 openpyxl is imported LAZILY inside export/import so merely importing this
 module never requires it. Everything else is pure stdlib.
@@ -34,24 +35,34 @@ module never requires it. Everything else is pure stdlib.
 
 from __future__ import annotations
 
-from .jobs.derived_recompute import _DERIVED
+from .equations import RatioEquation, SumEquation, defining_equation
 from .refdata import AGENCIES, METRICS
 
 # --- Public metric ordering, names, and agency names -------------------------
 
 # The 14 sourced and 6 derived metric codes, in refdata.METRICS display order.
-# monthly_ridership is excluded: it is a MONTHLY figure (fed by StatCan 23-10-0307),
-# but this workbook is annual -- one row per (agency, year) -- so it has no column here
-# and must never be imported under an annual period.
-_NON_ANNUAL_METRICS: frozenset[str] = frozenset({"monthly_ridership"})
+# Ridership is one metric; in this (still annual) workbook it is the annual
+# ridership column. Monthly granularity moves to a dedicated Monthly sheet, and
+# the balance-sheet family to a dedicated Balance Sheet sheet, in the period-aware
+# redesign (balance-sheet-and-frequency-plan.md) -- excluded from this grid for now.
+_BALANCE_SHEET_METRICS: frozenset[str] = frozenset({
+    "total_financial_assets", "total_liabilities", "total_non_financial_assets",
+    "total_assets", "tangible_capital_assets", "accumulated_surplus",
+    "long_term_debt", "cash_and_investments",
+    "net_debt", "debt_to_assets", "net_debt_per_capita",
+})
 SOURCED_METRICS: list[str] = [
-    c for c, m in METRICS.items() if not m["is_derived"] and c not in _NON_ANNUAL_METRICS
+    c for c, m in METRICS.items()
+    if not m["is_derived"] and c not in _BALANCE_SHEET_METRICS
 ]
-DERIVED_METRICS: list[str] = [c for c, m in METRICS.items() if m["is_derived"]]
+DERIVED_METRICS: list[str] = [
+    c for c, m in METRICS.items()
+    if m["is_derived"] and c not in _BALANCE_SHEET_METRICS
+]
 
 # Metric code -> human display name (the names a non-technical user reads).
 DISPLAY_NAMES: dict[str, str] = {
-    "annual_ridership": "Annual Ridership",
+    "ridership": "Ridership",
     "revenue_service_hours": "Revenue Service Hours",
     "vehicle_revenue_km": "Vehicle Revenue Kilometres",
     "on_time_performance": "On-Time Performance",
@@ -101,7 +112,7 @@ AGENCY_NAMES: dict[str, str] = {
 
 # Plain-language gloss per metric for the Data Dictionary "Plain meaning" column.
 _PLAIN_MEANING: dict[str, str] = {
-    "annual_ridership": "Total boardings (unlinked passenger trips) for the year.",
+    "ridership": "Total boardings (unlinked passenger trips), at the period shown.",
     "revenue_service_hours": "Hours vehicles spent carrying passengers in service.",
     "vehicle_revenue_km": "Kilometres vehicles travelled while in passenger service.",
     "on_time_performance": "Share of trips that ran on time.",
@@ -130,19 +141,25 @@ _SHEET_DATA = "Data"
 _SHEET_GAPS = "Gaps"
 
 
-# --- Derived-formula plumbing (driven off _DERIVED so it can't drift) --------
+# --- Derived-formula plumbing (driven off the equation catalog so it can't drift) --
+
+
+def _sum_display(eq: SumEquation, render) -> str:
+    """Render a SUM equation's RHS, e.g. 'Total Liabilities - Total Financial Assets'."""
+    parts: list[str] = []
+    for i, (sign, term) in enumerate(eq.terms):
+        op = " - " if sign < 0 else (" + " if i else "")
+        parts.append(f"{op}{render(term)}")
+    return "".join(parts).strip()
 
 
 def _plain_formula(code: str) -> str:
     """Human-readable formula for a derived metric, e.g. 'Operating Revenue /
-    Annual Ridership' -- built from the same _DERIVED structure the math uses."""
-    numer_codes, denom_code = _DERIVED[code]
-    if len(numer_codes) == 1:
-        numerator = DISPLAY_NAMES[numer_codes[0]]
-    else:
-        # subsidy_per_rider: numerator is (expenses - revenue).
-        numerator = "(" + " - ".join(DISPLAY_NAMES[c] for c in numer_codes) + ")"
-    return f"{numerator} / {DISPLAY_NAMES[denom_code]}"
+    Ridership' -- built from the equation catalog the solver uses."""
+    eq = defining_equation(code)
+    if isinstance(eq, RatioEquation):
+        return f"{DISPLAY_NAMES[eq.numerator]} / {DISPLAY_NAMES[eq.denominator]}"
+    return _sum_display(eq, lambda c: DISPLAY_NAMES[c])
 
 
 def _excel_unit_format(code: str) -> str:
@@ -162,27 +179,37 @@ def _excel_unit_format(code: str) -> str:
 def _derived_excel_formula(code: str, row: int, col_of: dict[str, int]) -> str:
     """Build the live Excel formula for a derived cell in `row`.
 
-    Mirrors compute_derived: blank ("") when any input cell is empty OR the
-    denominator is zero, else numerator/denominator. Column letters are computed
+    Mirrors the equation catalog: blank ("") when any input cell is empty OR a
+    ratio denominator is zero, else the ratio/sum. Column letters are computed
     programmatically from `col_of` (metric code -> 1-based column index); never
     hardcoded. Refs use an absolute column ($G2 style) so they survive copy/fill.
     """
     from openpyxl.utils import get_column_letter
 
-    numer_codes, denom_code = _DERIVED[code]
-    den = f"${get_column_letter(col_of[denom_code])}{row}"
+    eq = defining_equation(code)
+    needed = (
+        [eq.numerator, eq.denominator]
+        if isinstance(eq, RatioEquation)
+        else [t for _s, t in eq.terms]
+    )
+    # An operand that isn't a sheet column (e.g. net_debt_per_capita's
+    # service_area_population, an agency attribute) can't be a live Excel formula;
+    # leave the cell blank -- the server recompute is the source of truth for it.
+    if any(c not in col_of for c in needed):
+        return ""
 
-    if len(numer_codes) == 1:
-        num = f"${get_column_letter(col_of[numer_codes[0]])}{row}"
+    def cell(c: str) -> str:
+        return f"${get_column_letter(col_of[c])}{row}"
+
+    if isinstance(eq, RatioEquation):
+        num, den = cell(eq.numerator), cell(eq.denominator)
         guard = f'OR({num}="",{den}="",{den}=0)'
-        value = f"{num}/{den}"
-    else:
-        # subsidy_per_rider: numerator = (operating_expenses - operating_revenue).
-        exp = f"${get_column_letter(col_of[numer_codes[0]])}{row}"
-        rev = f"${get_column_letter(col_of[numer_codes[1]])}{row}"
-        guard = f'OR({exp}="",{rev}="",{den}="",{den}=0)'
-        value = f"({exp}-{rev})/{den}"
+        return f'=IF({guard},"",{num}/{den})'
 
+    # SumEquation (e.g. net_debt = total_liabilities - total_financial_assets).
+    cells = [cell(t) for _s, t in eq.terms]
+    guard = "OR(" + ",".join(f'{c}=""' for c in cells) + ")"
+    value = _sum_display(eq, cell).replace(" ", "")
     return f'=IF({guard},"",{value})'
 
 

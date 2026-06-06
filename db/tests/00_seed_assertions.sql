@@ -10,16 +10,25 @@ BEGIN
   -- exact count. primary_modes <-> agency_modes parity below covers every census row.
   IF (SELECT count(*) FROM core.agencies)     <  10 THEN RAISE EXCEPTION 'expected >= 10 agencies, got %',  (SELECT count(*) FROM core.agencies);     END IF;
   IF (SELECT count(*) FROM core.modes)        <> 10 THEN RAISE EXCEPTION 'expected 10 modes, got %',        (SELECT count(*) FROM core.modes);        END IF;
-  IF (SELECT count(*) FROM core.metrics)      <> 21 THEN RAISE EXCEPTION 'expected 21 metrics, got %',      (SELECT count(*) FROM core.metrics);      END IF;
-  IF (SELECT count(*) FROM core.source_feeds) <>  9 THEN RAISE EXCEPTION 'expected 9 source_feeds, got %',  (SELECT count(*) FROM core.source_feeds); END IF;
+  IF (SELECT count(*) FROM core.metrics)      <> 31 THEN RAISE EXCEPTION 'expected 31 metrics, got %',      (SELECT count(*) FROM core.metrics);      END IF;
+  IF (SELECT count(*) FROM core.source_feeds) <> 10 THEN RAISE EXCEPTION 'expected 10 source_feeds, got %', (SELECT count(*) FROM core.source_feeds); END IF;
 
   -- derived <-> formula presence (#8)
-  IF (SELECT count(*) FROM core.metrics WHERE is_derived)                          <> 6
-     THEN RAISE EXCEPTION 'expected exactly 6 derived metrics'; END IF;
+  IF (SELECT count(*) FROM core.metrics WHERE is_derived)                          <> 9
+     THEN RAISE EXCEPTION 'expected exactly 9 derived metrics'; END IF;
   IF (SELECT count(*) FROM core.metrics WHERE is_derived AND formula IS NULL)      <> 0
      THEN RAISE EXCEPTION 'a derived metric has NULL formula'; END IF;
   IF (SELECT count(*) FROM core.metrics WHERE NOT is_derived AND formula IS NOT NULL) <> 0
      THEN RAISE EXCEPTION 'a non-derived metric carries a formula'; END IF;
+
+  -- equation graph parity (07_equations.sql <-> equations.py): 8 equations, and every
+  -- derived metric is defined by exactly one of them.
+  IF (SELECT count(*) FROM core.metric_equations) <> 13
+     THEN RAISE EXCEPTION 'expected 13 metric_equations, got %', (SELECT count(*) FROM core.metric_equations); END IF;
+  SELECT count(*) INTO bad FROM core.metrics m
+   WHERE m.is_derived
+     AND NOT EXISTS (SELECT 1 FROM core.metric_equations e WHERE e.defines = m.code);
+  IF bad <> 0 THEN RAISE EXCEPTION '% derived metric(s) lack a defining equation', bad; END IF;
 
   -- primary_modes exactly matches agency_modes, per agency (#3)
   SELECT count(*) INTO bad

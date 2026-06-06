@@ -94,6 +94,15 @@ class PostgresRepository:
         ).fetchall()
         return [Metric(*r) for r in rows]
 
+    def agency_population(self, agency_id: int) -> Optional[Decimal]:
+        row = self._conn.execute(
+            "SELECT service_area_population FROM core.agencies WHERE id = %s",
+            (agency_id,),
+        ).fetchone()
+        if row is None or row[0] is None:
+            return None
+        return Decimal(row[0])
+
     # --- period & document upsert -------------------------------------------
 
     def get_or_create_reporting_period(
@@ -431,6 +440,70 @@ class PostgresRepository:
                 notes,
             ),
         ).fetchone()[0]
+
+    def insert_derived_value(
+        self,
+        agency_id: int,
+        metric_id: int,
+        reporting_period_id: int,
+        mode_id: Optional[int],
+        service_scope: str,
+        value: Decimal,
+        unit: str,
+        quality: str,
+        equation_code: str,
+        input_value_ids: list[int],
+        currency: Optional[str] = None,
+        comparable_flag: bool = True,
+        notes: Optional[str] = None,
+    ) -> int:
+        with self._conn.transaction():
+            vid = self._insert_value_locked(
+                agency_id=agency_id,
+                metric_id=metric_id,
+                reporting_period_id=reporting_period_id,
+                mode_id=mode_id,
+                service_scope=service_scope,
+                value=value,
+                unit=unit,
+                quality=quality,
+                currency=currency,
+                comparable_flag=comparable_flag,
+                crosscheck_value=None,
+                notes=notes,
+            )
+            did = self._conn.execute(
+                "INSERT INTO core.metric_value_derivations (metric_value_id, equation_code) "
+                "VALUES (%s, %s) RETURNING id",
+                (vid, equation_code),
+            ).fetchone()[0]
+            for input_id in input_value_ids:
+                self._conn.execute(
+                    "INSERT INTO core.metric_value_derivation_inputs "
+                    "(derivation_id, input_metric_value_id) VALUES (%s, %s) "
+                    "ON CONFLICT DO NOTHING",
+                    (did, input_id),
+                )
+        return vid
+
+    def get_derivation(self, metric_value_id: int) -> Optional[dict]:
+        row = self._conn.execute(
+            "SELECT id, equation_code FROM core.metric_value_derivations "
+            "WHERE metric_value_id = %s",
+            (metric_value_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        derivation_id, equation_code = row
+        inputs = self._conn.execute(
+            "SELECT input_metric_value_id FROM core.metric_value_derivation_inputs "
+            "WHERE derivation_id = %s ORDER BY input_metric_value_id",
+            (derivation_id,),
+        ).fetchall()
+        return {
+            "equation_code": equation_code,
+            "input_value_ids": [r[0] for r in inputs],
+        }
 
     # --- ranking & feed bookkeeping -----------------------------------------
 

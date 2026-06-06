@@ -5,7 +5,7 @@
   "description": "Hand-verified gold values for the TTC 2024 annual report fixture. Each row is a true figure a correct extractor should return within `tolerance` (relative). `should_flag` marks rows that a healthy extractor should mark low-confidence (or that validation should flag) because the source figure is ambiguous, restated, or unit-confusing. The eval guards precision (clean values within tolerance) and flag-recall (the hard rows get flagged).",
   "records": [
     {
-      "metric_code": "annual_ridership",
+      "metric_code": "ridership",
       "true_value": "256900000",
       "unit": "count",
       "tolerance": "0.01",

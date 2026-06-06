@@ -2,6 +2,57 @@
 
 All notable changes to TransitIndex.
 
+## [0.0.3.0] - 2026-06-06
+
+### Added
+
+#### Metrics are now a linked equation graph
+- **The system back-solves missing numbers from the ones you have.** Metrics are linked by
+  equations (farebox recovery = revenue ÷ expenses, total subsidy = expenses − revenue,
+  expenses = labour + energy + materials, and the balance-sheet identities). Give it any two
+  and it computes the third — e.g. farebox + revenue fills in expenses. It propagates to a
+  fixpoint, so one solved value unlocks the next.
+- **Every back-solved number stays dispute-proof.** Each derived value is exact arithmetic on
+  same-period figures only — never estimated, never mixed across years — and records the exact
+  equation and the exact source rows it came from (`metric_value_derivations`), so any number
+  can be traced back to cited inputs. A derived value never claims more certainty than its
+  weakest input.
+- **When a number is both published and computable, the two are cross-checked.** Agreement is
+  silent; a disagreement beyond 2% is flagged for review (`sum_mismatch` /
+  `cross_source_disagreement`) instead of silently picking one. The solver also guards against
+  "verifying" a value against the equation that produced it.
+
+#### One ridership metric; period is a dimension
+- **`monthly_ridership` and `annual_ridership` merged into one `ridership` metric.** Monthly vs
+  annual is now the reporting period's granularity, not a separate metric code. Annual ridership
+  is the sum of the twelve months when all twelve are present; an incomplete year is shown as a
+  partial year-to-date figure that never ranks against full years. Fiscal-year agencies
+  (Metrolinx, BC Transit) roll up April–March correctly.
+
+#### Financial-position (balance-sheet) metrics
+- **11 new balance-sheet metrics** (total assets, liabilities, net debt, accumulated surplus,
+  tangible capital assets, and more), following Canadian public-sector accounting (PSAB). The
+  raw dollar figures measure size, not performance, so they are never ranked; only the two
+  scale-free ratios (debt-to-assets, net-debt-per-capita) rank across agencies.
+
+#### A precise per-metric data dictionary
+- **One spec per metric** — what it is, what it is NOT, the English and French labels it appears
+  under in annual reports, where in a report it lives, and the common confusions to avoid
+  (unlinked vs linked trips, operating vs total revenue, a metro car vs a bus in "fleet"). This
+  single source now drives the human documentation, the PDF-extraction prompts, and FOI request
+  templates, so extraction and records requests ask for exactly the right figure.
+
+#### More accurate PDF extraction
+- **The model reports a number as printed and declares its scale and sign; the code applies
+  them.** "(in thousands)" and accounting parentheses like `(1,234)` are handled deterministically
+  in code rather than trusted to the model's arithmetic, and every scaling decision is auditable.
+
+### Changed
+- The metric catalog grew from 21 to 31 (the ridership merge −1, plus 11 balance-sheet metrics).
+  Migrations `012`–`014` apply the merge, the equation/derivation tables, and the balance-sheet
+  family; seeds and the Python reference data are kept in parity (`db/tests/00_seed_assertions`
+  now expects 31 metrics, 9 derived, 13 equations).
+
 ## [0.0.2.0] - 2026-06-06
 
 ### Added

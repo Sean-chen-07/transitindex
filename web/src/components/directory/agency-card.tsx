@@ -15,10 +15,10 @@ function modeGroup(modes: string[]): { cls: string; label: string } {
 }
 
 // The six free "fundamentals". Free payload is rank-only — these are ORDINALS, never raw
-// numbers (raw values live behind the gate on the detail page). Ridership prefers the annual
-// rank, falling back to the monthly one.
+// numbers (raw values live behind the gate on the detail page). Ridership is one metric;
+// the rank job picks the latest comparable period (monthly/annual) for it.
 const METRIC_SLOTS: { label: string; codes: string[] }[] = [
-  { label: "Ridership", codes: ["annual_ridership", "monthly_ridership"] },
+  { label: "Ridership", codes: ["ridership"] },
   { label: "Revenue", codes: ["operating_revenue"] },
   { label: "Farebox", codes: ["farebox_recovery_ratio"] },
   { label: "Cost / rider", codes: ["cost_per_rider"] },

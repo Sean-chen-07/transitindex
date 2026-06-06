@@ -41,7 +41,7 @@ def test_agency_slug():
 
 def test_metric_code():
     _, records = _parse()
-    assert all(r.metric_code == "monthly_ridership" for r in records)
+    assert all(r.metric_code == "ridership" for r in records)
 
 
 def test_timestamp_to_period():
