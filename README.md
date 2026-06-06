@@ -34,6 +34,7 @@ The 136-agency Canadian census is seeded. Loading real metric values (StatCan 23
 | **web/README.md** | The Next.js web app — running it, the paywall and rank-safety invariants |
 | **docs/managing-data.md** | Plain-language guide to viewing, gap-checking, and hand-entering data |
 | **docs/data-dictionary.md** | Every metric — what it means, its unit, and (for ratios) the formula |
+| **docs/reference-ingest-cli.md** | Every ingestion CLI command (`python -m transitindex_ingest …`) and flag |
 | **CHANGELOG.md** | What shipped in each release |
 | **TODOS.md** | Deferred work and open decisions |
 
