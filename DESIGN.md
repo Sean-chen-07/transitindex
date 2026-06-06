@@ -133,3 +133,18 @@ expand-in-place behaviour, rank-only free payload, and N<5 suppression are all p
 only the page-level arrangement (grids → single table) changed. wireframes-v5-expand.html
 remains the row/expand reference of record; the v3/v5 multi-column or province-grouped
 arrangements are superseded for the home by this single-table layout.
+
+## Status update 2026-06-06 — directory is responsive: soft cards (desktop) / table (mobile)
+
+The 2026-05-31 "one unified table" note flattened the home everywhere and lost the
+**"Mini Motorway"-soft card** thesis (§"Design thesis", §"Shape & space", Component #1).
+Restored via `/design-review`, reconciling both: it is still **one unified list of every
+agency** (no per-province grids), but the *row treatment* is now responsive:
+- **Desktop (md+):** each agency is its own soft card — `rounded-card` (18px), `bg-card`,
+  hairline `border-line`, `shadow-soft` lifting to `shadow-soft-hover`, generous `py-4`,
+  `gap-3` between cards; the table header is hidden. This is the free directory's soft mood.
+- **Mobile (<md):** the compact table is kept (header + hairline rows inside one
+  `rounded-card` container) — denser is better on a phone (matches the L1 list intent).
+
+Expand-in-place (wireframes-v5), rank-only free payload, tokens, and N<5 suppression are
+all unchanged — only the desktop row *shape* changed (flat table row → soft card).
