@@ -21,7 +21,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-screen font-sans antialiased">
         <header className="border-b border-line bg-card/60">
           <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-            <Link href="/" className="text-lg font-bold text-ink">
+            <Link
+              href="/"
+              className="-my-2 inline-flex items-center py-2 text-lg font-bold text-ink"
+            >
               TransitIndex
             </Link>
             <span className="text-xs text-ink-3">Canadian transit fundamentals</span>
