@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { Search } from "lucide-react";
-import { AgencyRow } from "./agency-row";
+import { AgencyCard } from "./agency-card";
+import { AgencyListRow } from "./agency-list-row";
 import { EmptySearch } from "@/components/common/states";
 import { provinceName } from "@/lib/format";
 import type { AgencyListItem, AgencyRank } from "@/server/data/types";
@@ -55,22 +56,22 @@ export function Directory({
       {query && filtered.length === 0 ? (
         <EmptySearch query={q} />
       ) : (
-        <div className="overflow-hidden rounded-card border border-line bg-card shadow-soft md:flex md:flex-col md:gap-3 md:overflow-visible md:rounded-none md:border-0 md:bg-transparent md:shadow-none">
-          <div className="flex items-center gap-3 border-b border-line bg-card-2 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-ink-3 md:hidden">
-            <span className="flex-1">
-              Agency
-              <span className="ml-2 font-normal normal-case tracking-normal text-ink-3">
-                · ranked vs all Canadian agencies
-              </span>
-            </span>
-            <span className="hidden w-32 shrink-0 md:block">Province</span>
-            <span className="hidden w-[152px] shrink-0 sm:block">Top ranks</span>
-            <span className="w-5 shrink-0" aria-hidden />
+        <div>
+          <p className="mb-3 text-xs text-ink-3">
+            {filtered.length} agencies · ranked vs all Canadian agencies
+          </p>
+          {/* Phones: one compact, dense list. */}
+          <div className="divide-y divide-line-2 overflow-hidden rounded-card border border-line bg-card shadow-soft sm:hidden">
+            {filtered.map((a) => (
+              <AgencyListRow key={a.slug} item={a} ranks={ranksBySlug[a.slug] ?? []} />
+            ))}
           </div>
-
-          {filtered.map((a) => (
-            <AgencyRow key={a.slug} item={a} ranks={ranksBySlug[a.slug] ?? []} />
-          ))}
+          {/* sm and up: grid of mini-page cards. */}
+          <div className="hidden gap-4 sm:grid sm:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((a) => (
+              <AgencyCard key={a.slug} item={a} ranks={ranksBySlug[a.slug] ?? []} />
+            ))}
+          </div>
         </div>
       )}
     </div>
