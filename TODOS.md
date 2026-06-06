@@ -86,6 +86,22 @@ Full spec in phase-plan.md "Design" section + DESIGN.md. Items below are build/d
 - Clickable source deep-links — dropped (D6); revisit if buyers want the live "prove it" click.
 - Fresher TTM ratio estimates — rejected (D12); revisit only if buyers ask.
 
+### From /design-review 2026-06-06 (live app, branch design/web-review)
+Audit of the running web app. **F1 + F2 fixed and committed on the branch** (contrast
+tokens → WCAG AA; duplicate agency-name line removed). Outstanding:
+- **F3 — detail "FULL DATA" table contradicts the rank cards (P2).** Cards say "7th/6th"
+  while the table lists the same metrics "not yet ranked" with no period/year label, so rows
+  read as duplicates. Show the period per row + reconcile the rank wording. Touches the
+  metrics read layer, not just CSS. (Overlaps the period-comparability work above.)
+- **F4 — mode-color left bar has no visible legend; 126/136 bars are one yellow (P3).**
+  sr-only label + expand pills cover a11y, but the color does little for a collapsed sighted
+  view. Add a small legend or accept it's decorative. (Related to the WCAG "mode group by
+  icon+label not colour alone" item above.)
+- **F5 — header logo tap target 28px tall (<44px) (P3).** One-line padding fix.
+- **F6 — no favicon / icon / OpenGraph image; all 404 (P3).** Blank browser-tab icon and no
+  link-preview when pasted into Slack/email. Add `web/src/app/icon.svg` + `favicon.ico` +
+  `opengraph-image`. Needs a small brand-mark decision.
+
 ## Architecture (from eng re-review 2026-05-30)
 Resolutions captured in phase-plan.md "Architecture — eng re-review" + data-model.md.
 
