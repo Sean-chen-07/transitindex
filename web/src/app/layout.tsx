@@ -7,12 +7,26 @@ import "./globals.css";
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: "swap" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001"),
   title: {
     default: "TransitIndex — Canadian transit agency fundamentals",
     template: "%s · TransitIndex",
   },
   description:
     "A free directory of Canadian transit agencies ranked on the fundamentals. Ranks are free; the raw numbers are membership-only.",
+  openGraph: {
+    title: "TransitIndex — Canadian transit agency fundamentals",
+    description:
+      "A free directory of Canadian transit agencies ranked on the fundamentals. Ranks are free; the raw numbers are membership-only.",
+    siteName: "TransitIndex",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TransitIndex — Canadian transit agency fundamentals",
+    description:
+      "A free directory of Canadian transit agencies ranked on the fundamentals.",
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
