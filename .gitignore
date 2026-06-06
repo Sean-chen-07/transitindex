@@ -30,6 +30,13 @@ _roundtrip_smoke.xlsx
 # Office temp/lock files (created when a workbook is open in Excel)
 ~$*
 
+# Downloaded source data + bulk-loader outputs (fetched/generated locally; never needed in git)
+statcan_*.csv
+statcan_*.zip
+hamilton_hsr_live.csv
+ingest/load_*_result.json
+pdfs/
+
 # OS / editor
 .DS_Store
 Thumbs.db
