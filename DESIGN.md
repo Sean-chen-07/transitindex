@@ -134,17 +134,23 @@ only the page-level arrangement (grids → single table) changed. wireframes-v5-
 remains the row/expand reference of record; the v3/v5 multi-column or province-grouped
 arrangements are superseded for the home by this single-table layout.
 
-## Status update 2026-06-06 — directory is responsive: soft cards (desktop) / table (mobile)
+## Status update 2026-06-06 — directory is a "Mini Motorway"-style card grid
 
 The 2026-05-31 "one unified table" note flattened the home everywhere and lost the
 **"Mini Motorway"-soft card** thesis (§"Design thesis", §"Shape & space", Component #1).
-Restored via `/design-review`, reconciling both: it is still **one unified list of every
-agency** (no per-province grids), but the *row treatment* is now responsive:
-- **Desktop (md+):** each agency is its own soft card — `rounded-card` (18px), `bg-card`,
-  hairline `border-line`, `shadow-soft` lifting to `shadow-soft-hover`, generous `py-4`,
-  `gap-3` between cards; the table header is hidden. This is the free directory's soft mood.
-- **Mobile (<md):** the compact table is kept (header + hairline rows inside one
-  `rounded-card` container) — denser is better on a phone (matches the L1 list intent).
+Restored via `/design-review` as a **card grid** (user direction), reconciling both — still
+every agency, no per-province grouping, but each is now a self-contained mini-page card:
+- **`sm`+ (tablet/desktop):** a responsive **grid** (`sm:grid-cols-2 xl:grid-cols-3`) of
+  vertical cards. Each card = name + province + mode chip (colour **and** label),
+  a fixed **6-metric rank grid** (ridership · revenue · farebox · cost/rider · service hrs ·
+  fleet — ordinals only, `—` until sourced), and a drill button ("View full data →", or
+  "Request this agency →" when unranked) to the detail page. `rounded-card` 18px, `shadow-soft`
+  → `shadow-soft-hover`. This is the soft free mood.
+- **`< sm` (phones):** one compact, dense **list** (mode bar · name · province · up to two
+  peek ranks · chevron), each row tapping through to the detail page. Denser is better on a
+  phone (the L1-list intent).
 
-Expand-in-place (wireframes-v5), rank-only free payload, tokens, and N<5 suppression are
-all unchanged — only the desktop row *shape* changed (flat table row → soft card).
+**Interaction change:** expand-in-place (wireframes-v5) is **replaced** by the drill button —
+"go deeper" now navigates to the detail page rather than expanding in the list. Free payload
+stays **rank-only** (no raw numbers reach the client); tokens and N<5 suppression unchanged.
+`agency-row.tsx` (the old expand row) was removed; see `agency-card.tsx` + `agency-list-row.tsx`.
