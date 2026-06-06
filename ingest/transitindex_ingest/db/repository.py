@@ -64,6 +64,11 @@ class Repository(Protocol):
         """Return all core.metrics rows."""
         ...
 
+    def agency_population(self, agency_id: int) -> Optional[Decimal]:
+        """The agency's static service_area_population, or None if unknown.
+        Used as the read-only denominator for net_debt_per_capita."""
+        ...
+
     # --- period & document upsert -------------------------------------------
 
     def get_or_create_reporting_period(
@@ -175,6 +180,36 @@ class Repository(Protocol):
         """Insert a metric value directly (used by the derived-metric job),
         with the SAME one-current/supersede/restatement semantics as
         promote_pending and an audit entry. Returns the new metric_value id."""
+        ...
+
+    def insert_derived_value(
+        self,
+        agency_id: int,
+        metric_id: int,
+        reporting_period_id: int,
+        mode_id: Optional[int],
+        service_scope: str,
+        value: Decimal,
+        unit: str,
+        quality: str,
+        equation_code: str,
+        input_value_ids: list[int],
+        currency: Optional[str] = None,
+        comparable_flag: bool = True,
+        notes: Optional[str] = None,
+    ) -> int:
+        """Insert a SOLVED (derived) metric value with the same one-current/
+        supersede/audit semantics as insert_metric_value, AND record its
+        derivation provenance: `equation_code` plus the exact `input_value_ids`
+        (the metric_value rows it was computed from). A derived value is thus a
+        citation tree bottoming out in sourced+cited rows -- dispute-proof.
+        Returns the new metric_value id."""
+        ...
+
+    def get_derivation(self, metric_value_id: int) -> Optional[dict]:
+        """Return the derivation for a value as
+        {'equation_code': str, 'input_value_ids': list[int]}, or None if the
+        value was sourced (no derivation row)."""
         ...
 
     # --- ranking & feed bookkeeping -----------------------------------------

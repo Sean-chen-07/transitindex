@@ -118,17 +118,16 @@ AGENCIES: Mapping[str, Mapping] = MappingProxyType(
     }
 )
 
-# --- 21 metrics (db/seeds/04_metrics.sql) ------------------------------------
+# --- 31 metrics (db/seeds/04_metrics.sql) ------------------------------------
 # code -> unit, unit_type, is_derived, formula (None unless derived),
 # higher_is_better (None = neutral). Insertion order preserved.
+# Ridership is ONE metric; monthly vs annual is the reporting period's
+# granularity (a dimension), not a separate metric code. The last 11 entries are
+# the balance-sheet family (8 sourced + 3 derived).
 
 METRICS: Mapping[str, Mapping] = MappingProxyType(
     {
-        "annual_ridership": MappingProxyType(
-            {"unit": "count", "unit_type": "count", "is_derived": False,
-             "formula": None, "higher_is_better": True}
-        ),
-        "monthly_ridership": MappingProxyType(
+        "ridership": MappingProxyType(
             {"unit": "count", "unit_type": "count", "is_derived": False,
              "formula": None, "higher_is_better": True}
         ),
@@ -142,11 +141,11 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         ),
         "average_fare": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
-             "formula": "operating_revenue / annual_ridership", "higher_is_better": None}
+             "formula": "operating_revenue / ridership", "higher_is_better": None}
         ),
         "trips_per_revenue_hour": MappingProxyType(
             {"unit": "trips/hr", "unit_type": "ratio", "is_derived": True,
-             "formula": "annual_ridership / revenue_service_hours", "higher_is_better": True}
+             "formula": "ridership / revenue_service_hours", "higher_is_better": True}
         ),
         "on_time_performance": MappingProxyType(
             {"unit": "%", "unit_type": "ratio", "is_derived": False,
@@ -182,7 +181,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         ),
         "cost_per_rider": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
-             "formula": "operating_expenses / annual_ridership", "higher_is_better": False}
+             "formula": "operating_expenses / ridership", "higher_is_better": False}
         ),
         "cost_per_hour": MappingProxyType(
             {"unit": "CAD/hr", "unit_type": "currency", "is_derived": True,
@@ -190,7 +189,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         ),
         "subsidy_per_rider": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
-             "formula": "(operating_expenses - operating_revenue) / annual_ridership",
+             "formula": "total_operating_subsidy / ridership",
              "higher_is_better": None}
         ),
         "fleet_size": MappingProxyType(
@@ -209,8 +208,63 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": False,
              "formula": None, "higher_is_better": None}
         ),
+        # --- balance-sheet family (PSAB statement of financial position) -------
+        "total_financial_assets": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "total_liabilities": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "total_non_financial_assets": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "total_assets": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "tangible_capital_assets": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "accumulated_surplus": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "long_term_debt": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "cash_and_investments": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "net_debt": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": True,
+             "formula": "total_liabilities - total_financial_assets", "higher_is_better": False}
+        ),
+        "debt_to_assets": MappingProxyType(
+            {"unit": "%", "unit_type": "ratio", "is_derived": True,
+             "formula": "total_liabilities / total_assets", "higher_is_better": False}
+        ),
+        "net_debt_per_capita": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": True,
+             "formula": "net_debt / service_area_population", "higher_is_better": False}
+        ),
     }
 )
+
+# Balance-sheet dollar figures measure SIZE, not performance, so they are never
+# ranked (their values carry comparable_flag=false). Only the two scale-free
+# ratios (debt_to_assets, net_debt_per_capita) rank. See
+# balance-sheet-and-frequency-plan.md.
+NON_RANKABLE_METRICS: frozenset[str] = frozenset({
+    "total_financial_assets", "total_liabilities", "total_non_financial_assets",
+    "total_assets", "tangible_capital_assets", "accumulated_surplus",
+    "long_term_debt", "cash_and_investments", "net_debt",
+})
 
 # --- 9 source feeds (db/seeds/05_source_feeds.sql) ---------------------------
 # code -> tier, expected_cadence, enabled. Insertion order preserved.

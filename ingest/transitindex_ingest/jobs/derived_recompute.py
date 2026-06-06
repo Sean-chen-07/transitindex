@@ -1,137 +1,134 @@
-"""Recompute the 6 derived ratio metrics from same-period source inputs.
+"""Recompute derived metric values by solving the equation graph.
 
-A derived metric is computed STRICTLY from other metric values in the *same*
-agency and *same* reporting period (never across years, never across agencies).
-`compute_derived` is the pure math -- given a `{metric_code: Decimal}` input
-map it returns `{derived_code: Decimal}`, skipping any derived metric whose
-inputs are missing or whose denominator is zero (so we never divide by zero and
-never fabricate a value). `recompute_derived` wires that math to a Repository:
-it reads the agency's current system-wide values for the period, computes the
-ratios, and writes each via `insert_metric_value`, whose one-current/supersede
-semantics make re-running idempotent (a corrected input restates the ratio and
-supersedes the stale one).
+For one agency + period this:
+  1. reads the current values and PARTITIONS them by (mode_id, service_scope) --
+     an income-statement ratio at `total` scope must never consume a
+     `system_wide` input;
+  2. seeds the solver with the OBSERVED values in each partition (current rows
+     with NO derivation -- i.e. sourced or independently observed; prior solver
+     output is excluded so it can be re-derived and superseded);
+  3. solves the equation graph to a fixpoint (`equations.solve`), back-solving
+     any unknown the data determines (e.g. expenses from farebox + revenue);
+  4. writes every newly SOLVED value via `repo.insert_derived_value`, recording
+     the equation + the exact input value rows (provenance) and a `quality`
+     inherited from its inputs -- never stronger than its weakest input.
+
+Cross-check and over-determination findings from the solver are returned as
+warnings (for the review queue). Re-running is idempotent: a corrected input
+restates the affected derived values via the repo's one-current/supersede chain.
 """
 
 from __future__ import annotations
 
-from decimal import Decimal
 from typing import NamedTuple
 
-from ..refdata import METRICS
+from decimal import Decimal
 
-# The 6 derived metrics, as (code, numerator-builder, denominator input).
-# Each entry: derived_code -> (callable(inputs) -> Decimal numerator, denom_code).
-# Numerators are plain expressions over the input map; denominators are a single
-# input code so the zero-check is uniform.
-_DERIVED: dict[str, tuple] = {
-    "average_fare": (("operating_revenue",), "annual_ridership"),
-    "trips_per_revenue_hour": (("annual_ridership",), "revenue_service_hours"),
-    "farebox_recovery_ratio": (("operating_revenue",), "operating_expenses"),
-    "cost_per_rider": (("operating_expenses",), "annual_ridership"),
-    "cost_per_hour": (("operating_expenses",), "revenue_service_hours"),
-    "subsidy_per_rider": (("operating_expenses", "operating_revenue"), "annual_ridership"),
-}
+from ..equations import ATTR_PREFIX, EQUATIONS, solve
+from ..refdata import METRICS, NON_RANKABLE_METRICS
+
+# Derivation equation codes produced by the WITHIN-PERIOD solver. A current value
+# carrying one of these is prior solver output -> excluded from the seed so it is
+# re-derived and superseded. Sourced values (no derivation) and cross-period
+# aggregations (e.g. the period_rollup annual ridership) ARE valid seed inputs.
+_WITHIN_PERIOD_CODES = frozenset(eq.code for eq in EQUATIONS)
+
+# Weakest-wins ordering: a derived value never claims more certainty than its
+# weakest input (rank 0 = strongest).
+_QUALITY_RANK = {"verified": 0, "preliminary": 1, "estimated": 2, "imputed": 3}
 
 
-def _numerator(code: str, inputs: dict[str, Decimal]) -> Decimal:
-    """Build a derived metric's numerator from same-period inputs."""
-    if code == "subsidy_per_rider":
-        return inputs["operating_expenses"] - inputs["operating_revenue"]
-    # All other derived metrics use a single source value as the numerator.
-    numer_codes, _denom = _DERIVED[code]
-    return inputs[numer_codes[0]]
+def weakest_quality(qualities: list[str]) -> str:
+    """The weakest (least certain) quality among inputs; 'verified' if none."""
+    if not qualities:
+        return "verified"
+    return max(qualities, key=lambda q: _QUALITY_RANK.get(q, 0))
 
 
 class RecomputeResult(NamedTuple):
-    """Outcome of `recompute_derived`: written ids plus non-fatal warnings."""
+    """Outcome of `recompute_derived`: written ids plus cross-check warnings."""
 
     ids: list[int]
     warnings: list[str]
 
 
-def compute_derived(inputs: dict[str, Decimal]) -> dict[str, Decimal]:
-    """Compute every derivable ratio from a `{metric_code: Decimal}` map.
-
-    Skips a derived metric when any required input is absent or when its
-    denominator is zero. Returns `{derived_code: Decimal}`; never raises on
-    missing data, never divides by zero.
-    """
-    out: dict[str, Decimal] = {}
-    for code, (numer_codes, denom_code) in _DERIVED.items():
-        required = (*numer_codes, denom_code)
-        if any(r not in inputs for r in required):
-            continue
-        denom = inputs[denom_code]
-        if denom == 0:
-            continue
-        out[code] = _numerator(code, inputs) / denom
-    return out
-
-
-def _warnings_for(results: dict[str, Decimal]) -> list[str]:
-    """Sanity checks that flag (not reject) implausible derived values."""
-    warnings: list[str] = []
-    fr = results.get("farebox_recovery_ratio")
-    if fr is not None and fr > Decimal(1):
-        warnings.append(f"farebox_recovery_ratio>1.0 ({fr})")
-    for code in ("cost_per_rider", "cost_per_hour"):
-        val = results.get(code)
-        if val is not None and val < 0:
-            warnings.append(f"{code} is negative ({val})")
-    return warnings
-
-
 def recompute_derived(repo, agency_slug: str, period_id: int) -> RecomputeResult:
-    """Recompute the agency's derived metrics for one period and write them.
+    """Solve the equation graph for one agency+period and write the results.
 
-    Reads the agency's current system-wide (mode_id None) values in `period_id`,
-    derives the ratios from those same-period inputs, and writes each via
-    `repo.insert_metric_value` with quality='verified'. The repo's
-    one-current/supersede semantics make this idempotent: a re-run after a
-    corrected input restates the prior ratio rather than leaving it stale.
-    Returns the new metric_value ids and any non-fatal sanity warnings.
+    Partitions current values by (mode_id, service_scope), seeds each partition's
+    OBSERVED values, solves to a fixpoint, and writes solved values with
+    provenance + inherited quality. Returns the new ids and any cross-check /
+    over-determination warnings.
     """
     agency_id = repo.agency_id(agency_slug)
-    rows = [
-        r
-        for r in repo.list_current_values_for_agency_period(agency_id, period_id)
-        if r.mode_id is None
-    ]
+    code_by_mid = {repo.metric_id(code): code for code in METRICS}
+    rows = repo.list_current_values_for_agency_period(agency_id, period_id)
 
-    # Source inputs for the formulas, keyed by metric code. Derived metrics that
-    # may already be present are ignored as inputs -- ratios feed off sources.
-    metric_code = {repo.metric_id(code): code for code in METRICS}
-    inputs: dict[str, Decimal] = {}
-    scopes: set[str] = set()
+    # Partition by (mode_id, service_scope): each cohort solves independently.
+    partitions: dict[tuple, list] = {}
     for r in rows:
-        code = metric_code.get(r.metric_id)
-        if code is None or METRICS[code]["is_derived"]:
-            continue
-        inputs[code] = r.value
-        scopes.add(r.service_scope)
-
-    results = compute_derived(inputs)
-
-    # Write every result under the scope the inputs were reported at. Inputs
-    # share one scope in practice (system_wide for StatCan, total for others);
-    # fall back to system_wide when there are no inputs to read a scope from.
-    scope = scopes.pop() if len(scopes) == 1 else "system_wide"
+        partitions.setdefault((r.mode_id, r.service_scope), []).append(r)
 
     ids: list[int] = []
-    for code, value in results.items():
-        meta = METRICS[code]
-        ids.append(
-            repo.insert_metric_value(
+    warnings: list[str] = []
+
+    for (mode_id, scope), part in partitions.items():
+        # Observed seed = current values WITHOUT a derivation row. Prior solver
+        # output is skipped so it gets re-derived (and superseded) cleanly.
+        observed: dict[str, object] = {}  # code -> MetricValue
+        seed: dict[str, object] = {}  # code -> Decimal
+        for v in part:
+            code = code_by_mid.get(v.metric_id)
+            if code is None:
+                continue
+            deriv = repo.get_derivation(v.id)
+            if deriv is not None and deriv["equation_code"] in _WITHIN_PERIOD_CODES:
+                continue  # prior within-period solver output; re-derive + supersede
+            observed[code] = v
+            seed[code] = v.value
+
+        # Agency attributes the solver may READ but never solve into (e.g.
+        # net_debt_per_capita = net_debt / service_area_population).
+        population = repo.agency_population(agency_id)
+        if population is not None:
+            seed[ATTR_PREFIX + "service_area_population"] = Decimal(population)
+
+        result = solve(seed)
+        for flag in result.flags:
+            warnings.append(f"{flag} ({agency_slug}, period {period_id}, scope {scope})")
+
+        # Write solved values in dependency order. res.values preserves insertion
+        # order: observed first, then each solved value after its inputs -- so a
+        # solved input's id is always known by the time a value that uses it is written.
+        code_to_vid: dict[str, int] = {c: v.id for c, v in observed.items()}
+        code_to_quality: dict[str, str] = {c: v.quality for c, v in observed.items()}
+        for code, sv in result.values.items():
+            if sv.origin != "solved":
+                continue
+            meta = METRICS.get(code)
+            if meta is None:
+                continue  # never write an attr: node or an unknown code
+            input_ids = [code_to_vid[c] for c in sv.inputs if c in code_to_vid]
+            quality = weakest_quality(
+                [code_to_quality[c] for c in sv.inputs if c in code_to_quality]
+            )
+            vid = repo.insert_derived_value(
                 agency_id=agency_id,
                 metric_id=repo.metric_id(code),
                 reporting_period_id=period_id,
-                mode_id=None,
+                mode_id=mode_id,
                 service_scope=scope,
-                value=value,
+                value=sv.value,
                 unit=meta["unit"],
-                quality="verified",
+                quality=quality,
+                equation_code=sv.equation_code,
+                input_value_ids=input_ids,
                 currency="CAD" if meta["unit_type"] == "currency" else None,
+                # Raw balance-sheet dollars measure size, not performance -> never ranked.
+                comparable_flag=code not in NON_RANKABLE_METRICS,
             )
-        )
+            ids.append(vid)
+            code_to_vid[code] = vid
+            code_to_quality[code] = quality
 
-    return RecomputeResult(ids=ids, warnings=_warnings_for(results))
+    return RecomputeResult(ids=ids, warnings=warnings)

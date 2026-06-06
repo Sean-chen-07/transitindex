@@ -1,7 +1,7 @@
 """In-memory Repository implementation -- the offline workhorse for all tests.
 
 Backed by plain dicts with auto-increment ids. Seeded on construction from
-refdata (10 agencies, 21 metrics, 10 modes, 8 feeds) so slug/code lookups
+refdata (10 agencies, 20 metrics, 10 modes, 8 feeds) so slug/code lookups
 resolve exactly as against the live DB. Faithfully enforces the
 one_current_value invariant (mode_id None is a concrete key part), the
 supersede/restatement chain, and the audit trail on every metric_value write.
@@ -41,6 +41,9 @@ class InMemoryRepository:
         self._metric_ids: dict[str, int] = {}
         self._mode_ids: dict[str, int] = {}
         self._feed_ids: dict[str, int] = {}
+        # agency_id -> static service_area_population (None unless set; tests may
+        # write this directly to exercise net_debt_per_capita).
+        self._agency_population: dict[int, Decimal] = {}
 
         # tables keyed by id
         self._metrics: dict[int, Metric] = {}
@@ -50,6 +53,8 @@ class InMemoryRepository:
         self._values: dict[int, MetricValue] = {}
         # (metric_value_id, source_document_id) -> link bookkeeping
         self._value_sources: dict[tuple[int, int], dict] = {}
+        # metric_value_id -> {'equation_code': str, 'input_value_ids': list[int]}
+        self._derivations: dict[int, dict] = {}
         # (metric_id, period_id, comparison_set) -> list[MetricRankRow]
         self._ranks: dict[tuple[int, int, str], list[MetricRankRow]] = {}
         self._feed_runs: list[dict] = []
@@ -123,6 +128,9 @@ class InMemoryRepository:
 
     def list_metrics(self) -> list[Metric]:
         return list(self._metrics.values())
+
+    def agency_population(self, agency_id: int) -> Optional[Decimal]:
+        return self._agency_population.get(agency_id)
 
     # --- period & document upsert -------------------------------------------
 
@@ -346,6 +354,45 @@ class InMemoryRepository:
             crosscheck_value=crosscheck_value,
             notes=notes,
         )
+
+    def insert_derived_value(
+        self,
+        agency_id: int,
+        metric_id: int,
+        reporting_period_id: int,
+        mode_id: Optional[int],
+        service_scope: str,
+        value: Decimal,
+        unit: str,
+        quality: str,
+        equation_code: str,
+        input_value_ids: list[int],
+        currency: Optional[str] = None,
+        comparable_flag: bool = True,
+        notes: Optional[str] = None,
+    ) -> int:
+        vid = self._write_metric_value(
+            agency_id=agency_id,
+            metric_id=metric_id,
+            reporting_period_id=reporting_period_id,
+            mode_id=mode_id,
+            service_scope=service_scope,
+            value=value,
+            unit=unit,
+            quality=quality,
+            currency=currency,
+            comparable_flag=comparable_flag,
+            crosscheck_value=None,
+            notes=notes,
+        )
+        self._derivations[vid] = {
+            "equation_code": equation_code,
+            "input_value_ids": list(input_value_ids),
+        }
+        return vid
+
+    def get_derivation(self, metric_value_id: int) -> Optional[dict]:
+        return self._derivations.get(metric_value_id)
 
     def _write_metric_value(
         self,

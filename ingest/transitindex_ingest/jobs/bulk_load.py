@@ -87,8 +87,8 @@ def bulk_load(
                   explicitly approved (Hamilton pattern: caller sets reset=True
                   and the adapter already emits quality='verified').
     feed_code   : source feed code for the feed_run record.
-    rank_metric_codes : metrics to refresh ranks for (e.g. ['monthly_ridership',
-                  'operating_revenue'] for StatCan; ['monthly_ridership'] for Hamilton).
+    rank_metric_codes : metrics to refresh ranks for (e.g. ['ridership',
+                  'operating_revenue'] for StatCan; ['ridership'] for Hamilton).
     agency_slugs: slugs whose data this feed owns (for verification + reset).
     validator   : optional flag computer; None uses the project default (or no-op).
     reset       : if True, wipe ALL existing data for `agency_slugs` before staging.
@@ -248,7 +248,7 @@ def load_statcan(
     *,
     reset: bool = False,
 ) -> BulkLoadResult:
-    """Load StatCan 23-10-0307 (12 agencies, monthly_ridership + operating_revenue)."""
+    """Load StatCan 23-10-0307 (12 agencies, ridership + operating_revenue, monthly)."""
     from ..adapters.statcan_307 import StatCan23100307Adapter
     from ..refdata import STATCAN_AGENCY_MAP
 
@@ -263,7 +263,7 @@ def load_statcan(
         records,
         tier=0,
         feed_code="statcan_307",
-        rank_metric_codes=["monthly_ridership", "operating_revenue"],
+        rank_metric_codes=["ridership", "operating_revenue"],
         agency_slugs=agency_slugs,
         reset=reset,
     )
@@ -275,7 +275,7 @@ def load_hamilton(
     *,
     reset: bool = False,
 ) -> BulkLoadResult:
-    """Load Hamilton HSR (1 agency, monthly_ridership only).
+    """Load Hamilton HSR (1 agency, ridership only, monthly).
 
     Hamilton is tier-1 (records are pending by default). The adapter already
     marks them quality='verified'; we approve-and-promote in one go.
@@ -294,7 +294,7 @@ def load_hamilton(
         records,
         tier=0,  # treat as trusted: zero-flag → approve
         feed_code="hamilton_open_data",
-        rank_metric_codes=["monthly_ridership"],
+        rank_metric_codes=["ridership"],
         agency_slugs=["hamilton-street-railway"],
         reset=reset,
     )

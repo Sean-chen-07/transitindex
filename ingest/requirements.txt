@@ -9,3 +9,4 @@ fastapi>=0.115           # review API
 httpx>=0.27              # source fetching
 python-dotenv>=1.0       # config.py .env loading (stdlib fallback exists)
 openpyxl>=3.1     # workbook export/import (xlsx round-trip)
+PyYAML>=6.0       # dictionary.py -> loads metric_dictionary.yaml (the data dictionary)

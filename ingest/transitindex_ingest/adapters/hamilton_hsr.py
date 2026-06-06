@@ -72,7 +72,7 @@ class HamiltonHSRAdapter:
             records.append(
                 MetricValueRecord(
                     agency_slug=_AGENCY_SLUG,
-                    metric_code="monthly_ridership",
+                    metric_code="ridership",
                     period_type=period.period_type,
                     period_start=period.start,
                     period_end=period.end,
