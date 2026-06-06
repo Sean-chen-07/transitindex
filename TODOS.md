@@ -89,7 +89,11 @@ Full spec in phase-plan.md "Design" section + DESIGN.md. Items below are build/d
 ## Architecture (from eng re-review 2026-05-30)
 Resolutions captured in phase-plan.md "Architecture — eng re-review" + data-model.md.
 
-### Paywall: account-gate numbers server-side — P1
+### ~~Paywall: account-gate numbers server-side~~ ✓ — P1
+- **Completed 2026-06-04 (PR #7):** Auth.js (migration 008) + `web/src/server/entitlement.ts`
+  gate raw numbers behind an active Stripe subscription, checked server-side live per request;
+  the free rank path stays login-free and crawlable. The structural choke point landed
+  v0.0.1.0; this wired the real account + subscription check.
 - **What:** Raw numbers gate behind a paid account, enforced server-side; web serves free
   public ranks (crawlable, no login, no tracking); drop the anonymous metering. Native app
   deferred to Phase 3.
@@ -184,7 +188,8 @@ Full plan: [balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-pla
   the MVP audience reads the website, they don't write code. Build only if a researcher,
   journalist, or another builder asks for raw/programmatic access. DX checklist below.
 - **Compare view** (2–4 agencies side by side, type-mismatch warnings — by modes + size).
-- **Accounts / watchlist / personal dashboard** (Auth.js).
+- **Accounts / watchlist / personal dashboard** (Auth.js). *Accounts + Stripe billing shipped
+  2026-06-04 (PR #7); the watchlist + personal dashboard remain deferred.*
 - **PDF + human-review treadmill** (TTC CEO Report adapter, annual-report adapters,
   OC Transpo scraper, board decks). This is the cost center — do not scale on conviction.
 - **US / NTD ingestion** (schema absorbs it with zero change; no build until CA core validated).

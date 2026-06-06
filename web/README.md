@@ -4,9 +4,9 @@ Next.js 15 (App Router) + TypeScript + Tailwind. A **pure reader** of the Postgr
 schema owned by `db/` (Lane 0): a free, crawlable directory of Canadian transit agencies
 (ranks only) with agency detail pages whose raw numbers are account-gated.
 
-> Status: **steps 1–5** of `../M1-WEB-PLAN.md` (free app + gate boundary against the
-> empty schema). Auth + Stripe (steps 6–8) and the StatCan rank load (step 9) are not
-> built yet.
+> Status: free directory + gate boundary, plus **Auth.js sign-in, Stripe billing, and the
+> live paid-entitlement check** (steps 1–9 of `../M1-WEB-PLAN.md`). Auth/billing setup is in
+> [SETUP-AUTH-BILLING.md](SETUP-AUTH-BILLING.md).
 
 ## Run it
 
@@ -43,6 +43,8 @@ npm run build
 - `src/server/data/` — free-safe queries (agencies, ranks, attribution, freshness).
 - `src/server/metrics/` — the paywall choke point (`access.ts`), the only raw reader
   (`queries.ts`), pure transforms (`transform.ts`), and the trend shape (`shape.ts`).
-- `src/server/entitlement.ts` — paid check (stubbed until step 7's Auth.js wiring).
+- `src/server/entitlement.ts` — the paid check, wired to Auth.js: `getSession()` resolves the
+  NextAuth session to an app user and `isPaid()` reads `subscription_status` live per request
+  (the Stripe webhook is its only writer).
 - `src/components/` — directory, detail, common, and shadcn-style ui primitives.
 - `src/app/` — routes, robots/sitemap, server actions.

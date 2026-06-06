@@ -2,6 +2,48 @@
 
 All notable changes to TransitIndex.
 
+## [0.0.2.0] - 2026-06-06
+
+### Added
+
+#### Accounts & billing
+- **Sign in and subscribe.** You can now create an account (Auth.js / NextAuth) and pay for
+  access through Stripe. Migration `008` adds the auth tables; the Stripe webhook is the only
+  writer of `subscription_status`, and `web/src/server/entitlement.ts` reads it live on every
+  request — so a cancelled subscription loses access on the very next page load, never a stale
+  token. Setup steps live in `web/SETUP-AUTH-BILLING.md`.
+- **The paywall is now real end-to-end** — raw agency numbers gate behind an active paid
+  account, enforced server-side; the free rank directory stays login-free and crawlable. This
+  wires the account check into the choke point that shipped structurally in 0.0.1.0.
+- **Shared reporting periods** (migration `009`) so a rank compares the same period across
+  every agency — never a 2024 figure against a 2023 one.
+
+#### Data population
+- **One-click bulk loaders for StatCan and Hamilton.** Double-click `load-statcan.bat` or
+  `load-hamilton.bat` (or run `python -m transitindex_ingest statcan-load <csv>` /
+  `hamilton-load <csv>`) to load a whole agency's monthly history at once. The load is
+  diff-aware and idempotent — re-running supersedes only the months that changed; add
+  `--reset` to force a full reload. Roughly 84 round-trips instead of ~12,000.
+- **Hamilton HSR adapter** (`adapters/hamilton_hsr.py`) reads Hamilton's ArcGIS JSON API —
+  144 months (Jan 2014–Apr 2025) staged for review.
+- **+11 agencies.** The StatCan map and seeds now cover Winnipeg, Hamilton, Brampton, Grand
+  River, STL Laval, RTL Longueuil, York Region, Halifax, Durham Region, Saskatoon, and Regina
+  (migration `010`). The Excel workbook tracks all 21 agencies (105 rows × 5 years).
+- **OGL Hamilton licence** added to the source-licence allow-list (`contract.py` + migration
+  `011`), so Hamilton's open data renders with its required attribution.
+
+### Changed
+- Seed assertions track the growing census: `db/tests/00_seed_assertions` now expects ≥10
+  agencies (a growing set, not a fixed 10), 21 metrics, and 9 source feeds.
+- The review API's mutating endpoints (approve/reject/edit) now require an
+  `Authorization: Bearer <token>` header matching `REVIEW_API_TOKEN`; read endpoints stay
+  open and the `review` CLI fails closed without a token.
+
+### Fixed
+- The Excel workbook no longer offers `monthly_ridership` as a hand-entry column — monthly
+  ridership is fed by the StatCan loader, so the annual grid (one row per agency-year) stays
+  annual-only and can never import a monthly figure under an annual period.
+
 ## [0.0.1.0] - 2026-05-31
 
 ### Added

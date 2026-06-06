@@ -12,8 +12,8 @@ The database **contract**, owned by neither service. Built from
 
 ```
 db/
-  migrations/   001..007_*.sql   the schema contract (dbmate)
-  seeds/        01..05_*.sql     reference data (modes, agencies, metrics, feeds) — NO metric values
+  migrations/   001..011_*.sql   the schema contract (dbmate)
+  seeds/        01..06_*.sql     reference data (modes, agencies, metrics, feeds) — NO metric values
   tests/        00..04_*.sql     plain-SQL assertions
   schema.sql                     generated snapshot (dbmate dump) — do not hand-edit
 ```
@@ -50,8 +50,8 @@ dbmate reads `DATABASE_URL` automatically (it loads `.env`).
 ## 3. Run migrations
 
 ```powershell
-dbmate --no-dump-schema up     # apply 001..007
-dbmate --no-dump-schema down   # revert the last migration (repeatable; full round-trip = down x7 then up)
+dbmate --no-dump-schema up     # apply 001..011
+dbmate --no-dump-schema down   # revert the last migration (repeatable; full round-trip = down x11 then up)
 
 # Refresh db/schema.sql. We DON'T use `dbmate dump` here: its dump covers the whole
 # database, and a Supabase project has ~10 built-in schemas (auth, storage, ...) that
@@ -84,7 +84,7 @@ Get-ChildItem db/tests/*.sql | Sort-Object Name | ForEach-Object {
 
 | Test | Proves (acceptance #) |
 |---|---|
-| `00_seed_assertions` | counts 10/10/20, `primary_modes` ↔ `agency_modes`, derived↔formula (#2, #3, #8) |
+| `00_seed_assertions` | counts (≥10 agencies / 10 modes / 21 metrics / 9 feeds), `primary_modes` ↔ `agency_modes`, derived↔formula (#2, #3, #8) |
 | `01_constraints`     | CHECK rejects bad enum; FK rejects orphan (#4) |
 | `02_invariants`      | `one_current_value` blocks a 2nd current row, incl. NULL mode (#5) |
 | `03_trigger`         | audit row written on value UPDATE, correct old/new (#6) |
