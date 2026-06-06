@@ -13,7 +13,7 @@ DECLARE a bigint; p bigint; m bigint;
 BEGIN
   SELECT id INTO a FROM core.agencies          WHERE slug = '__test_con__';
   SELECT id INTO p FROM core.reporting_periods WHERE label = '__test_con__';
-  SELECT id INTO m FROM core.metrics           WHERE code = 'annual_ridership';
+  SELECT id INTO m FROM core.metrics           WHERE code = 'ridership';
 
   -- bad service_scope -> rejected
   BEGIN

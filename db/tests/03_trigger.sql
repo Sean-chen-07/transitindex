@@ -14,7 +14,7 @@ DECLARE a bigint; p bigint; m bigint; v bigint; n int; ov numeric; nv numeric;
 BEGIN
   SELECT id INTO a FROM core.agencies          WHERE slug = '__test_trg__';
   SELECT id INTO p FROM core.reporting_periods WHERE label = '__test_trg__';
-  SELECT id INTO m FROM core.metrics           WHERE code = 'annual_ridership';
+  SELECT id INTO m FROM core.metrics           WHERE code = 'ridership';
 
   INSERT INTO core.metric_values (agency_id, metric_id, reporting_period_id, service_scope, value, unit, quality)
   VALUES (a, m, p, 'total', 1000, 'count', 'verified')

@@ -14,7 +14,7 @@ DECLARE a bigint; p bigint; m bigint;
 BEGIN
   SELECT id INTO a FROM core.agencies          WHERE slug = '__test_inv__';
   SELECT id INTO p FROM core.reporting_periods WHERE label = '__test_inv__';
-  SELECT id INTO m FROM core.metrics           WHERE code = 'annual_ridership';
+  SELECT id INTO m FROM core.metrics           WHERE code = 'ridership';
 
   -- first current row with mode_id NULL: ok
   INSERT INTO core.metric_values (agency_id, metric_id, reporting_period_id, mode_id, service_scope, value, unit, quality, is_current)
