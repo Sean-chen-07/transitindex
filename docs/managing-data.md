@@ -104,3 +104,49 @@ python -m transitindex_ingest export-xlsx
 - **Want to know exactly what a column means?** See
   [docs/data-dictionary.md](data-dictionary.md) (the same definitions also live
   on the Data Dictionary tab inside the spreadsheet).
+
+## Bulk-load a whole agency at once
+
+Two of our sources publish their numbers as open data you can download in a
+single file — so for these, you never type anything. Skip the spreadsheet and
+use a **one-click loader** instead:
+
+- **StatCan** — Statistics Canada's monthly ridership table (23-10-0307), which
+  covers about a dozen of the biggest agencies in one file.
+- **Hamilton** — Hamilton HSR's monthly ridership, published as open data.
+
+For everything else — the annual numbers you read off an agency's annual report
+or budget — use the spreadsheet (Steps 1–3 above) and enter them by hand.
+
+### Running a loader
+
+1. Download the source file and save it at the top of the project, with the name
+   the loader expects:
+   - StatCan → **`statcan_23100307.csv`**
+   - Hamilton → **`hamilton_hsr_live.csv`**
+2. Double-click the matching loader (or run it from the project's top folder):
+   - **`load-statcan.bat`**
+   - **`load-hamilton.bat`**
+
+A window opens, the loader runs, and it prints a short summary — how many numbers
+it added and how many it updated — then waits so you can read it. It also saves
+that summary to a file (`load_statcan_result.json` or `load_hamilton_result.json`)
+you can keep or ignore. It reads `DATABASE_URL` from the same `.env` as everything
+else; if that isn't set, it does a harmless practice run and saves nothing.
+
+**Re-running is safe.** A loader only changes the months that actually changed
+since last time and leaves the rest alone, so you can run it again whenever a new
+month is published — no mess, no duplicates.
+
+**Starting a source over.** If you need a clean slate for one source — say the
+file was wrong and you want to wipe it and reload from scratch — add **`--reset`**,
+which deletes that source's numbers first and then loads the file fresh. You only
+need this for a forced full reload; normal updates never do. Because double-
+clicking can't pass options, run it from a terminal for this:
+
+```
+load-statcan.bat --reset
+```
+
+Need the rest of the pipeline (PDFs, rankings, the review queue)? Every command is
+listed in [reference-ingest-cli.md](reference-ingest-cli.md).

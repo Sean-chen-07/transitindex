@@ -10,9 +10,15 @@ A **"Yahoo Finance for public transit."** Transit agencies publish performance a
 - **Business model:** **Everything is paid** — no free tier. Access is **metered** (~2 free agency views/month, then gated), not a hard wall, to keep the directory discoverable/SEO-visible. See decisions below.
 - **Primary user:** **Civically-engaged non-experts** — politicians, city/regional officials, nonprofits & advocacy groups who must care about transit but aren't close enough to see the full picture. The product's core job is **translation**, not just aggregation.
 
-## ⚠️ Current status: PHASE 1 — PLANNING. NO APPLICATION CODE YET.
+## Current status: MVP built — data population in progress
 
-**Do not write application code until the user explicitly approves the plan.** We are still finalizing the architecture, data model, and data-sourcing strategy. The work so far is research and design, captured in the docs below.
+The architecture, schema, and all three services are built and merged:
+
+- **`db/`** — the Postgres contract (migrations `001`–`011`): a `core` schema (ingestion writes) and an `app` schema (web writes), enforced by a least-privilege `web_reader` role.
+- **`ingest/`** — the Python pipeline: StatCan + Hamilton bulk loaders, the PDF/LLM extractor, an Excel workbook round-trip for manual entry, and a human review queue. The test suite runs offline (no database, API keys, or network needed).
+- **`web/`** — the Next.js app: a free, crawlable directory of Canadian agencies (ranks only), account-gated detail pages (raw numbers), sign-in (Auth.js), and Stripe billing.
+
+The 136-agency Canadian census is seeded. Loading real metric values (StatCan 23-10-0307, Hamilton HSR, annual-report PDFs) is the current work — see [TODOS.md](TODOS.md).
 
 ## Document index
 
@@ -23,6 +29,14 @@ A **"Yahoo Finance for public transit."** Transit agencies publish performance a
 | **phase-plan.md** | Phased roadmap, tech stack, ingestion strategy, launch agencies |
 | **source-registry.md** | Every launch agency × metric × specific data source + license |
 | **update-frequency.md** | Every agency × metric × finest available update frequency (monthly/quarterly/annual) |
+| **db/README.md** | How the schema is built, migrated, seeded, and tested (dbmate + psql) |
+| **ingest/README.md** | The Python ingestion package — layout, tests, wiring a real DB/LLM |
+| **web/README.md** | The Next.js web app — running it, the paywall and rank-safety invariants |
+| **docs/managing-data.md** | Plain-language guide to viewing, gap-checking, and hand-entering data |
+| **docs/data-dictionary.md** | Every metric — what it means, its unit, and (for ratios) the formula |
+| **docs/reference-ingest-cli.md** | Every ingestion CLI command (`python -m transitindex_ingest …`) and flag |
+| **CHANGELOG.md** | What shipped in each release |
+| **TODOS.md** | Deferred work and open decisions |
 
 ## Non-negotiable invariants
 
