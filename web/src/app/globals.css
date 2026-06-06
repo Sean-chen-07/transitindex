@@ -13,8 +13,8 @@
   --card: #ffffff;
   --card-2: #fbf9f4;
   --ink: #2e2c28;
-  --ink-2: #726e66;
-  --ink-3: #a8a299;
+  --ink-2: #5f5b52; /* secondary text — WCAG AA (>=4.5:1 on cream/white) */
+  --ink-3: #6e6960; /* muted/tertiary text + icons — lightest value still AA on cream */
   --line: #ece6d9;
   --line-2: #f3eee3;
   --grid: #e7e1d4; /* spreadsheet rules */

@@ -28,7 +28,7 @@ the free side a terminal; don't make the paid side bubbly.
 ```
 --bg      #F4F0E7   warm cream canvas
 --card    #FFFFFF   --card-2 #FBF9F4
---ink     #2E2C28   --ink-2 #726E66   --ink-3 #A8A299
+--ink     #2E2C28   --ink-2 #5F5B52   --ink-3 #6E6960   (ink-2/3 darkened to clear WCAG AA on cream)
 --line    #ECE6D9   --line-2 #F3EEE3   --grid #E7E1D4 (spreadsheet rules)
 --coral   #E2725B   (+ soft #FBE9E3)  primary action · paywall/upsell · "Paid"
 --teal    #3F9D92   (+ soft #E1F0ED)  interactive · "Free" · positive
