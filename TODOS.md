@@ -58,7 +58,10 @@ Full spec in phase-plan.md "Design" section + DESIGN.md. Items below are build/d
   failure the product exists to prevent. Pairs with the existing scope guard.
 - **Blocks:** any public rank render. **Confirm in eng review / record in data-model.md.**
 
-### Strict period-matched ratios — P2
+### ~~Strict period-matched ratios — P2~~ ✓
+- **Completed v0.0.3.0:** The equation-graph solver (`equations.py` + `jobs/derived_recompute.py`)
+  computes every derived value from SAME-period values only, partitioned by (mode, scope). No
+  cross-period mixing is possible by construction.
 - **What:** Derived ratios (cost-per-rider, farebox recovery, subsidy-per-rider) computed
   only from same-period inputs; labeled "as of FYxxxx"; "= a ÷ b" note; no TTM/mixed estimate.
 - **Why:** Mixed-period ratios are attackable; annual is the native cadence for these metrics.
@@ -125,7 +128,13 @@ Resolutions captured in phase-plan.md "Architecture — eng re-review" + data-mo
   and risks the period/scope rule drifting across call-sites.
 - **Test (IRON):** same-period-only rank; missing-period → not ranked, never cross-year.
 
-### Derived-recompute step (ratios) — P2
+### ~~Derived-recompute step (ratios) — P2~~ ✓
+- **Completed v0.0.3.0:** Replaced the one-directional `_DERIVED` dict with a bidirectional
+  equation-graph solver. It back-solves any unknown (e.g. expenses from farebox + revenue),
+  chains to a fixpoint, writes each solved value as a first-class `metric_value` carrying full
+  provenance (`metric_value_derivations` → exact input rows, migration 013), inherits the weakest
+  input's quality, and re-runs idempotently on input promote/restate. Cross-source / over-
+  determination disagreements raise `sum_mismatch` / `cross_source_disagreement`.
 - **What:** Post-promotion step computes period-matched ratios from approved inputs, stores
   as first-class `metric_values`, re-runs on input promote/restate; auto sanity flags.
 - **Why:** Pipeline had no derived-compute step; a corrected input could leave a stale ratio.
@@ -168,8 +177,20 @@ Resolutions captured in phase-plan.md "Architecture — eng re-review" + data-mo
   then `import-xlsx`. Priority columns: annual_ridership, operating_expenses, operating_revenue.
 
 ## Data expansion — balance sheets + native frequency (2026-05-31)
-Full plan: [balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-plan.md). Additive —
-**no `db/migrations/` change** (the existing tables absorb it). Build tasks, roughly in order:
+Full plan: [balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-plan.md).
+
+> **Mostly DELIVERED in v0.0.3.0** (the backend restructure folded this in). DONE: `quarterly_period()`;
+> 11 balance-sheet metrics seeded (`refdata.METRICS` + `04_metrics.sql`, parity-tested); `net_debt` /
+> `debt_to_assets` / `net_debt_per_capita` via the equation graph (population read from
+> `agencies.service_area_population`); raw dollars `comparable_flag=false` (never ranked); the PSAB
+> SUM identities (asset split, net-debt, accumulated-surplus) cross-checked by the solver;
+> `parse_number` accounting-negatives fixed; the `printed_scale`/`printed_sign` extraction tool fields
+> (model declares, code applies). The equation/derivation tables needed migrations after all
+> (013 — the plan's "no migration" held for the metrics, not the graph). STILL DEFERRED: the 6-sheet
+> workbook redesign; the locate-then-read EN+FR statement anchors + page-image feeding; explicit PSAB
+> component-bounds checks in `flags.py`; carry-forward web display; gold fixtures (need real verified data).
+
+Build tasks, roughly in order:
 
 - **`quarterly_period()` builder** (`ingest/.../periods.py`) — the one new period primitive
   (TransLink). No `period_type` enum change. **P2.**
