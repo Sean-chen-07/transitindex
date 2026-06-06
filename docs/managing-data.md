@@ -4,16 +4,9 @@ A short, friendly guide to seeing what data we have, seeing what is missing, and
 adding numbers by hand. No coding required — just two commands you copy-paste
 into a terminal, and some typing in Excel.
 
-> **Heads-up (2026-05-31):** the workbook is being expanded to show a lot more —
-> a **Monthly** tab for ridership/revenue, a **Balance Sheet** tab for the
-> agencies' financial position, and a **Period** column so a row can be a month,
-> a quarter, or a year. The guide below still describes the **current** workbook
-> (one annual grid). It will be updated when the new tabs ship. The plan and the
-> new colour/blank rules are in
-> [balance-sheet-and-frequency-plan.md](../balance-sheet-and-frequency-plan.md) —
-> the one rule to remember: **leave a cell blank if you don't have the number;
-> the website carries the last known value forward for you, so you never type a
-> guess.**
+> **The one rule to remember:** leave a cell **blank** if you don't have the
+> number — never type a guess. The website shows the last known number for you,
+> so a blank here is always fine.
 
 ## Before you start (one time)
 
@@ -45,34 +38,56 @@ This creates a file called **`transitindex-data.xlsx`** in the `ingest` folder.
 (Because the database is empty today, the spreadsheet comes out blank and ready
 to fill — that's expected.)
 
-Open it in Excel. It has four tabs along the bottom:
+Open it in Excel. It has six tabs along the bottom:
 
 1. **How to use** — the same plain instructions, right inside the file.
-2. **Data Dictionary** — what every column means, its unit, and (for the
-   calculated columns) the formula behind it.
-3. **Data** — the grid you actually edit: one row per agency per year.
-4. **Gaps** — a quick count, for each row, of how many of the 14 numbers are
-   filled in versus still missing. Use this to see what's left to do.
+2. **Data Dictionary** — what every number means, its unit, and — handily — a
+   **Sheet** column telling you which tab to type it on.
+3. **Monthly** — month-by-month ridership and fare revenue.
+4. **Annual Fundamentals** — the once-a-year operating numbers (service hours,
+   costs, fleet, and so on), one row per agency per year.
+5. **Balance Sheet** — the agency's once-a-year financial position (assets,
+   liabilities), from the audited financial statements.
+6. **Gaps** — a quick count, for each row, of how many numbers are filled in
+   versus still missing. Use this to see what's left to do.
+
+### The colour code
+
+The same three colours mean the same thing on every tab:
+
+- **White cells** — type here.
+- **Grey cells** — worked out automatically (yearly totals, ratios, accounting
+  checks). **Don't type in them** — anything you put there is ignored and
+  recalculated.
+- **Light-yellow cells** — optional, only needed for the rare quarterly case. A
+  blank light-yellow cell is perfectly normal.
 
 ## Step 2 — Add data
 
-Go to the **Data** tab. Each row is one agency for one year. Find the row you
-want and type real numbers in, taken straight from your source (an annual
-report, a budget document, and so on).
+Open the **Data Dictionary** tab if you're not sure where a number goes — its
+**Sheet** column points you to the right tab. Otherwise:
 
-- **White columns** are the ones you fill in — there are 14 of them (ridership,
-  operating expenses, fleet size, and so on).
-- **Grey columns** are calculated automatically (revenue per rider, farebox
-  recovery ratio, cost per rider, and the other ratios). They fill themselves in
-  by formula as you type the white columns. **Don't type in the grey columns** —
-  anything you put there gets ignored and recalculated.
-- Leave a cell **blank** if you don't have that number yet. Never guess. A blank
-  grey cell just means one of its inputs is still missing.
+- **Monthly tab** — for ridership and fare revenue. Type each month you have;
+  the **yearly total is worked out for you** when you import. If a city only
+  publishes a yearly number, skip this tab and use Annual Fundamentals instead.
+- **Annual Fundamentals tab** — the once-a-year operating numbers. Ridership and
+  fare revenue show up here too, but as a **grey yearly total** — you don't
+  re-type them, they come from the Monthly tab.
+- **Balance Sheet tab** — the eight financial-position lines from the audited
+  statements. **Net Debt** and the two **Check** columns are grey: they're
+  worked out for you so you can eyeball that the numbers add up.
 
-**About the Year column.** The Year is the calendar year the reporting year
-*begins*. For most agencies that's just the calendar year (Year 2024 = the year
-2024). For **Metrolinx** and **BC Transit**, whose financial year ends in March,
-Year 2024 means their **2024–25 fiscal year**.
+Type real numbers straight from your source (an annual report, a budget, an
+open-data file). Leave anything you don't have **blank** — never guess.
+
+**About the Period column** (on Annual Fundamentals and Balance Sheet). Each row
+already has its Period filled in for you:
+
+- **2024** means the calendar year 2024 (most agencies).
+- **FY2024-25** means a financial year ending in spring 2025 — for **Metrolinx**
+  and **BC Transit**, whose year ends in March.
+- **2024-Q1** means the first quarter of 2024. Only **TransLink** reports its
+  balance sheet this often; you'd type this one in yourself for that rare case.
 
 ## Step 3 — Save it back
 
@@ -82,12 +97,12 @@ When you're done editing, save the Excel file, then run:
 python -m transitindex_ingest import-xlsx transitindex-data.xlsx
 ```
 
-This reads your numbers, saves them into the database, automatically works out
-the 6 calculated metrics, and refreshes the rankings. You'll see a short summary
-of how many values were saved.
+This reads your white cells, saves them into the database, **adds up the months
+into yearly totals**, works out the calculated metrics (ratios, net debt), and
+refreshes the rankings. You'll see a short summary of how many values were saved.
 
 To confirm the round-trip worked, run the export again and reopen the file —
-your numbers (and the calculated columns) should now be there:
+your numbers (and the grey calculated cells) should now be there:
 
 ```
 python -m transitindex_ingest export-xlsx
@@ -95,9 +110,12 @@ python -m transitindex_ingest export-xlsx
 
 ## Good to know
 
-- **The grey/calculated columns are worked out for you** on both sides — in
-  Excel as you type, and again on the server when you import. You never need to
-  type them in, and you shouldn't.
+- **The grey cells are worked out for you** on both sides — in Excel as you
+  type, and again on the server when you import. You never need to type them in,
+  and you shouldn't.
+- **Blanks stay blank.** The spreadsheet never fills in a guessed or carried-
+  forward number, and import skips every blank cell. Showing a stale-but-real
+  number to visitors is the website's job, not the spreadsheet's.
 - **Fixing a number is safe.** If you typed something wrong, just correct the
   white cell and import again. The new value cleanly supersedes the old one —
   you don't need to delete anything first.

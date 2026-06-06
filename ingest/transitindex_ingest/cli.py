@@ -300,7 +300,7 @@ def cmd_pdf_smoke(args) -> int:
 
 
 def cmd_export_xlsx(args) -> int:
-    """Build the editable .xlsx workbook (one row per agency per year)."""
+    """Build the editable six-sheet .xlsx workbook (Monthly + Annual + Balance Sheet)."""
     from . import workbook
 
     repo, ephemeral = _build_repo()
@@ -309,18 +309,21 @@ def cmd_export_xlsx(args) -> int:
     years = _parse_years(args.years)
     summary = workbook.export_workbook(repo, args.out, years)
 
+    n_years = len(summary["years"])
     print(f"workbook      : {summary['path']}")
-    print(f"rows          : {summary['rows']} ({summary['agencies']} agencies x {len(summary['years'])} years)")
+    print(f"agencies      : {summary['agencies']} x {n_years} year(s)")
+    print(f"rows          : {summary['monthly_rows']} Monthly, {summary['annual_rows']} Annual, "
+          f"{summary['balance_rows']} Balance Sheet")
     print(f"filled cells  : {summary['filled_cells']} (pre-filled from the database)")
     print(
-        "next step     : Open it, fill the white columns, then: "
+        "next step     : Open it, fill the white cells, then: "
         f"python -m transitindex_ingest import-xlsx {summary['path']}"
     )
     return 0
 
 
 def cmd_import_xlsx(args) -> int:
-    """Read a filled-in workbook -> stage -> promote -> recompute derived -> rank."""
+    """Read a filled-in workbook -> stage -> promote -> roll up -> recompute derived -> rank."""
     from . import workbook
 
     repo, ephemeral = _build_repo()
@@ -330,6 +333,7 @@ def cmd_import_xlsx(args) -> int:
 
     print(f"staged        : {summary['staged']} pending")
     print(f"promoted      : {summary['promoted']} into metric_values")
+    print(f"rolled up     : {summary['rolled']} monthly->annual value(s)")
     print(f"derived       : {summary['derived']} ratio value(s)")
     print(f"ranks         : refreshed for {summary['periods']} period(s)")
     if summary["warnings"]:
