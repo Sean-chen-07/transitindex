@@ -95,14 +95,17 @@ export function AgencyRow({ item, ranks }: { item: AgencyListItem; ranks: Agency
       open={open}
       onOpenChange={setOpen}
       className={cn(
+        // Mobile: compact table rows separated by hairlines.
         "border-b border-line-2 last:border-b-0",
-        open && "bg-card-2",
+        // Desktop: each agency is its own soft "Mini Motorway" card (DESIGN.md thesis).
+        "md:overflow-hidden md:rounded-card md:border md:border-line md:shadow-soft md:transition-shadow md:hover:shadow-soft-hover",
+        open ? "bg-card-2" : "md:bg-card",
       )}
     >
       <div className="flex items-stretch">
         <Link
           href={`/agency/${item.slug}`}
-          className="group flex min-w-0 flex-1 items-center gap-3 px-4 py-3 hover:bg-card-2"
+          className="group flex min-w-0 flex-1 items-center gap-3 px-4 py-3 hover:bg-card-2 md:py-4 md:hover:bg-transparent"
         >
           <span aria-hidden className={cn("h-9 w-1.5 shrink-0 rounded-full", group.cls)} />
           <span className="sr-only">Mode group: {group.label}. </span>
@@ -117,7 +120,7 @@ export function AgencyRow({ item, ranks }: { item: AgencyListItem; ranks: Agency
         </Link>
 
         <CollapsibleTrigger
-          className="flex shrink-0 items-center gap-3 px-3 py-3 text-left hover:bg-card-2 sm:gap-5 sm:px-4"
+          className="flex shrink-0 items-center gap-3 px-3 py-3 text-left hover:bg-card-2 sm:gap-5 sm:px-4 md:py-4 md:hover:bg-transparent"
           aria-label={`${open ? "Collapse" : "Expand"} ranks for ${item.shortName ?? item.legalName}`}
         >
           <span className="hidden w-32 truncate text-sm text-ink-2 md:block">

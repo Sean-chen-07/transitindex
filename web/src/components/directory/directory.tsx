@@ -55,8 +55,8 @@ export function Directory({
       {query && filtered.length === 0 ? (
         <EmptySearch query={q} />
       ) : (
-        <div className="overflow-hidden rounded-card border border-line bg-card shadow-soft">
-          <div className="flex items-center gap-3 border-b border-line bg-card-2 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+        <div className="overflow-hidden rounded-card border border-line bg-card shadow-soft md:flex md:flex-col md:gap-3 md:overflow-visible md:rounded-none md:border-0 md:bg-transparent md:shadow-none">
+          <div className="flex items-center gap-3 border-b border-line bg-card-2 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-ink-3 md:hidden">
             <span className="flex-1">
               Agency
               <span className="ml-2 font-normal normal-case tracking-normal text-ink-3">
