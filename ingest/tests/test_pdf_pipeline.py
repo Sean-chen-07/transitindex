@@ -55,7 +55,7 @@ def _run(repo, values, validator=None):
 def test_values_land_as_pending_and_never_reach_metric_values(repo):
     values = [
         ExtractedValue(
-            metric_code="annual_ridership",
+            metric_code="ridership",
             value=Decimal("250000000"),
             unit="count",
             period_kind="annual",
@@ -81,7 +81,7 @@ def test_values_land_as_pending_and_never_reach_metric_values(repo):
     assert all(p.review_status == "pending" for p in pending)
 
     # Invariant #1: nothing was promoted -- no metric_values, no audit entries.
-    metric_id = repo.metric_id("annual_ridership")
+    metric_id = repo.metric_id("ridership")
     period_id = repo.get_or_create_reporting_period(
         "annual_calendar", date(2024, 1, 1), date(2024, 12, 31), "2024"
     )
@@ -144,7 +144,7 @@ def test_fiscal_year_period_mapping_for_metrolinx():
     repo = InMemoryRepository()
     values = [
         ExtractedValue(
-            metric_code="annual_ridership",
+            metric_code="ridership",
             value=Decimal("70000000"),
             unit="count",
             period_kind="annual",
@@ -174,7 +174,7 @@ def test_fiscal_year_period_mapping_for_metrolinx():
 def test_monthly_period_mapping(repo):
     values = [
         ExtractedValue(
-            metric_code="annual_ridership",
+            metric_code="ridership",
             value=Decimal("21000000"),
             unit="count",
             period_kind="monthly",
@@ -238,7 +238,7 @@ def test_validator_flags_are_merged(repo):
 
     values = [
         ExtractedValue(
-            metric_code="annual_ridership",
+            metric_code="ridership",
             value=Decimal("999999999"),
             unit="count",
             period_kind="annual",
@@ -269,7 +269,7 @@ def test_french_formatted_value_parses_through_a_fake_client(repo):
         def extract(self, system_prompt, document_text, agency_slug):
             return [
                 ExtractedValue(
-                    metric_code="annual_ridership",
+                    metric_code="ridership",
                     value=parse_number("1 234 567"),
                     unit="count",
                     period_kind="annual",
@@ -301,7 +301,7 @@ def test_unknown_agency_fails_fast(repo):
 
 
 def test_system_prompt_lists_sourced_codes_and_demands_low_confidence():
-    assert "annual_ridership" in EXTRACTION_SYSTEM_PROMPT
+    assert "ridership" in EXTRACTION_SYSTEM_PROMPT
     assert "operating_expenses" in EXTRACTION_SYSTEM_PROMPT
     # Derived metric must NOT be in the allowed set.
     assert "average_fare" not in EXTRACTION_SYSTEM_PROMPT

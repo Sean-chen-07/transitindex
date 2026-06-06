@@ -34,7 +34,7 @@ TEST_DB = os.environ.get("TEST_DATABASE_URL")
 # A far-future period no real StatCan/PDF data will ever occupy, so staging here
 # cannot disturb (or be disturbed by) production rows.
 _AGENCY = "ttc"
-_METRIC = "monthly_ridership"
+_METRIC = "ridership"
 _PERIOD_START = date(2099, 1, 1)
 _PERIOD_END = date(2099, 1, 31)
 _PERIOD_LABEL = "Jan 2099"

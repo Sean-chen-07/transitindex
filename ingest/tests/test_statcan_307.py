@@ -55,7 +55,7 @@ def test_slug_mapping():
 def test_measure_to_metric_code():
     _, records = _parse()
     codes = {r.metric_code for r in records}
-    assert codes == {"monthly_ridership", "operating_revenue"}
+    assert codes == {"ridership", "operating_revenue"}
 
 
 def test_scalar_factor_applied():
@@ -65,13 +65,13 @@ def test_scalar_factor_applied():
     assert rev.value == Decimal("52000") * Decimal(1000)
     assert rev.value == Decimal("52000000")
     # Ridership: VALUE 45000 with SCALAR_FACTOR 'thousands' -> x1000.
-    trips = _one(records, "ttc", "monthly_ridership", date(2026, 1, 1))
+    trips = _one(records, "ttc", "ridership", date(2026, 1, 1))
     assert trips.value == Decimal("45000000")
 
 
 def test_monthly_period_bounds_and_label():
     _, records = _parse()
-    feb = _one(records, "stm", "monthly_ridership", date(2026, 2, 1))
+    feb = _one(records, "stm", "ridership", date(2026, 2, 1))
     assert feb.period_type == "monthly"
     assert feb.period_start == date(2026, 2, 1)
     assert feb.period_end == date(2026, 2, 28)
@@ -81,7 +81,7 @@ def test_monthly_period_bounds_and_label():
 def test_scope_currency_and_source():
     _, records = _parse()
     rev = _one(records, "calgary-transit", "operating_revenue", date(2026, 1, 1))
-    trips = _one(records, "calgary-transit", "monthly_ridership", date(2026, 1, 1))
+    trips = _one(records, "calgary-transit", "ridership", date(2026, 1, 1))
     assert rev.service_scope == "total"
     assert rev.currency == "CAD"
     assert trips.currency is None
@@ -95,8 +95,8 @@ def test_scope_currency_and_source():
 def test_status_marks_preliminary():
     _, records = _parse()
     # Toronto Feb rows carry STATUS 'p'; Jan rows are final.
-    jan = _one(records, "ttc", "monthly_ridership", date(2026, 1, 1))
-    feb = _one(records, "ttc", "monthly_ridership", date(2026, 2, 1))
+    jan = _one(records, "ttc", "ridership", date(2026, 1, 1))
+    feb = _one(records, "ttc", "ridership", date(2026, 2, 1))
     assert jan.quality == "verified"
     assert feb.quality == "preliminary"
 

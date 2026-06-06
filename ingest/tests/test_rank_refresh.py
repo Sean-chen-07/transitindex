@@ -105,13 +105,13 @@ def test_compute_ranks_empty():
 
 def test_refresh_ranks_higher_is_better(repo):
     pid = _period(repo)
-    _put(repo, "ttc", "annual_ridership", pid, "300")
-    _put(repo, "stm", "annual_ridership", pid, "100")
-    _put(repo, "translink", "annual_ridership", pid, "200")
+    _put(repo, "ttc", "ridership", pid, "300")
+    _put(repo, "stm", "ridership", pid, "100")
+    _put(repo, "translink", "ridership", pid, "200")
 
-    refresh_ranks(repo, "annual_ridership", pid)
+    refresh_ranks(repo, "ridership", pid)
 
-    rows = _ranks(repo, "annual_ridership", pid, "all")
+    rows = _ranks(repo, "ridership", pid, "all")
     by_agency = {r.agency_id: r for r in rows}
     # highest ridership -> rank 1
     assert by_agency[repo.agency_id("ttc")].rank == 1
@@ -155,13 +155,13 @@ def test_refresh_ranks_neutral_direction(repo):
 
 def test_refresh_ranks_excludes_non_comparable(repo):
     pid = _period(repo)
-    _put(repo, "ttc", "annual_ridership", pid, "300")
-    _put(repo, "stm", "annual_ridership", pid, "200")
-    _put(repo, "translink", "annual_ridership", pid, "999", comparable=False)
+    _put(repo, "ttc", "ridership", pid, "300")
+    _put(repo, "stm", "ridership", pid, "200")
+    _put(repo, "translink", "ridership", pid, "999", comparable=False)
 
-    refresh_ranks(repo, "annual_ridership", pid)
+    refresh_ranks(repo, "ridership", pid)
 
-    rows = _ranks(repo, "annual_ridership", pid, "all")
+    rows = _ranks(repo, "ridership", pid, "all")
     agency_ids = {r.agency_id for r in rows}
     # non-comparable translink absent; denominator reflects only the 2 included
     assert repo.agency_id("translink") not in agency_ids
@@ -172,12 +172,12 @@ def test_refresh_ranks_excludes_non_comparable(repo):
 def test_refresh_ranks_missing_agency_absent(repo):
     pid = _period(repo)
     # only ttc and stm have a value for this period; the other 8 agencies do not
-    _put(repo, "ttc", "annual_ridership", pid, "300")
-    _put(repo, "stm", "annual_ridership", pid, "200")
+    _put(repo, "ttc", "ridership", pid, "300")
+    _put(repo, "stm", "ridership", pid, "200")
 
-    refresh_ranks(repo, "annual_ridership", pid)
+    refresh_ranks(repo, "ridership", pid)
 
-    rows = _ranks(repo, "annual_ridership", pid, "all")
+    rows = _ranks(repo, "ridership", pid, "all")
     assert {r.agency_id for r in rows} == {
         repo.agency_id("ttc"),
         repo.agency_id("stm"),
@@ -194,14 +194,14 @@ def test_refresh_ranks_ignores_other_periods(repo):
         date(2023, 12, 31),
         "2023",
     )
-    _put(repo, "ttc", "annual_ridership", pid, "300")
-    _put(repo, "stm", "annual_ridership", pid, "200")
+    _put(repo, "ttc", "ridership", pid, "300")
+    _put(repo, "stm", "ridership", pid, "200")
     # translink only has a 2023 value -> must be absent from 2024 ranks
-    _put(repo, "translink", "annual_ridership", other_pid, "999")
+    _put(repo, "translink", "ridership", other_pid, "999")
 
-    refresh_ranks(repo, "annual_ridership", pid)
+    refresh_ranks(repo, "ridership", pid)
 
-    rows = _ranks(repo, "annual_ridership", pid, "all")
+    rows = _ranks(repo, "ridership", pid, "all")
     assert repo.agency_id("translink") not in {r.agency_id for r in rows}
     assert len(rows) == 2
 
@@ -212,15 +212,15 @@ def test_refresh_ranks_ignores_other_periods(repo):
 def test_refresh_ranks_subdivision_groups_isolated(repo):
     pid = _period(repo)
     # ON: ttc, oc-transpo, miway ; AB: calgary-transit, edmonton-ets
-    _put(repo, "ttc", "annual_ridership", pid, "300")
-    _put(repo, "oc-transpo", "annual_ridership", pid, "100")
-    _put(repo, "miway", "annual_ridership", pid, "200")
-    _put(repo, "calgary-transit", "annual_ridership", pid, "50")
-    _put(repo, "edmonton-ets", "annual_ridership", pid, "80")
+    _put(repo, "ttc", "ridership", pid, "300")
+    _put(repo, "oc-transpo", "ridership", pid, "100")
+    _put(repo, "miway", "ridership", pid, "200")
+    _put(repo, "calgary-transit", "ridership", pid, "50")
+    _put(repo, "edmonton-ets", "ridership", pid, "80")
 
-    refresh_ranks(repo, "annual_ridership", pid)
+    refresh_ranks(repo, "ridership", pid)
 
-    sub_rows = _ranks(repo, "annual_ridership", pid, "subdivision")
+    sub_rows = _ranks(repo, "ridership", pid, "subdivision")
     by_agency = {r.agency_id: r for r in sub_rows}
 
     # Ontario group (3 agencies): ttc 1, miway 2, oc-transpo 3, denom 3
@@ -238,12 +238,12 @@ def test_refresh_ranks_subdivision_groups_isolated(repo):
 
 def test_refresh_ranks_writes_both_comparison_sets(repo):
     pid = _period(repo)
-    _put(repo, "ttc", "annual_ridership", pid, "300")
-    _put(repo, "calgary-transit", "annual_ridership", pid, "100")
+    _put(repo, "ttc", "ridership", pid, "300")
+    _put(repo, "calgary-transit", "ridership", pid, "100")
 
-    refresh_ranks(repo, "annual_ridership", pid)
+    refresh_ranks(repo, "ridership", pid)
 
-    metric_id = repo.metric_id("annual_ridership")
+    metric_id = repo.metric_id("ridership")
     assert (metric_id, pid, "all") in repo._ranks
     assert (metric_id, pid, "subdivision") in repo._ranks
     # ttc (ON) and calgary (AB) each alone in their subdivision -> rank 1
@@ -256,13 +256,13 @@ def test_refresh_ranks_writes_both_comparison_sets(repo):
 def test_refresh_ranks_ignores_other_scope(repo):
     """Only the matched service_scope participates (single-scope ranking)."""
     pid = _period(repo)
-    _put(repo, "ttc", "annual_ridership", pid, "300", scope="system_wide")
-    _put(repo, "stm", "annual_ridership", pid, "200", scope="system_wide")
+    _put(repo, "ttc", "ridership", pid, "300", scope="system_wide")
+    _put(repo, "stm", "ridership", pid, "200", scope="system_wide")
     # a conventional-scope row for translink must not enter the system_wide rank
-    _put(repo, "translink", "annual_ridership", pid, "999", scope="conventional")
+    _put(repo, "translink", "ridership", pid, "999", scope="conventional")
 
-    refresh_ranks(repo, "annual_ridership", pid)
+    refresh_ranks(repo, "ridership", pid)
 
-    rows = _ranks(repo, "annual_ridership", pid, "all")
+    rows = _ranks(repo, "ridership", pid, "all")
     assert repo.agency_id("translink") not in {r.agency_id for r in rows}
     assert len(rows) == 2

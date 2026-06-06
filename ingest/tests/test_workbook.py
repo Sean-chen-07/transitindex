@@ -75,7 +75,7 @@ def test_derived_columns_hold_formulas_not_numbers(repo, tmp_path):
         header.index(workbook.DISPLAY_NAMES["operating_revenue"]) + 1
     )
     rid_letter = openpyxl.utils.get_column_letter(
-        header.index(workbook.DISPLAY_NAMES["annual_ridership"]) + 1
+        header.index(workbook.DISPLAY_NAMES["ridership"]) + 1
     )
 
     # Every derived column in the first data row (row 2) is a formula.
@@ -84,7 +84,7 @@ def test_derived_columns_hold_formulas_not_numbers(repo, tmp_path):
         value = ws.cell(row=2, column=col).value
         assert isinstance(value, str) and value.startswith("=")
 
-    # average_fare = operating_revenue / annual_ridership: the formula must
+    # average_fare = operating_revenue / ridership: the formula must
     # reference both source columns in the same row.
     fare_formula = ws.cell(row=2, column=fare_col).value
     assert f"{rev_letter}2" in fare_formula
@@ -104,7 +104,7 @@ def test_round_trip_imports_sourced_and_recomputes_derived(repo, tmp_path):
     header = [cell.value for cell in ws[1]]
     agency_col = 1
     rev_col = header.index(workbook.DISPLAY_NAMES["operating_revenue"]) + 1
-    rid_col = header.index(workbook.DISPLAY_NAMES["annual_ridership"]) + 1
+    rid_col = header.index(workbook.DISPLAY_NAMES["ridership"]) + 1
 
     # Find the TTC and Metrolinx data rows (year is 2023 for all rows here).
     rows_by_agency = {}
@@ -129,9 +129,9 @@ def test_round_trip_imports_sourced_and_recomputes_derived(repo, tmp_path):
     from decimal import Decimal
 
     assert _current(repo, "ttc", 2023, "operating_revenue").value == Decimal("2500")
-    assert _current(repo, "ttc", 2023, "annual_ridership").value == Decimal("1000")
+    assert _current(repo, "ttc", 2023, "ridership").value == Decimal("1000")
 
-    # average_fare = operating_revenue / annual_ridership was recomputed & stored.
+    # average_fare = operating_revenue / ridership was recomputed & stored.
     ttc_fare = _current(repo, "ttc", 2023, "average_fare")
     assert ttc_fare is not None
     assert ttc_fare.value == Decimal("2.5")  # 2500 / 1000
@@ -149,7 +149,7 @@ def test_derived_columns_are_not_imported_as_sourced(repo, tmp_path):
     ws = wb[workbook._SHEET_DATA]
     header = [cell.value for cell in ws[1]]
     rev_col = header.index(workbook.DISPLAY_NAMES["operating_revenue"]) + 1
-    rid_col = header.index(workbook.DISPLAY_NAMES["annual_ridership"]) + 1
+    rid_col = header.index(workbook.DISPLAY_NAMES["ridership"]) + 1
     fare_col = header.index(workbook.DISPLAY_NAMES["average_fare"]) + 1
 
     ttc_row = None
@@ -181,7 +181,7 @@ def test_fiscal_mapping_metrolinx_imports_under_fiscal_period(repo, tmp_path):
     wb = openpyxl.load_workbook(out, data_only=False)
     ws = wb[workbook._SHEET_DATA]
     header = [cell.value for cell in ws[1]]
-    rid_col = header.index(workbook.DISPLAY_NAMES["annual_ridership"]) + 1
+    rid_col = header.index(workbook.DISPLAY_NAMES["ridership"]) + 1
 
     mx_row = None
     for r in range(2, ws.max_row + 1):
@@ -201,6 +201,6 @@ def test_fiscal_mapping_metrolinx_imports_under_fiscal_period(repo, tmp_path):
 
     from decimal import Decimal
 
-    value = _current(repo, "metrolinx", 2023, "annual_ridership")
+    value = _current(repo, "metrolinx", 2023, "ridership")
     assert value is not None
     assert value.value == Decimal("5000")

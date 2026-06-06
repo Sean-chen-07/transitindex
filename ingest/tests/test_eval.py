@@ -60,7 +60,7 @@ def _mostly_correct_scenario():
     only / subject to restatement" blended figure.
     """
     return [
-        _ev("annual_ridership", "256900000", "count", "0.97"),
+        _ev("ridership", "256900000", "count", "0.97"),
         _ev("operating_revenue", "1310000000", "CAD", "0.95"),
         _ev("operating_expenses", "2240000000", "CAD", "0.95"),
         _ev("revenue_service_hours", "9850000", "hours", "0.92"),
@@ -95,7 +95,7 @@ def test_mostly_correct_scenario_scores_above_threshold():
     otp = next(r for r in report.rows if r.metric_code == "on_time_performance")
     assert otp.should_flag and otp.flagged and not otp.within_tolerance
     # ...and a clean row is scored as correct.
-    ridership = next(r for r in report.rows if r.metric_code == "annual_ridership")
+    ridership = next(r for r in report.rows if r.metric_code == "ridership")
     assert ridership.matched and not ridership.flagged and ridership.within_tolerance
 
 
@@ -130,7 +130,7 @@ def test_regression_unflagged_wrong_value_is_penalized():
     report = run_eval(
         GOLD,
         [
-            ExtractedAssessment("annual_ridership", Decimal("999999999")),  # clean + wrong
+            ExtractedAssessment("ridership", Decimal("999999999")),  # clean + wrong
             ExtractedAssessment("operating_revenue", Decimal("1310000000")),  # clean + right
         ],
     )

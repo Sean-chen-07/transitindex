@@ -28,7 +28,7 @@ def make_record():
     def _make(**overrides) -> MetricValueRecord:
         defaults = dict(
             agency_slug="ttc",
-            metric_code="annual_ridership",
+            metric_code="ridership",
             period_type="monthly",
             period_start=date(2026, 3, 1),
             period_end=date(2026, 3, 31),
@@ -55,5 +55,5 @@ def make_record():
 
 @pytest.fixture
 def sample_record(make_record) -> MetricValueRecord:
-    """A single valid MetricValueRecord (TTC annual_ridership, Mar 2026)."""
+    """A single valid MetricValueRecord (TTC ridership, Mar 2026)."""
     return make_record()

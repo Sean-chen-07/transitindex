@@ -79,13 +79,13 @@ def test_cross_source_disagreement_no_crosscheck_is_silent(make_record):
 
 
 def test_unit_mismatch_fires_on_wrong_unit(make_record):
-    # annual_ridership expects unit "count"; record claims "%".
-    rec = make_record(metric_code="annual_ridership", unit="%", value=Decimal("100"))
+    # ridership expects unit "count"; record claims "%".
+    rec = make_record(metric_code="ridership", unit="%", value=Decimal("100"))
     assert flags.unit_mismatch(rec) == UNIT_MISMATCH
 
 
 def test_unit_mismatch_silent_on_correct_unit(make_record):
-    rec = make_record(metric_code="annual_ridership", unit="count", value=Decimal("100"))
+    rec = make_record(metric_code="ridership", unit="count", value=Decimal("100"))
     assert flags.unit_mismatch(rec) is None
 
 
@@ -197,7 +197,7 @@ def test_sum_mismatch_no_anchor_is_silent(make_record):
 def test_validate_composes_and_dedups(make_record):
     # Wrong unit AND a big crosscheck gap -> both row-level flags, deduped order.
     rec = make_record(
-        metric_code="annual_ridership",
+        metric_code="ridership",
         unit="%",
         value=Decimal("200"),
         crosscheck_value=Decimal("100"),
@@ -210,7 +210,7 @@ def test_validate_composes_and_dedups(make_record):
 
 def test_validate_clean_record_has_no_flags(make_record):
     rec = make_record(
-        metric_code="annual_ridership",
+        metric_code="ridership",
         unit="count",
         value=Decimal("100"),
         crosscheck_value=Decimal("100"),

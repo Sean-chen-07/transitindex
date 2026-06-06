@@ -51,10 +51,10 @@ def loaded_repo() -> InMemoryRepository:
     """A repo with two distinct 'pending' rows staged."""
     repo = InMemoryRepository()
     doc_id = repo.get_or_create_source_document(
-        _record("annual_ridership", "1").source, repo.agency_id("ttc")
+        _record("ridership", "1").source, repo.agency_id("ttc")
     )
     repo.insert_pending_value(
-        _record("annual_ridership", "1234567"), source_document_id=doc_id
+        _record("ridership", "1234567"), source_document_id=doc_id
     )
     repo.insert_pending_value(
         _record("operating_revenue", "999"), source_document_id=doc_id, flags=["yoy_spike"]
@@ -78,7 +78,7 @@ def test_list_returns_pending_rows(client):
     rows = client.get("/pending").json()
     assert len(rows) == 2
     codes = {r["metric_code"] for r in rows}
-    assert codes == {"annual_ridership", "operating_revenue"}
+    assert codes == {"ridership", "operating_revenue"}
     spike = next(r for r in rows if r["metric_code"] == "operating_revenue")
     assert spike["flags"] == ["yoy_spike"]
     assert spike["agency_slug"] == "ttc"
@@ -100,7 +100,7 @@ def test_unknown_pending_is_404(client):
 def test_pending_value_absent_until_approved(loaded_repo, client):
     """Invariant #1 over HTTP: nothing in metric_values until approve."""
     pid = client.get("/pending").json()[0]["id"]
-    metric_id = loaded_repo.metric_id("annual_ridership")
+    metric_id = loaded_repo.metric_id("ridership")
     agency_id = loaded_repo.agency_id("ttc")
     pending = loaded_repo.get_pending_value(pid)
     assert (
@@ -127,12 +127,12 @@ def test_approve_promotes_exactly_one_and_flips_status(loaded_repo, client):
 
     promoted = loaded_repo._values[mv_id]  # noqa: SLF001
     assert promoted.is_current is True
-    assert promoted.metric_id == loaded_repo.metric_id("annual_ridership")
+    assert promoted.metric_id == loaded_repo.metric_id("ridership")
 
     # Exactly one current row for the tuple, and it is reachable.
     current = loaded_repo.get_current_metric_value(
         loaded_repo.agency_id("ttc"),
-        loaded_repo.metric_id("annual_ridership"),
+        loaded_repo.metric_id("ridership"),
         pending.reporting_period_id,
         None,
         "system_wide",
