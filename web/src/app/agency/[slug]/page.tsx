@@ -62,7 +62,9 @@ export default async function AgencyDetailPage({
           {summary.shortName ?? summary.legalName}
         </h1>
         <p className="mt-1 text-ink-2">
-          {summary.legalName} · {summary.provinceName}
+          {summary.shortName && summary.shortName !== summary.legalName
+            ? `${summary.legalName} · ${summary.provinceName}`
+            : summary.provinceName}
         </p>
         <div className="mt-2 flex flex-wrap gap-1">
           {summary.modes.map((m) => (

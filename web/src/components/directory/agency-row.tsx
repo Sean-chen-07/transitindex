@@ -110,7 +110,9 @@ export function AgencyRow({ item, ranks }: { item: AgencyListItem; ranks: Agency
             <span className="block truncate font-semibold text-ink group-hover:underline">
               {item.shortName ?? item.legalName}
             </span>
-            <span className="block truncate text-xs text-ink-2">{item.legalName}</span>
+            {item.shortName && item.shortName !== item.legalName && (
+              <span className="block truncate text-xs text-ink-2">{item.legalName}</span>
+            )}
           </span>
         </Link>
 
