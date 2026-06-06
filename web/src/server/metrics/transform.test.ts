@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { toFreeView, toPaidView, type RawMetricRow } from "@/server/metrics/transform";
 
 const RAW: RawMetricRow = {
-  metricCode: "monthly_ridership",
-  displayName: "Monthly Ridership",
+  metricCode: "ridership",
+  displayName: "Ridership",
   unit: "count",
   higherIsBetter: true,
   serviceScope: "total",
