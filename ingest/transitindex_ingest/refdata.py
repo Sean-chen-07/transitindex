@@ -25,6 +25,22 @@ MODES: tuple[str, ...] = (
     "on_demand",
 )
 
+# Per-mode capacity weight for the aggregated `fleet_capacity` metric
+# (Σ capacity_weight × fleet_size(mode)). Mirrors db/seeds/01_modes.sql +
+# db/migrations/015_mode_capacity_weight.sql. Modes absent here (ferry,
+# paratransit, on_demand) keep a NULL weight and are excluded from the aggregation.
+MODE_CAPACITY_WEIGHT: Mapping[str, int] = MappingProxyType(
+    {
+        "bus": 1,
+        "streetcar": 2,
+        "light_rail": 3,
+        "subway": 4,
+        "commuter_rail": 5,
+        "brt": 1,
+        "trolleybus": 1,
+    }
+)
+
 # --- 10 agencies (db/seeds/02_agencies.sql + 03_agency_modes.sql) ------------
 # slug -> subdivision (province), fiscal_year_end_month, primary_modes.
 
@@ -118,7 +134,7 @@ AGENCIES: Mapping[str, Mapping] = MappingProxyType(
     }
 )
 
-# --- 31 metrics (db/seeds/04_metrics.sql) ------------------------------------
+# --- 32 metrics (db/seeds/04_metrics.sql) ------------------------------------
 # code -> unit, unit_type, is_derived, formula (None unless derived),
 # higher_is_better (None = neutral). Insertion order preserved.
 # Ridership is ONE metric; monthly vs annual is the reporting period's
@@ -203,6 +219,10 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         "accessible_fleet_pct": MappingProxyType(
             {"unit": "%", "unit_type": "ratio", "is_derived": False,
              "formula": None, "higher_is_better": True}
+        ),
+        "fleet_capacity": MappingProxyType(
+            {"unit": "count", "unit_type": "count", "is_derived": False,
+             "formula": None, "higher_is_better": None}
         ),
         "capital_expenditure": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": False,

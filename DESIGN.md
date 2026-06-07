@@ -140,10 +140,10 @@ The 2026-05-31 "one unified table" note flattened the home everywhere and lost t
 **"Mini Motorway"-soft card** thesis (§"Design thesis", §"Shape & space", Component #1).
 Restored via `/design-review` as a **card grid** (user direction), reconciling both — still
 every agency, no per-province grouping, but each is now a self-contained mini-page card:
-- **`sm`+ (tablet/desktop):** a responsive **grid** (`sm:grid-cols-2 xl:grid-cols-3`) of
+- **`sm`+ (tablet/desktop):** a responsive **grid** (`sm:grid-cols-2 lg:grid-cols-3`) of
   vertical cards. Each card = name + province + mode chip (colour **and** label),
-  a fixed **6-metric rank grid** (ridership · revenue · farebox · cost/rider · service hrs ·
-  fleet — ordinals only, `—` until sourced), and a drill button ("View full data →", or
+  a fixed **6-metric rank grid** (ridership · on-time · cost/rider · subsidy/rider · revenue ·
+  fleet scale — ordinals only, `—` until sourced; chosen 2026-06-06/07, see notes below), and a drill button ("View full data →", or
   "Request this agency →" when unranked) to the detail page. `rounded-card` 18px, `shadow-soft`
   → `shadow-soft-hover`. This is the soft free mood.
 - **`< sm` (phones):** one compact, dense **list** (mode bar · name · province · up to two
@@ -154,3 +154,35 @@ every agency, no per-province grouping, but each is now a self-contained mini-pa
 "go deeper" now navigates to the detail page rather than expanding in the list. Free payload
 stays **rank-only** (no raw numbers reach the client); tokens and N<5 suppression unchanged.
 `agency-row.tsx` (the old expand row) was removed; see `agency-card.tsx` + `agency-list-row.tsx`.
+
+## Status update 2026-06-07 — card metric set finalized
+
+The card's six free metrics are **Ridership · On-time · Cost/rider · Subsidy/rider · Revenue ·
+Fleet scale** (`agency-card.tsx` `METRIC_SLOTS`) — a clean 3×2 grid. This supersedes the earlier
+ridership/revenue/**farebox**/cost-per-rider/service-hrs/**fleet** list, implemented before the set
+was chosen. Decisions (user-driven): **farebox** dropped (tells the same story as subsidy — pick
+one); raw **fleet size** dropped (a metro car and a bus each count as "1") and **replaced by
+"Fleet scale"** — a mode-weighted vehicle count (bus 1 · streetcar 2 · light-rail 3 · subway 4 ·
+commuter-rail 5; BRT/trolleybus 1; ferry/paratransit/on-demand excluded). Weights live on
+`core.modes.capacity_weight`; `fleet_capacity` is **`is_derived=false`** and its values are produced
+by the cross-mode `mode_weighted_fleet` aggregation (the period_rollup pattern, NOT a within-period
+equation), so it stays neutral — a "how big" number, no good/bad grade.
+
+A **safety/complaint 6th metric was investigated and rejected**: no national, standardized,
+agency-level source exists (US has the mandatory National Transit Database; Canada does not). The
+closest, StatCan police-reported crime (UCR), is by *census metropolitan area* — city-level not
+agency-level, big-CMAs only (N<5), crime-framed (clashes with the neutral-ordinal rule). Fleet
+scale was chosen instead: sourceable from annual reports and neutral.
+
+## Status update 2026-06-07 — per-agency calendar-year time-series template
+
+Storage stays **atomic** (one `core.metric_values` row per value, tagged by reporting period +
+mode) — the template is a **presentation/entry layer, not a storage change** (atomic storage is
+what preserves the freedom to re-arrange later; per-agency tables would break cross-agency
+ranking). The data-entry workbook (`ingest/workbook.py`) is now **one tab per agency**, laid out by
+calendar year: `M1 M2 M3 Q1 … Q4 → YTD → Year`, where Q/YTD/Year are read-only computed roll-ups
+(Excel `SUM` formulas in-sheet; the authoritative DB roll-up is `jobs/rollup.py` →
+`calendar_rollup_metric`, which sums sourced months → quarter / YTD / annual_calendar, cited, never
+overwriting a sourced value). The detail page's **Trends tab**
+(`web/src/components/detail/trends-grid.tsx`, paid-only) renders the same grid. **Calendar year**
+(fiscal-only annual figures are shown separately, never forced into a calendar cell).

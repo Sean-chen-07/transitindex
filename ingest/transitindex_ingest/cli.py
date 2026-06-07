@@ -300,7 +300,7 @@ def cmd_pdf_smoke(args) -> int:
 
 
 def cmd_export_xlsx(args) -> int:
-    """Build the editable six-sheet .xlsx workbook (Monthly + Annual + Balance Sheet)."""
+    """Build the editable per-agency time-series .xlsx workbook (one tab per agency)."""
     from . import workbook
 
     repo, ephemeral = _build_repo()
@@ -311,9 +311,8 @@ def cmd_export_xlsx(args) -> int:
 
     n_years = len(summary["years"])
     print(f"workbook      : {summary['path']}")
-    print(f"agencies      : {summary['agencies']} x {n_years} year(s)")
-    print(f"rows          : {summary['monthly_rows']} Monthly, {summary['annual_rows']} Annual, "
-          f"{summary['balance_rows']} Balance Sheet")
+    print(f"agencies      : {summary['agencies']} tab(s) x {n_years} year(s)")
+    print(f"per tab       : {summary['metric_rows']} metric rows + {summary['fleet_modes']} fleet modes")
     print(f"filled cells  : {summary['filled_cells']} (pre-filled from the database)")
     print(
         "next step     : Open it, fill the white cells, then: "

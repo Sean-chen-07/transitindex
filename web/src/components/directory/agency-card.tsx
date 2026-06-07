@@ -14,16 +14,17 @@ function modeGroup(modes: string[]): { cls: string; label: string } {
   return { cls: "bg-mode-yellow", label: "Bus" };
 }
 
-// The six free "fundamentals". Free payload is rank-only — these are ORDINALS, never raw
-// numbers (raw values live behind the gate on the detail page). Ridership is one metric;
-// the rank job picks the latest comparable period (monthly/annual) for it.
+// The free "fundamentals" (chosen in the 2026-06-06 design review). Free payload is rank-only
+// — these are ORDINALS, never raw numbers (raw values live behind the gate on the detail page).
+// Farebox (redundant with subsidy) was dropped; the 6 slots fill the grid-cols-3 grid as a
+// clean 3×2.
 const METRIC_SLOTS: { label: string; codes: string[] }[] = [
   { label: "Ridership", codes: ["ridership"] },
-  { label: "Revenue", codes: ["operating_revenue"] },
-  { label: "Farebox", codes: ["farebox_recovery_ratio"] },
+  { label: "On-time", codes: ["on_time_performance"] },
   { label: "Cost / rider", codes: ["cost_per_rider"] },
-  { label: "Service hrs", codes: ["revenue_service_hours"] },
-  { label: "Fleet", codes: ["fleet_size"] },
+  { label: "Subsidy / rider", codes: ["subsidy_per_rider"] },
+  { label: "Revenue", codes: ["operating_revenue"] },
+  { label: "Fleet scale", codes: ["fleet_capacity"] },
 ];
 
 function rankFor(ranks: AgencyRank[], codes: string[]): string | null {
@@ -38,7 +39,7 @@ function rankFor(ranks: AgencyRank[], codes: string[]): string | null {
 
 /**
  * One agency as a vertical "mini page" card for the grid directory: name + province + mode,
- * a fixed six-metric rank grid (ordinals only, "—" until sourced), and a drill-in button to
+ * a fixed rank grid (ordinals only, "—" until sourced), and a drill-in button to
  * the detail page. Crawlable: name + button are real <Link>s in the server HTML.
  */
 export function AgencyCard({

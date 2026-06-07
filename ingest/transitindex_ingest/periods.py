@@ -172,3 +172,162 @@ def roll_up(
     if k == 12:
         return Rollup(annual_period(agency_slug, year), total, True, 12, indices)
     return Rollup(ytd_period(agency_slug, year, k), total, False, k, indices)
+
+
+# --- calendar-year rollup (month/quarter -> quarter, annual_calendar, ytd) ---
+#
+# A second, CALENDAR-only family: it sums lower-granularity sourced values within
+# a single calendar year into the higher-granularity calendar periods. Used for
+# every agency regardless of its fiscal year-end -- a calendar value is NEVER
+# synthesized from fiscal-year inputs, so this stays strictly Jan..Dec.
+
+_MONTHS_OF_QUARTER = {q: ((q - 1) * 3 + 1, (q - 1) * 3 + 2, (q - 1) * 3 + 3) for q in (1, 2, 3, 4)}
+
+
+def calendar_annual_period(year: int) -> Period:
+    """The calendar-year period (Jan 1 .. Dec 31), label e.g. '2024'.
+
+    Distinct from `annual_period`, which returns an annual_fiscal period for
+    fiscal agencies -- this is always the calendar year."""
+    return Period("annual_calendar", date(year, 1, 1), date(year, 12, 31), str(year))
+
+
+def calendar_ytd_period(year: int, through_month: int) -> Period:
+    """A calendar year-to-date period covering Jan .. `through_month` (1..11).
+
+    period_type='ytd'; never ranked against a full year. Label e.g.
+    '2025 YTD (Jan–Aug)'. through_month==12 would be a full year, so it is rejected."""
+    if not 1 <= through_month <= 11:
+        raise ValueError(f"through_month must be 1..11, got {through_month}")
+    end = date(year, through_month, monthrange(year, through_month)[1])
+    label = f"{year} YTD (Jan–{_MONTH_ABBR[through_month - 1]})"
+    return Period("ytd", date(year, 1, 1), end, label)
+
+
+@dataclass(frozen=True)
+class CalendarRollup:
+    """One derivable calendar period: its `period`, summed `value`, and the
+    component source keys it summed (so the job can cite the exact input rows).
+
+    `inputs` is a tuple of ('month', m) / ('quarter', q) keys, in calendar order.
+    `complete` is True for a full annual_calendar or a sourced-quarter-complete
+    quarter (used only to set comparable_flag; ytd is always partial)."""
+
+    period: Period
+    value: Decimal
+    inputs: tuple[tuple[str, int], ...]
+    complete: bool
+
+
+def _sum_inputs(
+    keys: tuple[tuple[str, int], ...],
+    monthly: Mapping[int, Decimal],
+    quarterly: Mapping[int, Decimal],
+) -> Decimal:
+    src = {"month": monthly, "quarter": quarterly}
+    return sum((src[kind][n] for kind, n in keys), Decimal(0))
+
+
+def plan_calendar_rollups(
+    year: int,
+    monthly: Mapping[int, Decimal],
+    quarterly: Mapping[int, Decimal],
+) -> list[CalendarRollup]:
+    """Plan the calendar quarter / annual / ytd values derivable from sourced
+    month and quarter values, summing WITHIN the calendar `year`.
+
+    `monthly` maps calendar month (1..12) -> value; `quarterly` maps calendar
+    quarter (1..4) -> value. Returns one `CalendarRollup` per derivable target:
+
+      - quarter = sum of its 3 calendar months (only when ALL three are present);
+      - annual_calendar = sum of 12 months, or of 4 quarters when monthly is
+        absent (prefers the finer monthly grain when both are available);
+      - ytd = running sum of the calendar year's months to date (the contiguous
+        run from January), or of the whole quarters to date when monthly is absent.
+
+    Pure arithmetic. It never fabricates a missing input and never decides what to
+    WRITE -- the caller skips a target that is itself already sourced (and instead
+    cross-checks it) and only writes into empty slots."""
+    out: list[CalendarRollup] = []
+
+    # Quarters: derivable only from a complete set of their 3 calendar months.
+    derivable_quarters: set[int] = set()
+    for q in (1, 2, 3, 4):
+        ms = _MONTHS_OF_QUARTER[q]
+        if all(m in monthly for m in ms):
+            keys = tuple(("month", m) for m in ms)
+            out.append(
+                CalendarRollup(
+                    quarterly_period(year, q),
+                    _sum_inputs(keys, monthly, quarterly),
+                    keys,
+                    complete=True,
+                )
+            )
+            derivable_quarters.add(q)
+
+    # Available quarter grain = sourced quarters ∪ quarters we can derive from months.
+    quarter_keys: dict[int, tuple[tuple[str, int], ...]] = {}
+    for q in (1, 2, 3, 4):
+        if all(m in monthly for m in _MONTHS_OF_QUARTER[q]):
+            quarter_keys[q] = tuple(("month", m) for m in _MONTHS_OF_QUARTER[q])
+        elif q in quarterly:
+            quarter_keys[q] = (("quarter", q),)
+
+    # Annual: prefer 12 months; else 4 derivable/sourced quarters.
+    if all(m in monthly for m in range(1, 13)):
+        keys = tuple(("month", m) for m in range(1, 13))
+        out.append(
+            CalendarRollup(
+                calendar_annual_period(year),
+                _sum_inputs(keys, monthly, quarterly),
+                keys,
+                complete=True,
+            )
+        )
+    elif all(q in quarter_keys for q in (1, 2, 3, 4)):
+        keys = tuple(k for q in (1, 2, 3, 4) for k in quarter_keys[q])
+        out.append(
+            CalendarRollup(
+                calendar_annual_period(year),
+                _sum_inputs(keys, monthly, quarterly),
+                keys,
+                complete=True,
+            )
+        )
+
+    # YTD: the contiguous run from January. Prefer the monthly grain; fall back to
+    # whole quarters when no month is present. Only emit a PARTIAL ytd (< full year).
+    month_run = 0
+    for m in range(1, 13):
+        if m not in monthly:
+            break
+        month_run = m
+    if 1 <= month_run <= 11:
+        keys = tuple(("month", m) for m in range(1, month_run + 1))
+        out.append(
+            CalendarRollup(
+                calendar_ytd_period(year, month_run),
+                _sum_inputs(keys, monthly, quarterly),
+                keys,
+                complete=False,
+            )
+        )
+    elif month_run == 0:
+        quarter_run = 0
+        for q in (1, 2, 3, 4):
+            if q not in quarter_keys:
+                break
+            quarter_run = q
+        if 1 <= quarter_run <= 3:  # 4 whole quarters is the full year, not a ytd
+            keys = tuple(k for q in range(1, quarter_run + 1) for k in quarter_keys[q])
+            out.append(
+                CalendarRollup(
+                    calendar_ytd_period(year, quarter_run * 3),
+                    _sum_inputs(keys, monthly, quarterly),
+                    keys,
+                    complete=False,
+                )
+            )
+
+    return out

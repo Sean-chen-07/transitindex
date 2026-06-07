@@ -1,4 +1,4 @@
-"""Round-trip tests for the period-aware six-sheet workbook.
+"""Round-trip tests for the per-agency calendar-year time-series workbook.
 
 Skipped unless BOTH openpyxl and PyYAML are installed (the workbook lazy-imports
 openpyxl for the spreadsheet and PyYAML via the data dictionary).
@@ -15,7 +15,7 @@ pytest.importorskip("yaml")
 
 from transitindex_ingest import workbook
 from transitindex_ingest.dictionary import load_dictionary
-from transitindex_ingest.periods import annual_period, monthly_period, quarterly_period
+from transitindex_ingest.periods import annual_period, monthly_period
 
 NAMES = {c: s.display_name for c, s in load_dictionary().items()}
 
@@ -27,123 +27,140 @@ def _load(path):
     return openpyxl.load_workbook(path, data_only=False)
 
 
-def _header(ws) -> list:
-    return [c.value for c in ws[1]]
+def _year_block(ws, year: int) -> int:
+    """1-based start column of `year`'s 18-col block on an agency tab."""
+    col = workbook._FIRST_YEAR_COL
+    while col <= ws.max_column:
+        raw = ws.cell(row=workbook._YEAR_HEADER_ROW, column=col).value
+        if raw is not None and int(raw) == year:
+            return col
+        col += workbook.YEAR_BLOCK_WIDTH
+    raise AssertionError(f"year block {year} not found")
 
 
-def _col_index(ws) -> dict:
-    """Header name -> 1-based column index."""
-    return {h: i + 1 for i, h in enumerate(_header(ws)) if h is not None}
-
-
-def _fill_row(ws, *, agency: str, period, updates: dict) -> int:
-    """Set `updates` (header name -> value) on the row matching (agency, period)."""
-    idx = _col_index(ws)
-    for r in range(2, ws.max_row + 1):
-        if ws.cell(row=r, column=1).value == agency and ws.cell(row=r, column=2).value == period:
-            for head, value in updates.items():
-                ws.cell(row=r, column=idx[head]).value = value
+def _row_for(ws, label: str) -> int:
+    """1-based row whose column-A label matches `label`."""
+    for r in range(workbook._FIRST_DATA_ROW, ws.max_row + 1):
+        if ws.cell(row=r, column=workbook._LABEL_COL).value == label:
             return r
-    raise AssertionError(f"row not found for {agency!r} / {period!r}")
+    raise AssertionError(f"row {label!r} not found")
 
 
-def _set_period(ws, *, agency: str, old_period, new_period) -> None:
-    """Overwrite the Period token on an (agency, old_period) row (e.g. -> quarterly)."""
-    for r in range(2, ws.max_row + 1):
-        if ws.cell(row=r, column=1).value == agency and ws.cell(row=r, column=2).value == old_period:
-            ws.cell(row=r, column=2).value = new_period
-            return
-    raise AssertionError(f"row not found for {agency!r} / {old_period!r}")
+def _set_month(ws, *, metric_code: str, year: int, month: int, value) -> None:
+    row = _row_for(ws, NAMES[metric_code])
+    ystart = _year_block(ws, year)
+    off = workbook._MONTH_OFFSETS[month - 1]
+    ws.cell(row=row, column=ystart + off).value = value
 
 
-def _fill_monthly(ws, *, agency: str, year: int, ridership=None, revenue=None) -> None:
-    """Set ridership / operating-revenue for every (agency, year) month row."""
-    idx = _col_index(ws)
-    for r in range(2, ws.max_row + 1):
-        if ws.cell(row=r, column=1).value == agency and ws.cell(row=r, column=2).value == year:
-            if ridership is not None:
-                ws.cell(row=r, column=idx[NAMES["ridership"]]).value = ridership
-            if revenue is not None:
-                ws.cell(row=r, column=idx[NAMES["operating_revenue"]]).value = revenue
+def _fill_year_of_months(ws, *, metric_code: str, year: int, value) -> None:
+    for m in range(1, 13):
+        _set_month(ws, metric_code=metric_code, year=year, month=m, value=value)
 
 
-def _current(repo, agency_slug, period, code):
-    """The current 'total' value for (agency, period, metric), or None."""
+def _set_year_cell(ws, *, label: str, year: int, value) -> None:
+    """Set the Year-column cell of the row labelled `label` for `year`."""
+    row = _row_for(ws, label)
+    ystart = _year_block(ws, year)
+    ws.cell(row=row, column=ystart + workbook._YEAR_OFFSET).value = value
+
+
+def _year_cell(ws, *, label: str, year: int):
+    row = _row_for(ws, label)
+    ystart = _year_block(ws, year)
+    return ws.cell(row=row, column=ystart + workbook._YEAR_OFFSET).value
+
+
+def _current(repo, agency_slug, period, code, mode_code=None):
+    """The current 'total' value for (agency, period, metric[, mode]), or None."""
     agency_id = repo.agency_id(agency_slug)
     pid = repo.get_or_create_reporting_period(
         period.period_type, period.start, period.end, period.label
     )
-    return repo.get_current_metric_value(agency_id, repo.metric_id(code), pid, None, "total")
+    mode_id = repo.mode_id(mode_code)
+    return repo.get_current_metric_value(agency_id, repo.metric_id(code), pid, mode_id, "total")
 
 
 # --- structure ---------------------------------------------------------------
 
 
-def test_export_creates_six_sheets_with_headers(repo, tmp_path):
+def test_export_creates_one_tab_per_agency(repo, tmp_path):
     out = str(tmp_path / "wb.xlsx")
     summary = workbook.export_workbook(repo, out, [2023, 2024])
 
     assert summary["agencies"] == 21
-    assert summary["monthly_rows"] == 21 * 2 * 12
-    assert summary["annual_rows"] == 21 * 2
+    assert summary["fleet_modes"] == 5
+    assert summary["metric_rows"] == len(workbook.METRIC_ROWS)
 
     wb = _load(out)
-    assert wb.sheetnames == [
-        workbook.SHEET_HOWTO, workbook.SHEET_DICT, workbook.SHEET_MONTHLY,
-        workbook.SHEET_ANNUAL, workbook.SHEET_BALANCE, workbook.SHEET_GAPS,
-    ]
-    assert _header(wb[workbook.SHEET_MONTHLY]) == [
-        "Agency", "Year", "Month", NAMES["ridership"], NAMES["operating_revenue"],
-    ]
-    assert _header(wb[workbook.SHEET_ANNUAL]) == (
-        ["Agency", "Period"] + [NAMES[c] for c in workbook.ANNUAL_COLUMNS]
-    )
-    assert _header(wb[workbook.SHEET_BALANCE]) == (
-        ["Agency", "Period"]
-        + [NAMES[c] for c in workbook.BALANCE_SHEET_SOURCED]
-        + [NAMES["net_debt"], "Check: Assets", "Check: Net debt"]
+    # Two reference tabs, then one tab per agency in AGENCY_NAMES order.
+    assert wb.sheetnames == (
+        [workbook.SHEET_HOWTO, workbook.SHEET_DICT] + list(workbook.AGENCY_NAMES.values())
     )
 
 
-def test_dictionary_lists_all_31_metrics_with_routing(repo, tmp_path):
+def test_agency_tab_has_year_blocks_and_month_subheaders(repo, tmp_path):
+    out = str(tmp_path / "wb.xlsx")
+    workbook.export_workbook(repo, out, [2023, 2024])
+    ws = _load(out)["TTC"]
+
+    # Two year-block headers.
+    assert ws.cell(row=workbook._YEAR_HEADER_ROW, column=_year_block(ws, 2023)).value == 2023
+    assert ws.cell(row=workbook._YEAR_HEADER_ROW, column=_year_block(ws, 2024)).value == 2024
+
+    # The 18 within-year sub-headers, in order.
+    ystart = _year_block(ws, 2023)
+    labels = [
+        ws.cell(row=workbook._SUBHEADER_ROW, column=ystart + off).value
+        for off in range(workbook.YEAR_BLOCK_WIDTH)
+    ]
+    assert labels == [
+        "Jan", "Feb", "Mar", "Q1", "Apr", "May", "Jun", "Q2",
+        "Jul", "Aug", "Sep", "Q3", "Oct", "Nov", "Dec", "Q4", "YTD", "Year",
+    ]
+
+
+def test_quarter_year_and_derived_cells_are_formulas(repo, tmp_path):
+    out = str(tmp_path / "wb.xlsx")
+    workbook.export_workbook(repo, out, [2023])
+    ws = _load(out)["TTC"]
+    ystart = _year_block(ws, 2023)
+
+    rid_row = _row_for(ws, NAMES["ridership"])
+    # Q1 and Year on a monthly metric are live SUM formulas.
+    q1 = ws.cell(row=rid_row, column=ystart + workbook._QUARTER_OFFSETS[0]).value
+    yr = ws.cell(row=rid_row, column=ystart + workbook._YEAR_OFFSET).value
+    assert isinstance(q1, str) and q1.startswith("=") and "SUM(" in q1
+    assert isinstance(yr, str) and yr.startswith("=") and "SUM(" in yr
+
+    # average_fare's Year cell is a live ratio formula (numerator / denominator).
+    af = _year_cell(ws, label=NAMES["average_fare"], year=2023)
+    assert isinstance(af, str) and af.startswith("=") and "/" in af
+
+
+def test_fleet_block_present_with_modes_and_scale(repo, tmp_path):
+    out = str(tmp_path / "wb.xlsx")
+    workbook.export_workbook(repo, out, [2023])
+    ws = _load(out)["TTC"]
+
+    for _mode, label in workbook.FLEET_MODES:
+        _row_for(ws, f"Fleet — {label}")  # raises if missing
+    scale = _year_cell(ws, label="Fleet scale", year=2023)
+    assert isinstance(scale, str) and scale.startswith("=")  # computed Fleet scale
+
+
+def test_dictionary_lists_all_metrics(repo, tmp_path):
     out = str(tmp_path / "wb.xlsx")
     workbook.export_workbook(repo, out, [2023])
     ws = _load(out)[workbook.SHEET_DICT]
 
-    assert _header(ws) == [
-        "Column", "Plain meaning", "Unit", "Type", "Formula",
-        "Native frequency", "Sheet",
+    assert [c.value for c in ws[1]] == [
+        "Column", "Plain meaning", "Unit", "Type", "Formula", "Native frequency",
     ]
-    assert ws.max_row - 1 == 31  # all metrics, including the 11 balance-sheet ones
-
-    # Routing columns send the user to the right tab.
+    assert ws.max_row - 1 == 32  # all metrics, including fleet_capacity + balance sheet
     by_name = {ws.cell(row=r, column=1).value: r for r in range(2, ws.max_row + 1)}
-    rid = by_name[NAMES["ridership"]]
-    assert ws.cell(row=rid, column=6).value == "Monthly"
-    assert ws.cell(row=rid, column=7).value == workbook.SHEET_MONTHLY
-    liab = by_name[NAMES["total_liabilities"]]
-    assert ws.cell(row=liab, column=7).value == workbook.SHEET_BALANCE
-
-
-def test_annual_derived_and_balance_checks_are_formulas(repo, tmp_path):
-    out = str(tmp_path / "wb.xlsx")
-    workbook.export_workbook(repo, out, [2023])
-    wb = _load(out)
-
-    annual = wb[workbook.SHEET_ANNUAL]
-    idx = _col_index(annual)
-    # Every derived ratio cell is a live formula referencing this row.
-    for code in workbook.ANNUAL_DERIVED_METRICS:
-        val = annual.cell(row=2, column=idx[NAMES[code]]).value
-        assert isinstance(val, str) and val.startswith("=")
-    af = annual.cell(row=2, column=idx[NAMES["average_fare"]]).value
-    assert "/" in af  # average fare references its numerator / denominator columns
-
-    balance = wb[workbook.SHEET_BALANCE]
-    bidx = _col_index(balance)
-    assert str(balance.cell(row=2, column=bidx[NAMES["net_debt"]]).value).startswith("=")
-    assert "MISMATCH" in balance.cell(row=2, column=bidx["Check: Assets"]).value
-    assert str(balance.cell(row=2, column=bidx["Check: Net debt"]).value).startswith("=")
+    assert ws.cell(row=by_name[NAMES["ridership"]], column=6).value == "Monthly"
+    assert ws.cell(row=by_name[NAMES["operating_expenses"]], column=6).value == "Annual"
 
 
 # --- round trips -------------------------------------------------------------
@@ -155,12 +172,16 @@ def test_monthly_round_trip_rolls_up_and_derives_average_fare(repo, tmp_path):
     workbook.export_workbook(repo, out, [2023])
 
     wb = _load(out)
-    _fill_monthly(wb[workbook.SHEET_MONTHLY], agency="TTC", year=2023, ridership=100, revenue=250)
+    ws = wb["TTC"]
+    _fill_year_of_months(ws, metric_code="ridership", year=2023, value=100)
+    _fill_year_of_months(ws, metric_code="operating_revenue", year=2023, value=250)
     wb.save(out)
 
     summary = workbook.import_workbook(repo, out)
     assert summary["promoted"] == 24  # 12 months x 2 metrics
-    assert summary["rolled"] == 2  # annual ridership + annual revenue
+    # 2 native annuals + the 4 calendar quarters each metric also rolls up (the
+    # annual_calendar slot is already filled by the native roll-up, so it is skipped).
+    assert summary["rolled"] == 10
 
     ap = annual_period("ttc", 2023)
     assert _current(repo, "ttc", ap, "ridership").value == Decimal("1200")
@@ -168,16 +189,26 @@ def test_monthly_round_trip_rolls_up_and_derives_average_fare(repo, tmp_path):
     assert _current(repo, "ttc", ap, "average_fare").value == Decimal("2.5")
 
 
-def test_annual_fundamentals_white_cell_round_trip(repo, tmp_path):
+def test_partial_months_land_as_monthly_values(repo, tmp_path):
     out = str(tmp_path / "wb.xlsx")
     workbook.export_workbook(repo, out, [2023])
 
     wb = _load(out)
-    _fill_row(
-        wb[workbook.SHEET_ANNUAL],
-        agency="TTC", period="2023",
-        updates={NAMES["operating_expenses"]: 8000},
-    )
+    ws = wb["TTC"]
+    _set_month(ws, metric_code="ridership", year=2023, month=1, value=42)
+    wb.save(out)
+
+    workbook.import_workbook(repo, out)
+    jan = monthly_period(2023, 1)
+    assert _current(repo, "ttc", jan, "ridership").value == Decimal("42")
+
+
+def test_annual_white_cell_round_trip(repo, tmp_path):
+    out = str(tmp_path / "wb.xlsx")
+    workbook.export_workbook(repo, out, [2023])
+
+    wb = _load(out)
+    _set_year_cell(wb["TTC"], label=NAMES["operating_expenses"], year=2023, value=8000)
     wb.save(out)
 
     workbook.import_workbook(repo, out)
@@ -190,15 +221,9 @@ def test_balance_sheet_dollars_not_comparable_and_net_debt_derived(repo, tmp_pat
     workbook.export_workbook(repo, out, [2023])
 
     wb = _load(out)
-    _fill_row(
-        wb[workbook.SHEET_BALANCE],
-        agency="TTC", period="2023",
-        updates={
-            NAMES["total_liabilities"]: 500,
-            NAMES["total_financial_assets"]: 200,
-            NAMES["net_debt"]: 999,  # grey cell: must be ignored on import
-        },
-    )
+    ws = wb["TTC"]
+    _set_year_cell(ws, label=NAMES["total_liabilities"], year=2023, value=500)
+    _set_year_cell(ws, label=NAMES["total_financial_assets"], year=2023, value=200)
     wb.save(out)
 
     workbook.import_workbook(repo, out)
@@ -209,7 +234,7 @@ def test_balance_sheet_dollars_not_comparable_and_net_debt_derived(repo, tmp_pat
     assert liab.comparable_flag is False  # raw balance-sheet dollars are never ranked
 
     nd = _current(repo, "ttc", ap, "net_debt")
-    assert nd.value == Decimal("300")  # server-derived 500-200, not the typed 999
+    assert nd.value == Decimal("300")  # server-derived 500-200
     assert nd.comparable_flag is False
 
 
@@ -218,10 +243,8 @@ def test_fiscal_agency_imports_under_fiscal_period(repo, tmp_path):
     workbook.export_workbook(repo, out, [2023])
 
     wb = _load(out)
-    ws = wb[workbook.SHEET_ANNUAL]
-    # Metrolinx (March year-end) -> Period pre-filled as 'FY2023-24'.
-    _fill_row(ws, agency="Metrolinx", period="FY2023-24",
-              updates={NAMES["operating_expenses"]: 7000})
+    # Metrolinx (March year-end): the 2023 column maps to its FY2023-24 period.
+    _set_year_cell(wb["Metrolinx"], label=NAMES["operating_expenses"], year=2023, value=7000)
     wb.save(out)
 
     workbook.import_workbook(repo, out)
@@ -230,37 +253,44 @@ def test_fiscal_agency_imports_under_fiscal_period(repo, tmp_path):
     assert _current(repo, "metrolinx", ap, "operating_expenses").value == Decimal("7000")
 
 
-def test_quarterly_token_imports_under_quarterly_period(repo, tmp_path):
-    out = str(tmp_path / "wb.xlsx")
-    workbook.export_workbook(repo, out, [2024])
-
-    wb = _load(out)
-    ws = wb[workbook.SHEET_BALANCE]
-    # TransLink: a user types a quarterly token for its quarterly statement.
-    _set_period(ws, agency="TransLink", old_period="2024", new_period="2024-Q1")
-    _fill_row(ws, agency="TransLink", period="2024-Q1",
-              updates={NAMES["total_assets"]: 900})
-    wb.save(out)
-
-    workbook.import_workbook(repo, out)
-    qp = quarterly_period(2024, 1)
-    landed = _current(repo, "translink", qp, "total_assets")
-    assert landed is not None and landed.value == Decimal("900")
-
-
-def test_grey_cells_are_not_imported(repo, tmp_path):
-    """Typing into a grey roll-up / derived cell is ignored; the server recomputes."""
+def test_per_mode_fleet_imports_with_mode_id_and_aggregates_capacity(repo, tmp_path):
+    """Typed per-mode fleet rows land as fleet_size at the right mode_id; the server
+    aggregates them into fleet_capacity (the grey Fleet-scale cell is not imported)."""
     out = str(tmp_path / "wb.xlsx")
     workbook.export_workbook(repo, out, [2023])
 
     wb = _load(out)
-    _fill_monthly(wb[workbook.SHEET_MONTHLY], agency="TTC", year=2023, ridership=100, revenue=250)
-    # Bogus numbers typed into grey Annual cells (roll-up + derived).
-    _fill_row(
-        wb[workbook.SHEET_ANNUAL],
-        agency="TTC", period="2023",
-        updates={NAMES["ridership"]: 5, NAMES["average_fare"]: 999},
-    )
+    ws = wb["TTC"]
+    _set_year_cell(ws, label="Fleet — Bus", year=2023, value=100)
+    _set_year_cell(ws, label="Fleet — Subway", year=2023, value=10)
+    # Bogus number typed into the grey Fleet-scale cell: must be ignored.
+    _set_year_cell(ws, label="Fleet scale", year=2023, value=99999)
+    wb.save(out)
+
+    workbook.import_workbook(repo, out)
+    ap = annual_period("ttc", 2023)
+
+    assert _current(repo, "ttc", ap, "fleet_size", mode_code="bus").value == Decimal("100")
+    assert _current(repo, "ttc", ap, "fleet_size", mode_code="subway").value == Decimal("10")
+    # fleet_capacity = 1*100 (bus) + 4*10 (subway) = 140, derived server-side; the
+    # typed 99999 is ignored because that cell is never imported.
+    cap = _current(repo, "ttc", ap, "fleet_capacity")
+    assert cap is not None and cap.value == Decimal("140")
+    assert cap.mode_id is None  # a system-wide aggregate, not a per-mode row
+
+
+def test_grey_computed_cells_are_not_imported(repo, tmp_path):
+    """Typing into a grey Q/Year/derived cell is ignored; the server recomputes."""
+    out = str(tmp_path / "wb.xlsx")
+    workbook.export_workbook(repo, out, [2023])
+
+    wb = _load(out)
+    ws = wb["TTC"]
+    _fill_year_of_months(ws, metric_code="ridership", year=2023, value=100)
+    _fill_year_of_months(ws, metric_code="operating_revenue", year=2023, value=250)
+    # Bogus number typed over the grey ridership Year roll-up cell + derived ratio.
+    _set_year_cell(ws, label=NAMES["ridership"], year=2023, value=5)
+    _set_year_cell(ws, label=NAMES["average_fare"], year=2023, value=999)
     wb.save(out)
 
     workbook.import_workbook(repo, out)
@@ -270,18 +300,14 @@ def test_grey_cells_are_not_imported(repo, tmp_path):
     assert _current(repo, "ttc", ap, "average_fare").value == Decimal("2.5")
 
 
-def test_malformed_period_token_warns_and_skips(repo, tmp_path):
+def test_non_numeric_cell_warns_and_skips(repo, tmp_path):
     out = str(tmp_path / "wb.xlsx")
     workbook.export_workbook(repo, out, [2023])
 
     wb = _load(out)
-    ws = wb[workbook.SHEET_ANNUAL]
-    _set_period(ws, agency="TTC", old_period="2023", new_period="twenty-twenty-three")
-    _fill_row(ws, agency="TTC", period="twenty-twenty-three",
-              updates={NAMES["operating_expenses"]: 1234})
+    _set_year_cell(wb["TTC"], label=NAMES["operating_expenses"], year=2023, value="not-a-number")
     wb.save(out)
 
     summary = workbook.import_workbook(repo, out)
-    assert any("unreadable Period" in w for w in summary["warnings"])
-    # The bad row contributed nothing.
+    assert any("non-numeric" in w for w in summary["warnings"])
     assert _current(repo, "ttc", annual_period("ttc", 2023), "operating_expenses") is None
