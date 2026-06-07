@@ -10,7 +10,7 @@ BEGIN
   -- exact count. primary_modes <-> agency_modes parity below covers every census row.
   IF (SELECT count(*) FROM core.agencies)     <  10 THEN RAISE EXCEPTION 'expected >= 10 agencies, got %',  (SELECT count(*) FROM core.agencies);     END IF;
   IF (SELECT count(*) FROM core.modes)        <> 10 THEN RAISE EXCEPTION 'expected 10 modes, got %',        (SELECT count(*) FROM core.modes);        END IF;
-  IF (SELECT count(*) FROM core.metrics)      <> 31 THEN RAISE EXCEPTION 'expected 31 metrics, got %',      (SELECT count(*) FROM core.metrics);      END IF;
+  IF (SELECT count(*) FROM core.metrics)      <> 32 THEN RAISE EXCEPTION 'expected 32 metrics, got %',      (SELECT count(*) FROM core.metrics);      END IF;
   IF (SELECT count(*) FROM core.source_feeds) <> 10 THEN RAISE EXCEPTION 'expected 10 source_feeds, got %', (SELECT count(*) FROM core.source_feeds); END IF;
 
   -- derived <-> formula presence (#8)
@@ -21,7 +21,7 @@ BEGIN
   IF (SELECT count(*) FROM core.metrics WHERE NOT is_derived AND formula IS NOT NULL) <> 0
      THEN RAISE EXCEPTION 'a non-derived metric carries a formula'; END IF;
 
-  -- equation graph parity (07_equations.sql <-> equations.py): 8 equations, and every
+  -- equation graph parity (07_equations.sql <-> equations.py): 13 equations, and every
   -- derived metric is defined by exactly one of them.
   IF (SELECT count(*) FROM core.metric_equations) <> 13
      THEN RAISE EXCEPTION 'expected 13 metric_equations, got %', (SELECT count(*) FROM core.metric_equations); END IF;

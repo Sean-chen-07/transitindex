@@ -4,85 +4,80 @@ This is the manual-entry path for a NON-TECHNICAL editor (city staff). It turns
 the database into a friendly Excel workbook they can fill by hand, then reads
 that workbook back into the pipeline.
 
-The workbook is **period-aware**, six sheets (balance-sheet-and-frequency-plan.md §4):
-  1. "How to use"          -- plain-language instructions, "Which tab?", the
-                              Period token, and the colour legend.
-  2. "Data Dictionary"     -- one row per metric (all 31), what each means, its
-                              unit, formula, native frequency, and which sheet it
-                              lives on.
-  3. "Monthly"             -- fast-moving ridership + operating revenue, one row
-                              per (agency, year, month). Resolved at a monthly
-                              period; the server rolls them up to the year.
-  4. "Annual Fundamentals" -- one row per (agency, Period). The 12 annual sourced
-                              metrics are typed in (white); ridership/revenue ride
-                              along as the grey annual ROLL-UP cell; the 6 derived
-                              ratios are grey live Excel formulas.
-  5. "Balance Sheet"       -- one row per (agency, Period). The 8 PSAB line items
-                              are typed in (white); net_debt + two accounting
-                              "check" columns are grey live formulas.
-  6. "Gaps"                -- live =COUNT of filled cells per (agency, period)
-                              across sheets 3-5, plus the newest month present.
+The workbook is a **per-agency calendar-year time-series**: one tab per agency,
+plus two reference tabs.
 
-Colours: white = type here · grey = calculated / do-not-touch · light-yellow =
-optional / quarterly-only. Every grey cell is recomputed on the server, so import
-reads ONLY the white cells (never a grey/derived/roll-up cell) and never fabricates
-a blank. The server's bidirectional solver is the source of truth for every
-derived and back-solved value; the Excel formulas are a live entry aid only.
+  1. "How to use"      -- plain-language instructions and the colour legend.
+  2. "Data Dictionary" -- one row per metric (all 32): what each means, its unit,
+                          formula, native frequency.
+  3..N  one tab PER AGENCY (e.g. "TTC", "STM", ...). Each agency tab is a grid:
+        one ROW per metric, and COLUMNS grouped by CALENDAR year, each year a
+        block of:  M1 M2 M3 Q1 | M4 M5 M6 Q2 | M7 M8 M9 Q3 | M10 M11 M12 Q4 | YTD | Year
+        The editor TYPES the raw monthly cells they have (white). The Q / YTD /
+        Year cells are READ-ONLY computed cells -- live Excel SUM formulas over
+        the month cells (presentation only; the authoritative roll-up is the
+        server-side rollup job, never the workbook). Annual-only metrics are
+        typed once, into the Year cell; their month/quarter cells are locked
+        (grey). Derived ratios show as a grey live Excel formula in the Year cell.
 
-One **Period text token** keys the annual sheets: `2024` (calendar), `FY2024-25`
-(fiscal), or `2024-Q1` (TransLink quarterly). Export pre-fills the right token per
-agency (from fiscal_year_end_month); import parses it back to a reporting period.
+        Each agency tab also carries a per-mode FLEET block: one white column per
+        weighted mode (Bus / Subway / Light rail / Commuter rail / Streetcar) that
+        IMPORTS into metric `fleet_size` at that mode, plus a grey computed
+        "Fleet scale" (fleet_capacity) cell.
+
+Colours: white = type here · grey = calculated / do-not-touch. Every grey cell is
+recomputed on the server, so import reads ONLY the white cells (never a grey /
+derived / roll-up cell) and never fabricates a blank.
 
 Display names + plain meanings come from the per-metric data dictionary
-(`dictionary.load_dictionary()`), the single source of truth for both. openpyxl
-AND PyYAML are imported LAZILY inside export/import, so merely importing this
-module never requires either; everything else is pure stdlib.
+(`dictionary.load_dictionary()`). openpyxl AND PyYAML are imported LAZILY inside
+export/import, so merely importing this module never requires either.
 """
 
 from __future__ import annotations
 
-import re
-
 from .equations import RatioEquation, defining_equation
-from .refdata import METRICS, NON_RANKABLE_METRICS
+from .refdata import METRICS, MODE_CAPACITY_WEIGHT, NON_RANKABLE_METRICS
 
-# --- Metric groupings (routing), agency names --------------------------------
+# --- Metric groupings, agency + mode names -----------------------------------
 
-# The 11-metric balance-sheet family (PSAB). Kept for ROUTING -- which sheet a
-# metric lives on -- no longer to EXCLUDE these metrics from the workbook.
-BALANCE_SHEET_METRICS: frozenset[str] = frozenset({
-    "total_financial_assets", "total_liabilities", "total_non_financial_assets",
-    "total_assets", "tangible_capital_assets", "accumulated_surplus",
-    "long_term_debt", "cash_and_investments",
-    "net_debt", "debt_to_assets", "net_debt_per_capita",
-})
-
-# The two monthly-native feeds (StatCan 23-10-0307 publishes both): typed on the
-# Monthly sheet, shown as the grey annual ROLL-UP cell on Annual Fundamentals.
+# The two monthly-native feeds (StatCan 23-10-0307 publishes both): typed
+# month-by-month; their Q/YTD/Year cells are live SUM roll-ups.
 MONTHLY_METRICS: list[str] = ["ridership", "operating_revenue"]
 
-# Annual Fundamentals columns: the 14 non-balance-sheet sourced (in METRICS order,
-# ridership/revenue included as grey roll-up), then the 6 derived (grey formulas).
+# fleet_size is entered PER MODE in the Fleet block, not as a system-wide row;
+# fleet_capacity is the derived Fleet-scale cell. Both are kept out of the main
+# metric rows.
+_FLEET_SIZE = "fleet_size"
+_FLEET_CAPACITY = "fleet_capacity"
+
+# System-wide sourced metrics typed once a year (everything sourced except the two
+# monthly feeds and the per-mode fleet_size). In METRICS order.
 ANNUAL_SOURCED_METRICS: list[str] = [
-    c for c, m in METRICS.items() if not m["is_derived"] and c not in BALANCE_SHEET_METRICS
+    c for c, m in METRICS.items()
+    if not m["is_derived"] and c not in MONTHLY_METRICS and c not in (_FLEET_SIZE, _FLEET_CAPACITY)
 ]
+# Derived system-wide metrics shown as a live Year-cell formula. fleet_capacity is
+# excluded here -- it lives in the Fleet block as its own Fleet-scale cell.
 ANNUAL_DERIVED_METRICS: list[str] = [
-    c for c, m in METRICS.items() if m["is_derived"] and c not in BALANCE_SHEET_METRICS
+    c for c, m in METRICS.items() if m["is_derived"] and c != _FLEET_CAPACITY
 ]
-ANNUAL_COLUMNS: list[str] = ANNUAL_SOURCED_METRICS + ANNUAL_DERIVED_METRICS
-# The 12 typed-in annual sourced metrics (everything sourced except the two that
-# roll up from the Monthly sheet).
-ANNUAL_WHITE_METRICS: list[str] = [c for c in ANNUAL_SOURCED_METRICS if c not in MONTHLY_METRICS]
 
-# Balance Sheet: the 8 sourced line items (white). net_debt is shown as a grey
-# formula; the two ranked ratios are computed server-side and never entered here.
-BALANCE_SHEET_SOURCED: list[str] = [
-    c for c, m in METRICS.items() if c in BALANCE_SHEET_METRICS and not m["is_derived"]
+# The full ordered list of metric ROWS on an agency tab: monthly feeds first, then
+# annual sourced, then derived. fleet_size / fleet_capacity are NOT here (Fleet block).
+METRIC_ROWS: list[str] = MONTHLY_METRICS + ANNUAL_SOURCED_METRICS + ANNUAL_DERIVED_METRICS
+
+# The weighted modes whose fleet_size the user enters, in display order (the modes
+# that carry a capacity weight; Σ weight × fleet_size = fleet_capacity).
+FLEET_MODES: list[tuple[str, str]] = [
+    ("bus", "Bus"),
+    ("subway", "Subway"),
+    ("light_rail", "Light rail"),
+    ("commuter_rail", "Commuter rail"),
+    ("streetcar", "Streetcar"),
 ]
-_NET_DEBT = "net_debt"
-_WEBSITE_ONLY: frozenset[str] = frozenset({"debt_to_assets", "net_debt_per_capita"})
 
-# Agency slug -> short name, in workbook row order (= reverse-lookup map on import).
+# Agency slug -> short name (= tab title). Reverse-lookup map on import.
 AGENCY_NAMES: dict[str, str] = {
     "ttc": "TTC",
     "stm": "STM",
@@ -108,55 +103,46 @@ AGENCY_NAMES: dict[str, str] = {
     "regina-transit": "Regina Transit",
 }
 
-# Sheet names (single source of truth for both export and import).
+# Reference sheet names.
 SHEET_HOWTO = "How to use"
 SHEET_DICT = "Data Dictionary"
-SHEET_MONTHLY = "Monthly"
-SHEET_ANNUAL = "Annual Fundamentals"
-SHEET_BALANCE = "Balance Sheet"
-SHEET_GAPS = "Gaps"
+
+# Within-year column geometry. 18 columns per calendar year:
+#   M1 M2 M3 Q1 | M4 M5 M6 Q2 | M7 M8 M9 Q3 | M10 M11 M12 Q4 | YTD | Year
+_MONTH_ABBR = ("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+# Sub-header label + a parallel "kind" tag for each of the 18 columns, used by both
+# export (styling/formulas) and import (which cells to read).
+_YEAR_SUBHEADERS: list[tuple[str, str]] = []
+for _q in range(4):
+    for _mi in range(3):
+        _YEAR_SUBHEADERS.append((_MONTH_ABBR[_q * 3 + _mi], "month"))
+    _YEAR_SUBHEADERS.append((f"Q{_q + 1}", "quarter"))
+_YEAR_SUBHEADERS.append(("YTD", "ytd"))
+_YEAR_SUBHEADERS.append(("Year", "year"))
+YEAR_BLOCK_WIDTH = len(_YEAR_SUBHEADERS)  # 18
+
+# 0-based offsets within a year block.
+_MONTH_OFFSETS = [i for i, (_l, k) in enumerate(_YEAR_SUBHEADERS) if k == "month"]  # 12
+_QUARTER_OFFSETS = [i for i, (_l, k) in enumerate(_YEAR_SUBHEADERS) if k == "quarter"]
+_YTD_OFFSET = next(i for i, (_l, k) in enumerate(_YEAR_SUBHEADERS) if k == "ytd")
+_YEAR_OFFSET = next(i for i, (_l, k) in enumerate(_YEAR_SUBHEADERS) if k == "year")
+
+# Layout anchors (1-based). Column A is the row label; year blocks start at col B.
+_LABEL_COL = 1
+_FIRST_YEAR_COL = 2
+# Rows: 1 = agency title, 2 = year-block header, 3 = within-year sub-header, then data.
+_TITLE_ROW = 1
+_YEAR_HEADER_ROW = 2
+_SUBHEADER_ROW = 3
+_FIRST_DATA_ROW = 4
 
 # Fills (ARGB). White = no fill.
 _GREY = "FFD9D9D9"
-_YELLOW = "FFFFF2CC"  # light yellow: optional / quarterly-only
 
 
 def _native_frequency(code: str) -> str:
     return "Monthly" if code in MONTHLY_METRICS else "Annual"
-
-
-def _sheet_for(code: str) -> str:
-    """Which sheet a metric is ENTERED on (routes the user in the dictionary)."""
-    if code in MONTHLY_METRICS:
-        return SHEET_MONTHLY
-    if code in BALANCE_SHEET_METRICS:
-        if code in _WEBSITE_ONLY:
-            return "— (calculated on the website)"
-        return SHEET_BALANCE
-    return SHEET_ANNUAL
-
-
-# --- Formula plumbing (driven off the equation catalog so it can't drift) -----
-
-
-def _operand_name(code: str, names: dict[str, str]) -> str:
-    """Human label for a formula operand; humanizes `attr:` agency attributes."""
-    if code.startswith("attr:"):
-        return code[len("attr:"):].replace("_", " ").strip().capitalize()
-    return names.get(code, code)
-
-
-def _plain_formula(code: str, names: dict[str, str]) -> str:
-    """Human-readable formula for a derived metric, e.g. 'Operating Revenue /
-    Ridership' -- built from the equation catalog the solver uses."""
-    eq = defining_equation(code)
-    if isinstance(eq, RatioEquation):
-        return f"{_operand_name(eq.numerator, names)} / {_operand_name(eq.denominator, names)}"
-    parts: list[str] = []
-    for i, (sign, term) in enumerate(eq.terms):
-        op = " - " if sign < 0 else (" + " if i else "")
-        parts.append(f"{op}{_operand_name(term, names)}")
-    return "".join(parts).strip()
 
 
 def _excel_unit_format(code: str) -> str:
@@ -164,47 +150,62 @@ def _excel_unit_format(code: str) -> str:
     meta = METRICS[code]
     unit, unit_type = meta["unit"], meta["unit_type"]
     if unit_type == "currency":
-        return '#,##0.00'  # dollars; no symbol so CAD / CAD-per-hour read cleanly
+        return '#,##0.00'
     if unit == "%":
-        return '#,##0.0'  # stored as a percentage number (e.g. 92.5), not a fraction
+        return '#,##0.0'
     if unit_type == "count":
         return '#,##0'
-    return '#,##0.00'  # hours, km, years, ratios
+    return '#,##0.00'
 
 
-def _cell(col: int, row: int) -> str:
-    """Absolute-column cell ref ($G2 style) that survives copy/fill."""
+def _col(idx: int) -> str:
     from openpyxl.utils import get_column_letter
 
-    return f"${get_column_letter(col)}{row}"
+    return get_column_letter(idx)
 
 
-def _derived_excel_formula(code: str, row: int, col_of: dict[str, int]) -> str:
-    """Build the live Excel formula for a derived cell in `row`.
+def _year_start_col(year_idx: int) -> int:
+    """1-based column where calendar-year `year_idx`'s 18-col block begins."""
+    return _FIRST_YEAR_COL + year_idx * YEAR_BLOCK_WIDTH
 
-    Mirrors the equation catalog: blank ("") when any input cell is empty OR a
-    ratio denominator is zero, else the ratio/sum. Column letters come from
-    `col_of` (metric code -> 1-based column index); never hardcoded. An operand
-    that isn't a column on this sheet (e.g. net_debt_per_capita's
-    service_area_population, an agency attribute) can't be a live formula -> the
-    cell stays blank and the server recompute is the source of truth for it.
+
+# --- Formula plumbing (the Q/YTD/Year + Fleet-scale read-only cells) ----------
+
+
+def _sum_formula(row: int, cols: list[int]) -> str:
+    """A SUM over the given 1-based columns in `row`; blank when all are empty."""
+    refs = [f"{_col(c)}{row}" for c in cols]
+    joined = ",".join(refs)
+    # COUNT==0 -> blank, so an untouched roll-up shows nothing (not a zero).
+    return f'=IF(COUNT({joined})=0,"",SUM({joined}))'
+
+
+def _derived_year_formula(code: str, year_start: int, year_rows: dict[str, int]) -> str:
+    """Live Excel formula for a derived metric's Year cell, mirroring its equation.
+
+    Operands are read from each operand metric's own Year column in the same year
+    block (`year_rows`: metric code -> its data row). Blank when an input cell is
+    empty or a ratio denominator is zero. An operand with no row on this tab (e.g.
+    an `attr:` agency attribute, or a metric defined by a non-SUM/RATIO rule) ->
+    blank cell; the server is the source of truth there.
     """
     eq = defining_equation(code)
+    if eq is None:
+        return ""
     if isinstance(eq, RatioEquation):
         needed = [eq.numerator, eq.denominator]
     else:
         needed = [t for _s, t in eq.terms]
-    if any(c not in col_of for c in needed):
+    if any(c not in year_rows for c in needed):
         return ""
 
     def ref(c: str) -> str:
-        return _cell(col_of[c], row)
+        return f"{_col(year_start + _YEAR_OFFSET)}{year_rows[c]}"
 
     if isinstance(eq, RatioEquation):
         num, den = ref(eq.numerator), ref(eq.denominator)
         return f'=IF(OR({num}="",{den}="",{den}=0),"",{num}/{den})'
 
-    # SumEquation (e.g. net_debt = total_liabilities - total_financial_assets).
     cells = [ref(t) for _s, t in eq.terms]
     guard = "OR(" + ",".join(f'{c}=""' for c in cells) + ")"
     parts: list[str] = []
@@ -214,99 +215,27 @@ def _derived_excel_formula(code: str, row: int, col_of: dict[str, int]) -> str:
     return f'=IF({guard},"",{"".join(parts)})'
 
 
-def _check_assets_formula(row: int, col_of: dict[str, int]) -> str:
-    """Asset-split identity: total_assets == financial + non-financial (0.5% tol)."""
-    tfa = _cell(col_of["total_financial_assets"], row)
-    tnfa = _cell(col_of["total_non_financial_assets"], row)
-    ta = _cell(col_of["total_assets"], row)
-    # Guard total_assets too (beyond the spec's tfa/tnfa) so a missing total never
-    # shows a #VALUE! error to a non-technical user -- blank when any input is missing.
-    return (
-        f'=IF(OR({tfa}="",{tnfa}="",{ta}=""),"",'
-        f'IF(ABS(({tfa}+{tnfa})-{ta})<=ABS({ta})*0.005,"OK","MISMATCH"))'
+def _fleet_capacity_formula(year_start: int, mode_rows: dict[str, int]) -> str:
+    """Live Fleet-scale formula: Σ capacity_weight × fleet_size(mode) over the year
+    block. Blank when no mode cell is filled."""
+    year_col = _col(year_start + _YEAR_OFFSET)
+    cells = [f"{year_col}{mode_rows[m]}" for m, _label in FLEET_MODES]
+    guard = "COUNT(" + ",".join(cells) + ")=0"
+    terms = "+".join(
+        f"{MODE_CAPACITY_WEIGHT[m]}*N({year_col}{mode_rows[m]})" for m, _label in FLEET_MODES
     )
-
-
-def _check_netdebt_formula(row: int, col_of: dict[str, int]) -> str:
-    """Net-debt identity beside the printed cell: liabilities - financial assets."""
-    liab = _cell(col_of["total_liabilities"], row)
-    tfa = _cell(col_of["total_financial_assets"], row)
-    return f'=IF(OR({liab}="",{tfa}=""),"",{liab}-{tfa})'
-
-
-# --- Period token (one resolver) ---------------------------------------------
-
-_RE_QUARTER = re.compile(r"^(\d{4})-Q([1-4])$")
-_RE_FISCAL = re.compile(r"^FY(\d{4})-(\d{2})$")
-_RE_YEAR = re.compile(r"^(\d{4})$")
-
-
-def _parse_period_token(token: object, agency_slug: str):
-    """Parse a Period text token into a reporting Period. Raises on a bad token.
-
-    `2024-Q3` -> quarterly_period; `FY2024-25` / `2024` -> annual_period (the
-    agency's fiscal_year_end_month decides calendar vs fiscal). Never guesses.
-    """
-    from .periods import annual_period, quarterly_period
-
-    t = str(token).strip()
-    m = _RE_QUARTER.match(t)
-    if m:
-        return quarterly_period(int(m.group(1)), int(m.group(2)))
-    m = _RE_FISCAL.match(t)
-    if m:
-        start_year = int(m.group(1))
-        expected = (start_year + 1) % 100
-        if int(m.group(2)) != expected:
-            raise ValueError(
-                f"unreadable Period {t!r} for {agency_slug}: fiscal end-year "
-                f"should be {expected:02d} (e.g. FY{start_year}-{expected:02d})"
-            )
-        return annual_period(agency_slug, start_year)
-    m = _RE_YEAR.match(t)
-    if m:
-        return annual_period(agency_slug, int(m.group(1)))
-    raise ValueError(
-        f"unreadable Period {t!r} for {agency_slug}: expected '2024', "
-        "'FY2024-25', or '2024-Q1'"
-    )
-
-
-# --- DB read helpers (pre-fill from current values) --------------------------
-
-
-def _period_index(repo) -> dict:
-    """Existing reporting periods keyed by (period_type, start, end) -> period.
-
-    Lets export pre-fill from current values WITHOUT creating empty periods."""
-    return {
-        (p.period_type, p.start_date, p.end_date): p
-        for p in repo.list_reporting_periods()
-    }
-
-
-def _read_total_values(repo, agency_id: int, period_id: int, codes) -> dict[str, object]:
-    """Current system-wide ('total', mode_id None) values for `codes` at a period."""
-    by_mid = {repo.metric_id(c): c for c in codes}
-    out: dict[str, object] = {}
-    for v in repo.list_current_values_for_agency_period(agency_id, period_id):
-        if v.mode_id is not None or v.service_scope != "total":
-            continue
-        code = by_mid.get(v.metric_id)
-        if code is not None:
-            out[code] = v.value
-    return out
+    return f'=IF({guard},"",{terms})'
 
 
 # --- Export ------------------------------------------------------------------
 
 
 def export_workbook(repo, path: str, years: list[int]) -> dict:
-    """Build the six-sheet editable workbook and save it to `path`.
+    """Build the per-agency time-series workbook and save it to `path`.
 
-    Pre-fills white cells from current DB values (and ridership/revenue from their
-    annual roll-up) where present; the DB is empty at MVP so this usually fills
-    nothing -- expected. Returns a summary dict with per-sheet row counts.
+    One tab per agency (plus How-to + Data Dictionary). Pre-fills white cells from
+    current DB values where present; the DB is usually empty at MVP. Returns a
+    summary dict.
     """
     from openpyxl import Workbook
 
@@ -320,30 +249,48 @@ def export_workbook(repo, path: str, years: list[int]) -> dict:
     wb = Workbook()
     _build_howto_sheet(wb)  # replaces the default sheet
     _build_dictionary_sheet(wb, names, meanings)
+
     filled = 0
-    filled += _build_monthly_sheet(wb, years, names, repo, index)
-    filled += _build_annual_sheet(wb, years, names, repo, index)
-    filled += _build_balance_sheet(wb, years, names, repo, index)
-    _build_gaps_sheet(wb, years, names)
+    for slug, short_name in AGENCY_NAMES.items():
+        filled += _build_agency_sheet(wb, slug, short_name, years, names, repo, index)
 
     wb.save(path)
 
-    n_agencies = len(AGENCY_NAMES)
-    n_years = len(years)
     return {
         "path": path,
-        "agencies": n_agencies,
+        "agencies": len(AGENCY_NAMES),
         "years": list(years),
-        "monthly_rows": n_agencies * n_years * 12,
-        "annual_rows": n_agencies * n_years,
-        "balance_rows": n_agencies * n_years,
+        "metric_rows": len(METRIC_ROWS),
+        "fleet_modes": len(FLEET_MODES),
         "filled_cells": filled,
     }
 
 
+def _period_index(repo) -> dict:
+    """Existing reporting periods keyed by (period_type, start, end) -> period."""
+    return {
+        (p.period_type, p.start_date, p.end_date): p
+        for p in repo.list_reporting_periods()
+    }
+
+
+def _read_total_values(repo, agency_id, period_id, codes, mode_id=None) -> dict[str, object]:
+    """Current 'total'-scope values for `codes` at a period, filtered to `mode_id`
+    (None = system-wide; a mode's id for per-mode fleet)."""
+    by_mid = {repo.metric_id(c): c for c in codes}
+    out: dict[str, object] = {}
+    for v in repo.list_current_values_for_agency_period(agency_id, period_id):
+        if v.mode_id != mode_id or v.service_scope != "total":
+            continue
+        code = by_mid.get(v.metric_id)
+        if code is not None:
+            out[code] = v.value
+    return out
+
+
 def _build_howto_sheet(wb) -> None:
     """Sheet 1: plain-language instructions; reuses the default first sheet."""
-    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.styles import Alignment, Font
 
     ws = wb.active
     ws.title = SHEET_HOWTO
@@ -352,383 +299,237 @@ def _build_howto_sheet(wb) -> None:
     lines: list[tuple[str, bool]] = [
         ("How to use this workbook", True),
         ("", False),
-        ("This workbook collects transit numbers. You type real figures into the "
-         "WHITE cells, taken straight from your source (an annual report, a budget, "
-         "an open-data file). Leave a cell BLANK if you don't have the number yet -- "
-         "never guess. The website shows the last known number for you, so a blank "
-         "here is fine.", False),
+        ("This workbook collects transit numbers, one tab per agency. On an "
+         "agency's tab, each row is a metric and the columns run left to right by "
+         "calendar year. Within a year you see the twelve months, the four "
+         "quarters, a year-to-date total, and the full-year total.", False),
         ("", False),
-        ("Which tab do I use?", True),
-        ("- Monthly: month-by-month ridership and fare revenue. Type each month you "
-         "have; the yearly total is worked out for you.", False),
-        ("- Annual Fundamentals: the once-a-year operating numbers (service hours, "
-         "costs, fleet, and so on), one row per agency per year.", False),
-        ("- Balance Sheet: the agency's once-a-year financial position (assets, "
-         "liabilities), from the audited financial statements.", False),
-        ("- Data Dictionary: look up exactly what any column means and which tab to "
-         "type it on.", False),
-        ("- Gaps: see, at a glance, how many numbers are still missing.", False),
+        ("What do I type?", True),
+        ("- Ridership and Operating revenue: type each MONTH you have (the white "
+         "month cells). The quarter, year-to-date, and full-year totals fill in "
+         "automatically.", False),
+        ("- Every other yearly number (service hours, costs, fleet age, and so "
+         "on): type it once, in that row's YEAR column. The month and quarter "
+         "cells for those rows are greyed out -- you don't use them.", False),
+        ("- Fleet: at the bottom of each tab, type the number of vehicles for each "
+         "mode (Bus, Subway, Light rail, Commuter rail, Streetcar) in the YEAR "
+         "column. The 'Fleet scale' row is worked out for you.", False),
+        ("", False),
+        ("Leave a cell BLANK if you don't have the number yet -- never guess. The "
+         "website keeps the last known number, so a blank here is fine.", False),
         ("", False),
         ("The colour code", True),
         ("- WHITE cells: type here.", False),
-        ("- GREY cells: worked out automatically (totals, ratios, checks). Don't "
-         "type in them -- anything you put there is ignored and recalculated.", False),
-        ("- LIGHT-YELLOW cells: optional, only needed for the rare quarterly case. "
-         "A blank one is perfectly normal.", False),
+        ("- GREY cells: worked out automatically (quarter / year totals, ratios, "
+         "Fleet scale). Don't type in them -- anything you put there is ignored "
+         "and recalculated on the server.", False),
         ("", False),
-        ("The Period column", True),
-        ("On the Annual Fundamentals and Balance Sheet tabs, each row has a Period. "
-         "It is filled in for you:", False),
-        ("- 2024 means the calendar year 2024 (most agencies).", False),
-        ("- FY2024-25 means a financial year ending in spring 2025 (Metrolinx and "
-         "BC Transit, whose year ends in March).", False),
-        ("- 2024-Q1 means the first quarter of 2024 -- only TransLink reports its "
-         "balance sheet this often. You'd type this in yourself for that rare case.",
-         False),
+        ("A note on years", True),
+        ("Most agencies report on the calendar year. Metrolinx and BC Transit end "
+         "their financial year in March; for them, the year column labelled e.g. "
+         "'2024' means their 2024-25 fiscal year.", False),
         ("", False),
         ("When you're done", True),
         ("Save the file and run the import command. Your numbers go into the "
-         "database; the grey totals, ratios, and checks are recomputed on the "
-         "server -- you don't need to worry about them.", False),
+         "database; the grey totals and ratios are recomputed on the server.", False),
     ]
     for i, (text, bold) in enumerate(lines, start=1):
         cell = ws.cell(row=i, column=1, value=text)
         cell.font = Font(bold=bold, size=14 if (bold and i == 1) else 11)
         cell.alignment = Alignment(wrap_text=True, vertical="top")
-    # A light-yellow swatch beside the legend line so the colour is concrete.
-    ws.cell(row=16, column=2, value="example").fill = PatternFill(
-        start_color=_YELLOW, end_color=_YELLOW, fill_type="solid"
-    )
     ws.column_dimensions["A"].width = 100
-    ws.column_dimensions["B"].width = 12
 
 
 def _build_dictionary_sheet(wb, names: dict[str, str], meanings: dict[str, str]) -> None:
-    """Sheet 2: one row per metric (all 31) -- meaning, unit, type, formula, and
-    the two routing columns (Native frequency, Sheet)."""
+    """Sheet 2: one row per metric (all 32) -- meaning, unit, type, formula,
+    native frequency."""
     from openpyxl.styles import Alignment, Font
 
     ws = wb.create_sheet(SHEET_DICT)
-    headers = ["Column", "Plain meaning", "Unit", "Type", "Formula",
-               "Native frequency", "Sheet"]
+    headers = ["Column", "Plain meaning", "Unit", "Type", "Formula", "Native frequency"]
     for col, head in enumerate(headers, start=1):
         ws.cell(row=1, column=col, value=head).font = Font(bold=True)
 
     row = 2
     for code, meta in METRICS.items():
-        is_derived = meta["is_derived"]
+        # fleet_capacity is is_derived=False (sourced per-mode), but it IS computed
+        # in the Fleet block, so show it as calculated for the reader.
+        is_calculated = meta["is_derived"] or code == _FLEET_CAPACITY
         ws.cell(row=row, column=1, value=names[code])
         ws.cell(row=row, column=2, value=meanings[code])
         ws.cell(row=row, column=3, value=meta["unit"])
-        ws.cell(row=row, column=4, value="Calculated" if is_derived else "Sourced")
-        ws.cell(row=row, column=5, value=_plain_formula(code, names) if is_derived else "")
+        ws.cell(row=row, column=4, value="Calculated" if is_calculated else "Sourced")
+        ws.cell(row=row, column=5, value=meta["formula"] or ("Σ capacity_weight × fleet_size(mode)" if code == _FLEET_CAPACITY else ""))
         ws.cell(row=row, column=6, value=_native_frequency(code))
-        ws.cell(row=row, column=7, value=_sheet_for(code))
         row += 1
 
     ws.freeze_panes = "A2"
     for col_letter, width in (
-        ("A", 28), ("B", 55), ("C", 10), ("D", 12), ("E", 38), ("F", 16), ("G", 22)
+        ("A", 28), ("B", 55), ("C", 10), ("D", 12), ("E", 38), ("F", 16)
     ):
         ws.column_dimensions[col_letter].width = width
     for r in range(2, row):
         ws.cell(row=r, column=2).alignment = Alignment(wrap_text=True, vertical="top")
 
 
-def _build_monthly_sheet(wb, years, names, repo, index) -> int:
-    """Sheet 3: month-by-month ridership + operating revenue (white). Returns the
-    number of cells pre-filled from the DB."""
-    from openpyxl.styles import Alignment, Font
+def _build_agency_sheet(wb, slug, short_name, years, names, repo, index) -> int:
+    """One agency tab: a metric x (year-block) grid + a per-mode Fleet block.
 
-    from .periods import monthly_period
-
-    ws = wb.create_sheet(SHEET_MONTHLY)
-    bold = Font(bold=True)
-    headers = ["Agency", "Year", "Month"] + [names[c] for c in MONTHLY_METRICS]
-    for col, head in enumerate(headers, start=1):
-        cell = ws.cell(row=1, column=col, value=head)
-        cell.font = bold
-        cell.alignment = Alignment(wrap_text=True, vertical="bottom")
-    col_of = {code: 4 + i for i, code in enumerate(MONTHLY_METRICS)}  # 4, 5
-
-    filled = 0
-    row = 2
-    for slug, short_name in AGENCY_NAMES.items():
-        agency_id = repo.agency_id(slug)
-        for year in years:
-            for month in range(1, 13):
-                mp = monthly_period(year, month)
-                period = index.get((mp.period_type, mp.start, mp.end))
-                values = (
-                    _read_total_values(repo, agency_id, period.id, MONTHLY_METRICS)
-                    if period is not None else {}
-                )
-                ws.cell(row=row, column=1, value=short_name)
-                ws.cell(row=row, column=2, value=int(year))
-                ws.cell(row=row, column=3, value=month)
-                for code in MONTHLY_METRICS:
-                    cell = ws.cell(row=row, column=col_of[code])
-                    cell.number_format = _excel_unit_format(code)
-                    if code in values:
-                        cell.value = float(values[code])
-                        filled += 1
-                row += 1
-
-    ws.freeze_panes = "D2"
-    ws.auto_filter.ref = f"A1:{_col(col_of[MONTHLY_METRICS[-1]])}{row - 1}"
-    for letter, width in (("A", 20), ("B", 8), ("C", 8)):
-        ws.column_dimensions[letter].width = width
-    for code in MONTHLY_METRICS:
-        ws.column_dimensions[_col(col_of[code])].width = 18
-    return filled
-
-
-def _build_annual_sheet(wb, years, names, repo, index) -> int:
-    """Sheet 4: annual fundamentals -- 12 white sourced + grey roll-up
-    ridership/revenue + 6 grey derived formulas. Returns pre-filled cell count."""
+    Returns the number of white cells pre-filled from the DB.
+    """
     from openpyxl.styles import Alignment, Font, PatternFill
 
-    from .periods import annual_period
+    from .periods import annual_period, monthly_period
 
-    ws = wb.create_sheet(SHEET_ANNUAL)
+    ws = wb.create_sheet(short_name)
     grey = PatternFill(start_color=_GREY, end_color=_GREY, fill_type="solid")
     bold = Font(bold=True)
-    col_of = {code: 3 + i for i, code in enumerate(ANNUAL_COLUMNS)}
+    agency_id = repo.agency_id(slug)
 
-    ws.cell(row=1, column=1, value="Agency").font = bold
-    ws.cell(row=1, column=2, value="Period").font = bold
-    for code in ANNUAL_COLUMNS:
-        cell = ws.cell(row=1, column=col_of[code], value=names[code])
-        cell.font = bold
-        cell.alignment = Alignment(wrap_text=True, vertical="bottom")
-        if METRICS[code]["is_derived"] or code in MONTHLY_METRICS:
-            cell.fill = grey  # derived formulas + roll-up cells are do-not-touch
+    # --- header rows ---------------------------------------------------------
+    ws.cell(row=_TITLE_ROW, column=_LABEL_COL, value=short_name).font = Font(bold=True, size=14)
+    ws.cell(row=_SUBHEADER_ROW, column=_LABEL_COL, value="Metric").font = bold
+    last_col = _FIRST_YEAR_COL + len(years) * YEAR_BLOCK_WIDTH - 1
+    for yi, year in enumerate(years):
+        ystart = _year_start_col(yi)
+        yh = ws.cell(row=_YEAR_HEADER_ROW, column=ystart, value=int(year))
+        yh.font = bold
+        yh.alignment = Alignment(horizontal="center")
+        ws.merge_cells(
+            start_row=_YEAR_HEADER_ROW, start_column=ystart,
+            end_row=_YEAR_HEADER_ROW, end_column=ystart + YEAR_BLOCK_WIDTH - 1,
+        )
+        for off, (label, _kind) in enumerate(_YEAR_SUBHEADERS):
+            c = ws.cell(row=_SUBHEADER_ROW, column=ystart + off, value=label)
+            c.font = bold
+            c.alignment = Alignment(horizontal="center")
 
+    # Data-row index per metric (needed for the derived Year formulas).
+    metric_row: dict[str, int] = {
+        code: _FIRST_DATA_ROW + i for i, code in enumerate(METRIC_ROWS)
+    }
+
+    # --- metric rows ---------------------------------------------------------
     filled = 0
-    row = 2
-    for slug, short_name in AGENCY_NAMES.items():
-        agency_id = repo.agency_id(slug)
-        for year in years:
-            ap = annual_period(slug, year)
-            period = index.get((ap.period_type, ap.start, ap.end))
-            values = (
-                _read_total_values(repo, agency_id, period.id, ANNUAL_SOURCED_METRICS)
-                if period is not None else {}
-            )
-            ws.cell(row=row, column=1, value=short_name)
-            ws.cell(row=row, column=2, value=ap.label)  # pre-filled Period token
+    for code in METRIC_ROWS:
+        row = metric_row[code]
+        is_monthly = code in MONTHLY_METRICS
+        is_derived = METRICS[code]["is_derived"]
+        ws.cell(row=row, column=_LABEL_COL, value=names[code]).font = bold
+        fmt = _excel_unit_format(code)
 
-            for code in ANNUAL_COLUMNS:
-                cell = ws.cell(row=row, column=col_of[code])
-                cell.number_format = _excel_unit_format(code)
-                if METRICS[code]["is_derived"]:
-                    cell.value = _derived_excel_formula(code, row, col_of)
-                    cell.fill = grey
-                elif code in MONTHLY_METRICS:
-                    # Grey annual ROLL-UP cell: show the rolled value if present,
-                    # never re-entered (the Monthly sheet is where it's typed).
-                    cell.fill = grey
-                    if code in values:
-                        cell.value = float(values[code])
-                        filled += 1
+        for yi, year in enumerate(years):
+            ystart = _year_start_col(yi)
+            month_cols = [ystart + off for off in _MONTH_OFFSETS]
+
+            if is_monthly:
+                # White month cells (pre-filled from monthly DB values).
+                for mi, mcol in enumerate(month_cols, start=1):
+                    cell = ws.cell(row=row, column=mcol)
+                    cell.number_format = fmt
+                    mp = monthly_period(year, mi)
+                    period = index.get((mp.period_type, mp.start, mp.end))
+                    if period is not None:
+                        vals = _read_total_values(repo, agency_id, period.id, [code])
+                        if code in vals:
+                            cell.value = float(vals[code])
+                            filled += 1
+                # Grey Q (sum of its 3 months), YTD + Year (sum of all 12).
+                for qi, qoff in enumerate(_QUARTER_OFFSETS):
+                    qcell = ws.cell(row=row, column=ystart + qoff)
+                    qcell.value = _sum_formula(row, month_cols[qi * 3:qi * 3 + 3])
+                    qcell.number_format = fmt
+                    qcell.fill = grey
+                for off in (_YTD_OFFSET, _YEAR_OFFSET):
+                    c = ws.cell(row=row, column=ystart + off)
+                    c.value = _sum_formula(row, month_cols)
+                    c.number_format = fmt
+                    c.fill = grey
+            else:
+                # Annual-only: grey-lock months/quarters/YTD; the Year cell is the
+                # only entry point (white for sourced, grey formula for derived).
+                for off in range(YEAR_BLOCK_WIDTH):
+                    if off == _YEAR_OFFSET:
+                        continue
+                    ws.cell(row=row, column=ystart + off).fill = grey
+                ycell = ws.cell(row=row, column=ystart + _YEAR_OFFSET)
+                ycell.number_format = fmt
+                if is_derived:
+                    ycell.value = _derived_year_formula(code, ystart, metric_row)
+                    ycell.fill = grey
                 else:
-                    if code in values:  # 12 white sourced columns
-                        cell.value = float(values[code])
-                        filled += 1
-            row += 1
+                    ap = annual_period(slug, year)
+                    period = index.get((ap.period_type, ap.start, ap.end))
+                    if period is not None:
+                        vals = _read_total_values(repo, agency_id, period.id, [code])
+                        if code in vals:
+                            ycell.value = float(vals[code])
+                            filled += 1
 
-    ws.freeze_panes = "C2"
-    ws.auto_filter.ref = f"A1:{_col(col_of[ANNUAL_COLUMNS[-1]])}{row - 1}"
-    ws.column_dimensions["A"].width = 20
-    ws.column_dimensions["B"].width = 12
-    for code in ANNUAL_COLUMNS:
-        ws.column_dimensions[_col(col_of[code])].width = 16
-    return filled
+    # --- Fleet block ---------------------------------------------------------
+    fleet_header_row = _FIRST_DATA_ROW + len(METRIC_ROWS) + 1
+    ws.cell(row=fleet_header_row, column=_LABEL_COL, value="Fleet (vehicles by mode)").font = bold
+    mode_row: dict[str, int] = {
+        m: fleet_header_row + 1 + i for i, (m, _label) in enumerate(FLEET_MODES)
+    }
+    cap_row = fleet_header_row + 1 + len(FLEET_MODES)
+    fmt_fleet = _excel_unit_format(_FLEET_SIZE)
 
-
-def _build_balance_sheet(wb, years, names, repo, index) -> int:
-    """Sheet 5: balance sheet -- 8 white sourced lines + grey net_debt + two grey
-    check columns. Returns pre-filled cell count."""
-    from openpyxl.styles import Alignment, Font, PatternFill
-
-    from .periods import annual_period
-
-    ws = wb.create_sheet(SHEET_BALANCE)
-    grey = PatternFill(start_color=_GREY, end_color=_GREY, fill_type="solid")
-    bold = Font(bold=True)
-
-    metric_cols = BALANCE_SHEET_SOURCED + [_NET_DEBT]
-    col_of = {code: 3 + i for i, code in enumerate(metric_cols)}
-    check_assets_col = 3 + len(metric_cols)
-    check_netdebt_col = check_assets_col + 1
-    last_col = check_netdebt_col
-
-    ws.cell(row=1, column=1, value="Agency").font = bold
-    ws.cell(row=1, column=2, value="Period").font = bold
-    for code in metric_cols:
-        cell = ws.cell(row=1, column=col_of[code], value=names[code])
-        cell.font = bold
-        cell.alignment = Alignment(wrap_text=True, vertical="bottom")
-        if code == _NET_DEBT:
-            cell.fill = grey
-    for col, head in ((check_assets_col, "Check: Assets"), (check_netdebt_col, "Check: Net debt")):
-        cell = ws.cell(row=1, column=col, value=head)
-        cell.font = bold
-        cell.alignment = Alignment(wrap_text=True, vertical="bottom")
-        cell.fill = grey
-
-    filled = 0
-    row = 2
-    for slug, short_name in AGENCY_NAMES.items():
-        agency_id = repo.agency_id(slug)
-        for year in years:
+    for m, label in FLEET_MODES:
+        row = mode_row[m]
+        ws.cell(row=row, column=_LABEL_COL, value=f"Fleet — {label}").font = bold
+        mode_id = repo.mode_id(m)
+        for yi, year in enumerate(years):
+            ystart = _year_start_col(yi)
+            # Grey-lock everything but the Year cell (fleet is point-in-time annual).
+            for off in range(YEAR_BLOCK_WIDTH):
+                if off == _YEAR_OFFSET:
+                    continue
+                ws.cell(row=row, column=ystart + off).fill = grey
+            ycell = ws.cell(row=row, column=ystart + _YEAR_OFFSET)
+            ycell.number_format = fmt_fleet
             ap = annual_period(slug, year)
             period = index.get((ap.period_type, ap.start, ap.end))
-            values = (
-                _read_total_values(repo, agency_id, period.id, BALANCE_SHEET_SOURCED)
-                if period is not None else {}
-            )
-            ws.cell(row=row, column=1, value=short_name)
-            ws.cell(row=row, column=2, value=ap.label)
-
-            for code in BALANCE_SHEET_SOURCED:
-                cell = ws.cell(row=row, column=col_of[code])
-                cell.number_format = _excel_unit_format(code)
-                if code in values:
-                    cell.value = float(values[code])
+            if period is not None:
+                vals = _read_total_values(repo, agency_id, period.id, [_FLEET_SIZE], mode_id=mode_id)
+                if _FLEET_SIZE in vals:
+                    ycell.value = float(vals[_FLEET_SIZE])
                     filled += 1
 
-            nd = ws.cell(row=row, column=col_of[_NET_DEBT])
-            nd.value = _derived_excel_formula(_NET_DEBT, row, col_of)
-            nd.number_format = _excel_unit_format(_NET_DEBT)
-            nd.fill = grey
+    # Fleet scale (fleet_capacity): grey computed cell per year (Year col only).
+    ws.cell(row=cap_row, column=_LABEL_COL, value="Fleet scale").font = bold
+    for yi, _year in enumerate(years):
+        ystart = _year_start_col(yi)
+        for off in range(YEAR_BLOCK_WIDTH):
+            if off == _YEAR_OFFSET:
+                continue
+            ws.cell(row=cap_row, column=ystart + off).fill = grey
+        c = ws.cell(row=cap_row, column=ystart + _YEAR_OFFSET)
+        c.value = _fleet_capacity_formula(ystart, mode_row)
+        c.number_format = _excel_unit_format(_FLEET_CAPACITY)
+        c.fill = grey
 
-            ca = ws.cell(row=row, column=check_assets_col, value=_check_assets_formula(row, col_of))
-            ca.fill = grey
-            cn = ws.cell(row=row, column=check_netdebt_col, value=_check_netdebt_formula(row, col_of))
-            cn.number_format = _excel_unit_format(_NET_DEBT)
-            cn.fill = grey
-            row += 1
-
-    ws.freeze_panes = "C2"
-    ws.auto_filter.ref = f"A1:{_col(last_col)}{row - 1}"
-    ws.column_dimensions["A"].width = 20
-    ws.column_dimensions["B"].width = 12
-    for col in range(3, last_col + 1):
-        ws.column_dimensions[_col(col)].width = 18
-    return filled
-
-
-def _build_gaps_sheet(wb, years, names) -> None:
-    """Sheet 6: live =COUNT of filled cells per (agency, period) across sheets 3-5,
-    plus the newest month present per agency. All formulas, so never stale."""
-    from openpyxl.styles import Font
-
-    ws = wb.create_sheet(SHEET_GAPS)
-    bold = Font(bold=True)
-    n_years = len(years)
-    rid_col = _col(4)  # ridership column on the Monthly sheet
-
-    annual_white_cols = [_annual_col(c) for c in ANNUAL_WHITE_METRICS]
-    first_bs = _col(3)
-    last_bs = _col(2 + len(BALANCE_SHEET_SOURCED))
-
-    row = 1
-    ws.cell(row=row, column=1, value="What's still missing").font = bold
-    row += 2
-
-    # Newest month present per agency (live MAXIFS over the Monthly sheet).
-    ws.cell(row=row, column=1, value="Newest year with monthly ridership").font = bold
-    row += 1
-    for col, head in ((1, "Agency"), (2, "Newest year")):
-        ws.cell(row=row, column=col, value=head).font = bold
-    row += 1
-    for short_name in AGENCY_NAMES.values():
-        ws.cell(row=row, column=1, value=short_name)
-        maxifs = (
-            f"MAXIFS('{SHEET_MONTHLY}'!B:B,'{SHEET_MONTHLY}'!A:A,A{row},"
-            f"'{SHEET_MONTHLY}'!{rid_col}:{rid_col},\"<>\")"
-        )
-        ws.cell(row=row, column=2, value=f'=IF({maxifs}=0,"",{maxifs})')
-        row += 1
-    row += 1
-
-    # Monthly coverage: months filled (of 12) per (agency, year).
-    ws.cell(row=row, column=1, value="Monthly: months filled (of 12)").font = bold
-    row += 1
-    for col, head in ((1, "Agency"), (2, "Year"), (3, "Months filled")):
-        ws.cell(row=row, column=col, value=head).font = bold
-    row += 1
-    for ai, short_name in enumerate(AGENCY_NAMES.values()):
-        for yi, year in enumerate(years):
-            start = 2 + (ai * n_years + yi) * 12
-            ws.cell(row=row, column=1, value=short_name)
-            ws.cell(row=row, column=2, value=int(year))
-            rng = f"'{SHEET_MONTHLY}'!{rid_col}{start}:{rid_col}{start + 11}"
-            ws.cell(row=row, column=3, value=f"=COUNT({rng})")
-            row += 1
-    row += 1
-
-    # Annual Fundamentals: filled (of 12) per (agency, period).
-    ws.cell(row=row, column=1, value=f"Annual Fundamentals: filled (of {len(ANNUAL_WHITE_METRICS)})").font = bold
-    row += 1
-    for col, head in ((1, "Agency"), (2, "Period"), (3, "Filled")):
-        ws.cell(row=row, column=col, value=head).font = bold
-    row += 1
-    for ai, short_name in enumerate(AGENCY_NAMES.values()):
-        for yi, year in enumerate(years):
-            data_row = 2 + (ai * n_years + yi)
-            ws.cell(row=row, column=1, value=short_name)
-            ws.cell(row=row, column=2, value=f"='{SHEET_ANNUAL}'!B{data_row}")
-            cells = ",".join(f"'{SHEET_ANNUAL}'!{c}{data_row}" for c in annual_white_cols)
-            ws.cell(row=row, column=3, value=f"=COUNT({cells})")
-            row += 1
-    row += 1
-
-    # Balance Sheet: filled (of 8) per (agency, period).
-    ws.cell(row=row, column=1, value=f"Balance Sheet: filled (of {len(BALANCE_SHEET_SOURCED)})").font = bold
-    row += 1
-    for col, head in ((1, "Agency"), (2, "Period"), (3, "Filled")):
-        ws.cell(row=row, column=col, value=head).font = bold
-    row += 1
-    for ai, short_name in enumerate(AGENCY_NAMES.values()):
-        for yi, year in enumerate(years):
-            data_row = 2 + (ai * n_years + yi)
-            ws.cell(row=row, column=1, value=short_name)
-            ws.cell(row=row, column=2, value=f"='{SHEET_BALANCE}'!B{data_row}")
-            rng = f"'{SHEET_BALANCE}'!{first_bs}{data_row}:{last_bs}{data_row}"
-            ws.cell(row=row, column=3, value=f"=COUNT({rng})")
-            row += 1
-
+    # --- presentation --------------------------------------------------------
+    ws.freeze_panes = ws.cell(row=_FIRST_DATA_ROW, column=_FIRST_YEAR_COL)
     ws.column_dimensions["A"].width = 26
-    ws.column_dimensions["B"].width = 14
-    ws.column_dimensions["C"].width = 14
-
-
-def _col(idx: int) -> str:
-    from openpyxl.utils import get_column_letter
-
-    return get_column_letter(idx)
-
-
-def _annual_col(code: str) -> str:
-    """Column letter of a metric on the Annual Fundamentals sheet."""
-    return _col(3 + ANNUAL_COLUMNS.index(code))
+    for col in range(_FIRST_YEAR_COL, last_col + 1):
+        ws.column_dimensions[_col(col)].width = 11
+    return filled
 
 
 # --- Import ------------------------------------------------------------------
 
 
 def import_workbook(repo, path: str) -> dict:
-    """Read the white cells of the three entry sheets and push them through the
-    pipeline.
+    """Read the white cells of every agency tab and push them through the pipeline.
 
-    Dispatches each sheet's rows to the right period builder and service scope,
-    stages them (tier 0, feed 'manual_entry'), promotes, rolls monthly
-    ridership/revenue up to the year, recomputes derived ratios for every touched
-    (agency, period) -- including the annual periods the roll-up created -- then
-    refreshes ranks. Grey cells (derived, roll-up, checks) are never read; blank
-    cells are skipped (never fabricated). Returns counts plus any warnings.
+    For each agency tab: month cells -> monthly periods; annual sourced Year cells
+    -> the agency's annual period; per-mode Fleet Year cells -> fleet_size at that
+    mode_id. Then stage -> promote -> roll monthly ridership/revenue up to the
+    year -> recompute derived ratios for every touched (agency, period) ->
+    aggregate per-mode fleet into fleet_capacity -> refresh ranks. Grey cells
+    (Q / YTD / Year roll-ups, derived ratios, Fleet scale) are never read; blank
+    cells are skipped. Returns counts plus any warnings.
     """
     from decimal import Decimal, InvalidOperation
 
@@ -737,14 +538,16 @@ def import_workbook(repo, path: str) -> dict:
     from .contract import MetricValueRecord, SourceRef
     from .dictionary import load_dictionary
     from .jobs.derived_recompute import recompute_derived
+    from .jobs.fleet_capacity_aggregate import fleet_capacity_aggregate
     from .jobs.rank_refresh import refresh_ranks
-    from .jobs.rollup import rollup_metric
-    from .periods import monthly_period
+    from .jobs.rollup import calendar_rollup_metric, rollup_metric
+    from .periods import annual_period, monthly_period
     from .promotion import promote_approved
     from .staging import stage_records
 
     names = {c: s.display_name for c, s in load_dictionary().items()}
-    slug_of = {name: slug for slug, name in AGENCY_NAMES.items()}
+    code_of_name = {name: code for code, name in names.items()}
+    fleet_label_of = {f"Fleet — {label}": m for m, label in FLEET_MODES}
     source = SourceRef(
         document_type="manual_entry",
         extraction_method="manual",
@@ -755,24 +558,16 @@ def import_workbook(repo, path: str) -> dict:
     records: list[MetricValueRecord] = []
     monthly_agency_years: set[tuple[str, int]] = set()
 
-    def resolve_slug(agency_name) -> "str | None":
-        if agency_name is None:
-            return None
-        slug = slug_of.get(str(agency_name).strip())
-        if slug is None:
-            warnings.append(f"unknown agency name: {agency_name!r}")
-        return slug
-
-    def as_decimal(cell, code, agency_name, period_label):
+    def as_decimal(cell, label, agency_name, period_label):
         try:
             return Decimal(str(cell))
         except (InvalidOperation, ValueError):
             warnings.append(
-                f"non-numeric {names[code]} for {agency_name} {period_label}: {cell!r}"
+                f"non-numeric {label} for {agency_name} {period_label}: {cell!r}"
             )
             return None
 
-    def add_record(slug, code, period, value):
+    def add_record(slug, code, period, value, mode_code=None):
         meta = METRICS[code]
         records.append(
             MetricValueRecord(
@@ -786,69 +581,76 @@ def import_workbook(repo, path: str) -> dict:
                 value=str(value),
                 unit=meta["unit"],
                 quality="verified",
+                mode_code=mode_code,
                 currency="CAD" if meta["unit_type"] == "currency" else None,
-                # Balance-sheet dollars measure size, not performance -> never ranked.
                 comparable_flag=code not in NON_RANKABLE_METRICS,
                 source=source,
             )
         )
 
-    def columns_for(ws, codes) -> dict[int, str]:
-        name_to_code = {names[c]: c for c in codes}
-        header = [c.value for c in ws[1]]
-        return {i: name_to_code[h] for i, h in enumerate(header) if h in name_to_code}
-
-    # --- Monthly sheet -> monthly_period(year, month) ------------------------
-    if SHEET_MONTHLY in wb.sheetnames:
-        ws = wb[SHEET_MONTHLY]
-        cols = columns_for(ws, MONTHLY_METRICS)
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            if not row:
-                continue
-            slug = resolve_slug(row[0] if len(row) > 0 else None)
-            if slug is None or len(row) < 3:
-                continue
-            try:
-                year, month = int(row[1]), int(row[2])
-                period = monthly_period(year, month)
-            except (TypeError, ValueError):
-                warnings.append(f"unreadable Year/Month {row[1]!r}/{row[2]!r} for {row[0]}")
-                continue
-            for ci, code in cols.items():
-                if ci >= len(row) or row[ci] is None or row[ci] == "":
-                    continue
-                value = as_decimal(row[ci], code, row[0], period.label)
-                if value is not None:
-                    add_record(slug, code, period, value)
-            monthly_agency_years.add((slug, year))
-
-    # --- Annual Fundamentals + Balance Sheet -> Period token -----------------
-    for sheet_name, codes in (
-        (SHEET_ANNUAL, ANNUAL_WHITE_METRICS),
-        (SHEET_BALANCE, BALANCE_SHEET_SOURCED),
-    ):
-        if sheet_name not in wb.sheetnames:
+    for slug, short_name in AGENCY_NAMES.items():
+        if short_name not in wb.sheetnames:
             continue
-        ws = wb[sheet_name]
-        cols = columns_for(ws, codes)
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            if not row:
-                continue
-            slug = resolve_slug(row[0] if len(row) > 0 else None)
-            token = row[1] if len(row) > 1 else None
-            if slug is None or token is None or token == "":
-                continue
+        ws = wb[short_name]
+        # Map each year-block to (year, 1-based start column) from the header row.
+        year_blocks: list[tuple[int, int]] = []
+        col = _FIRST_YEAR_COL
+        while col <= ws.max_column:
+            raw = ws.cell(row=_YEAR_HEADER_ROW, column=col).value
+            if raw is None:
+                break
             try:
-                period = _parse_period_token(token, slug)
-            except ValueError as exc:
-                warnings.append(str(exc))
+                year_blocks.append((int(raw), col))
+            except (TypeError, ValueError):
+                warnings.append(f"{short_name}: unreadable year header {raw!r}")
+            col += YEAR_BLOCK_WIDTH
+
+        for r in range(_FIRST_DATA_ROW, ws.max_row + 1):
+            label = ws.cell(row=r, column=_LABEL_COL).value
+            if not label:
                 continue
-            for ci, code in cols.items():
-                if ci >= len(row) or row[ci] is None or row[ci] == "":
-                    continue
-                value = as_decimal(row[ci], code, row[0], period.label)
-                if value is not None:
-                    add_record(slug, code, period, value)
+            label = str(label).strip()
+
+            # --- a per-mode Fleet row (white = Year cell, imports fleet_size) ---
+            if label in fleet_label_of:
+                mode_code = fleet_label_of[label]
+                for year, ystart in year_blocks:
+                    cell = ws.cell(row=r, column=ystart + _YEAR_OFFSET).value
+                    if cell is None or cell == "":
+                        continue
+                    period = annual_period(slug, year)
+                    value = as_decimal(cell, label, short_name, period.label)
+                    if value is not None:
+                        add_record(slug, _FLEET_SIZE, period, value, mode_code=mode_code)
+                continue
+
+            # --- a metric row -------------------------------------------------
+            code = code_of_name.get(label)
+            if code is None or code not in METRIC_ROWS:
+                continue  # Fleet scale, separators, unknown rows: skip
+            if METRICS[code]["is_derived"]:
+                continue  # derived Year cell is a grey formula -> never imported
+
+            is_monthly = code in MONTHLY_METRICS
+            for year, ystart in year_blocks:
+                if is_monthly:
+                    for mi, off in enumerate(_MONTH_OFFSETS, start=1):
+                        cell = ws.cell(row=r, column=ystart + off).value
+                        if cell is None or cell == "":
+                            continue
+                        period = monthly_period(year, mi)
+                        value = as_decimal(cell, label, short_name, period.label)
+                        if value is not None:
+                            add_record(slug, code, period, value)
+                            monthly_agency_years.add((slug, year))
+                else:
+                    cell = ws.cell(row=r, column=ystart + _YEAR_OFFSET).value
+                    if cell is None or cell == "":
+                        continue
+                    period = annual_period(slug, year)
+                    value = as_decimal(cell, label, short_name, period.label)
+                    if value is not None:
+                        add_record(slug, code, period, value)
 
     # --- Orchestration: stage -> promote -> roll up -> recompute -> rank -----
     pending_ids = stage_records(repo, records, tier=0, feed_code="manual_entry")
@@ -856,12 +658,12 @@ def import_workbook(repo, path: str) -> dict:
 
     periods: set[int] = set()
     agency_periods: set[tuple[str, int]] = set()
-    for r in records:
+    for rec in records:
         pid = repo.get_or_create_reporting_period(
-            r.period_type, r.period_start, r.period_end, r.period_label
+            rec.period_type, rec.period_start, rec.period_end, rec.period_label
         )
         periods.add(pid)
-        agency_periods.add((r.agency_slug, pid))
+        agency_periods.add((rec.agency_slug, pid))
 
     # Roll monthly ridership + revenue up to the year BEFORE recompute, so annual
     # ratios (average_fare, ...) derive from the rolled-up annual inputs.
@@ -874,11 +676,32 @@ def import_workbook(repo, path: str) -> dict:
                 periods.add(pid)
                 agency_periods.add((slug, pid))
 
+    # Then fill the CALENDAR quarter / YTD / annual_calendar values from the same
+    # monthly feeds (for the per-agency time-series grid). Runs AFTER the native
+    # roll-up: calendar_rollup_metric writes only into EMPTY slots and cross-checks
+    # existing ones, so it never clobbers a native annual -- it just adds the calendar
+    # quarters / ytd (and, for fiscal-year agencies, the calendar-year total).
+    for slug, year in sorted(monthly_agency_years):
+        for code in MONTHLY_METRICS:
+            cal = calendar_rollup_metric(repo, slug, year, code)
+            rolled += len(cal.value_ids)
+            warnings.extend(cal.warnings)
+            for pid in cal.period_ids:
+                periods.add(pid)
+                agency_periods.add((slug, pid))
+
     derived = 0
     for agency_slug, pid in sorted(agency_periods):
         res = recompute_derived(repo, agency_slug, pid)
         derived += len(res.ids)
         warnings.extend(res.warnings)
+
+    # Aggregate per-mode fleet sizes into fleet_capacity AFTER per-mode fleet
+    # values exist (promoted above), and BEFORE rank refresh so the new aggregate
+    # is ranked this run.
+    for agency_slug, pid in sorted(agency_periods):
+        fleet = fleet_capacity_aggregate(repo, agency_slug, pid)
+        derived += len(fleet.value_ids)
 
     for pid in periods:
         for code in METRICS:

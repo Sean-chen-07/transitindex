@@ -9,6 +9,8 @@ import { getSession } from "@/server/entitlement";
 import { RankGrid } from "@/components/directory/rank-grid";
 import { GatedTable } from "@/components/detail/gated-metric";
 import { Spreadsheet } from "@/components/detail/spreadsheet";
+import { TrendsGrid } from "@/components/detail/trends-grid";
+import { DetailTabs } from "@/components/detail/detail-tabs";
 import { PendingNotice } from "@/components/common/states";
 import { RequestAgencyForm } from "@/components/detail/request-agency-form";
 import { SourceFootnote } from "@/components/common/source-footnote";
@@ -82,7 +84,10 @@ export default async function AgencyDetailPage({
 
       {detail.metrics.length > 0 &&
         (detail.reveal ? (
-          <Spreadsheet metrics={detail.metrics as PaidMetricView[]} />
+          <DetailTabs
+            snapshot={<Spreadsheet metrics={detail.metrics as PaidMetricView[]} />}
+            trends={<TrendsGrid metrics={detail.metrics as PaidMetricView[]} />}
+          />
         ) : (
           <GatedTable
             metrics={detail.metrics as FreeMetricView[]}

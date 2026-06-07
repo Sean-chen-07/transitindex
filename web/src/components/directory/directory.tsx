@@ -66,8 +66,8 @@ export function Directory({
               <AgencyListRow key={a.slug} item={a} ranks={ranksBySlug[a.slug] ?? []} />
             ))}
           </div>
-          {/* sm and up: grid of mini-page cards. */}
-          <div className="hidden gap-4 sm:grid sm:grid-cols-2 xl:grid-cols-3">
+          {/* sm and up: grid of mini-page cards. 3-up at lg (matches the max-w-5xl container). */}
+          <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((a) => (
               <AgencyCard key={a.slug} item={a} ranks={ranksBySlug[a.slug] ?? []} />
             ))}
