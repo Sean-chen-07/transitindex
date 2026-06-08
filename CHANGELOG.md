@@ -2,6 +2,31 @@
 
 All notable changes to TransitIndex.
 
+## [0.0.4.0] - 2026-06-08
+
+### Added
+
+#### Source PDFs now live in the cloud, with a scan queue
+- **The 64 annual-report PDFs moved off the laptop into Supabase Storage** (private bucket
+  `annual-reports`, one file per agency/year). The raw files are backed up in the cloud and
+  the local copies are no longer needed.
+- **A documents catalog tracks every PDF** — agency, year, document type, transit-authored
+  `[T]` vs city `[C]`, where it is stored, and whether it has been scanned yet
+  (`unscanned` → `scanned` / `failed`). The unscanned list is your work queue. (new
+  `core.documents` table, migration 016)
+- **A Scan button** on the review console (`python -m transitindex_ingest review`, then open
+  the page) fetches a PDF from the cloud, runs the existing extractor, and stages the numbers
+  into the review queue. Scanning feeds the existing human-review step — it never publishes a
+  number directly.
+- **New commands to manage the collection:** `docs-sync` (upload a folder and build the
+  catalog), `docs-upload` (add one PDF going forward), `docs-list` (see the queue),
+  `docs-scan` (scan from the command line), and `docs-verify` (confirm cloud copies match the
+  originals before deleting local files).
+
+### Changed
+- Scanning fetches each PDF from cloud storage into a temporary file and deletes it afterward —
+  no PDF is kept permanently on local disk.
+
 ## [0.0.3.0] - 2026-06-06
 
 ### Added
