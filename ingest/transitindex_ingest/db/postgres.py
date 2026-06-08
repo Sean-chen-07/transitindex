@@ -16,6 +16,7 @@ from typing import Optional
 
 from ..contract import MetricValueRecord, SourceRef
 from .models import (
+    Document,
     Metric,
     MetricRankRow,
     MetricValue,
@@ -158,6 +159,93 @@ class PostgresRepository:
                     source.license,
                 ),
             ).fetchone()[0]
+
+    # --- document catalog (core.documents) ----------------------------------
+
+    _DOC_COLS = (
+        "id, agency_id, year, doc_type, author_label, storage_key, source_url, "
+        "file_hash, file_bytes, scan_status, scanned_at, staged_count, last_error, "
+        "source_document_id"
+    )
+
+    def upsert_document(
+        self,
+        *,
+        agency_id: int,
+        year: int,
+        doc_type: str,
+        author_label: str,
+        storage_key: str,
+        source_url: Optional[str] = None,
+        file_hash: Optional[str] = None,
+        file_bytes: Optional[int] = None,
+    ) -> int:
+        # storage_key is the identity (UNIQUE). On conflict we refresh the
+        # descriptive columns but deliberately leave scan_status/scanned_at alone
+        # so a re-upload of an already-scanned file doesn't silently re-queue it.
+        with self._conn.transaction():
+            return self._conn.execute(
+                "INSERT INTO core.documents "
+                "(agency_id, year, doc_type, author_label, storage_key, source_url, "
+                " file_hash, file_bytes) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
+                "ON CONFLICT (storage_key) DO UPDATE SET "
+                "  agency_id = EXCLUDED.agency_id, year = EXCLUDED.year, "
+                "  doc_type = EXCLUDED.doc_type, author_label = EXCLUDED.author_label, "
+                "  source_url = EXCLUDED.source_url, file_hash = EXCLUDED.file_hash, "
+                "  file_bytes = EXCLUDED.file_bytes, updated_at = now() "
+                "RETURNING id",
+                (
+                    agency_id,
+                    year,
+                    doc_type,
+                    author_label,
+                    storage_key,
+                    source_url,
+                    file_hash,
+                    file_bytes,
+                ),
+            ).fetchone()[0]
+
+    def list_documents(self, status: Optional[str] = None) -> list[Document]:
+        sql = f"SELECT {self._DOC_COLS} FROM core.documents"
+        params: tuple = ()
+        if status is not None:
+            sql += " WHERE scan_status = %s"
+            params = (status,)
+        # unscanned (0) before failed (1) before scanned (2), then agency/year.
+        sql += (
+            " ORDER BY CASE scan_status WHEN 'unscanned' THEN 0 "
+            "WHEN 'failed' THEN 1 ELSE 2 END, agency_id, year, doc_type"
+        )
+        rows = self._conn.execute(sql, params).fetchall()
+        return [Document(*r) for r in rows]
+
+    def get_document(self, document_id: int) -> Optional[Document]:
+        row = self._conn.execute(
+            f"SELECT {self._DOC_COLS} FROM core.documents WHERE id = %s",
+            (document_id,),
+        ).fetchone()
+        return Document(*row) if row is not None else None
+
+    def mark_document_scanned(
+        self, document_id: int, *, source_document_id: Optional[int], staged_count: int
+    ) -> None:
+        with self._conn.transaction():
+            self._conn.execute(
+                "UPDATE core.documents SET scan_status = 'scanned', scanned_at = now(), "
+                "staged_count = %s, last_error = NULL, source_document_id = %s, "
+                "updated_at = now() WHERE id = %s",
+                (staged_count, source_document_id, document_id),
+            )
+
+    def mark_document_failed(self, document_id: int, *, error: str) -> None:
+        with self._conn.transaction():
+            self._conn.execute(
+                "UPDATE core.documents SET scan_status = 'failed', last_error = %s, "
+                "updated_at = now() WHERE id = %s",
+                (error, document_id),
+            )
 
     # --- staging -------------------------------------------------------------
 

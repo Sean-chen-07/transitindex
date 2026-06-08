@@ -24,6 +24,8 @@ class Config:
     database_url: Optional[str]
     anthropic_api_key: Optional[str]
     review_api_token: Optional[str]
+    supabase_url: Optional[str]
+    supabase_service_role_key: Optional[str]
 
 
 def load_config(env_path: Optional[Path] = None) -> Config:
@@ -39,6 +41,11 @@ def load_config(env_path: Optional[Path] = None) -> Config:
         ),
         review_api_token=(
             os.environ.get("REVIEW_API_TOKEN") or file_values.get("REVIEW_API_TOKEN")
+        ),
+        supabase_url=os.environ.get("SUPABASE_URL") or file_values.get("SUPABASE_URL"),
+        supabase_service_role_key=(
+            os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+            or file_values.get("SUPABASE_SERVICE_ROLE_KEY")
         ),
     )
 

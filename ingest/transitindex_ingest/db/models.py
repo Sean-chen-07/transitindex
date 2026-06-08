@@ -60,6 +60,26 @@ class SourceDocument:
 
 
 @dataclass(frozen=True)
+class Document:
+    """A row of core.documents -- one collected PDF in the catalog/scan queue."""
+
+    id: int
+    agency_id: int
+    year: int
+    doc_type: str
+    author_label: str            # 'T' (transit-own) or 'C' (city)
+    storage_key: str
+    source_url: Optional[str]
+    file_hash: Optional[str]
+    file_bytes: Optional[int]
+    scan_status: str             # 'unscanned' | 'scanned' | 'failed'
+    scanned_at: Optional[object] # datetime; kept loose to avoid a tz import here
+    staged_count: Optional[int]
+    last_error: Optional[str]
+    source_document_id: Optional[int]
+
+
+@dataclass(frozen=True)
 class MetricValue:
     """A row of core.metric_values (the promoted, current-or-superseded value)."""
 
