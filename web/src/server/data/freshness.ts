@@ -24,14 +24,36 @@ export async function getFeedFreshness(): Promise<FeedFreshness[]> {
     .from(sourceFeeds)
     .leftJoin(feedRuns, eq(feedRuns.feedId, sourceFeeds.id));
 
-  // Keep the latest run per feed (by finishedAt; nulls treated as oldest).
+  return reduceLatestFreshness(rows);
+}
+
+/** One row of the source_feeds ⟕ feed_runs join (feed_runs columns are nullable). */
+export interface FeedRunRow {
+  code: string;
+  displayName: string;
+  expectedCadence: string | null;
+  enabled: boolean;
+  status: string | null;
+  lastGoodAt: Date | null;
+  finishedAt: Date | null;
+}
+
+/**
+ * Keep the latest run per feed by finishedAt (nulls treated as oldest), then sort by name.
+ * Compares each candidate's finishedAt against the KEPT run's own finishedAt — not against a
+ * different column — so the newest run wins regardless of success/failure. (The previous code
+ * compared finishedAt against the kept run's lastGoodAt; since the ingester never sets
+ * lastGoodAt, that collapsed to "keep whichever row came last".)
+ */
+export function reduceLatestFreshness(rows: FeedRunRow[]): FeedFreshness[] {
   const latest = new Map<string, FeedFreshness>();
+  const bestFinishedAt = new Map<string, number>();
   for (const r of rows) {
     if (!r.enabled) continue;
-    const prev = latest.get(r.code);
     const ts = r.finishedAt ? r.finishedAt.getTime() : -1;
-    const prevTs = prev?.lastGoodAt ? new Date(prev.lastGoodAt).getTime() : -1;
-    if (!prev || ts > prevTs) {
+    const prevTs = bestFinishedAt.get(r.code) ?? -1;
+    if (!latest.has(r.code) || ts > prevTs) {
+      bestFinishedAt.set(r.code, ts);
       latest.set(r.code, {
         code: r.code,
         displayName: r.displayName,

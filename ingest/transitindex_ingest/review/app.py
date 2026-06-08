@@ -17,7 +17,7 @@ from typing import Optional
 
 from ..db.models import PendingValue
 from ..db.repository import Repository
-from ..promotion import promote_one
+from ..promotion import _PROMOTED_NOTE, promote_one
 from ..refdata import AGENCIES
 
 
@@ -106,7 +106,16 @@ def create_app(repo: Repository, *, token: Optional[str] = None):
 
     @app.post("/pending/{pending_id}/approve", dependencies=[Depends(require_token)])
     def approve(pending_id: int) -> dict:
-        _require_pending(pending_id)
+        p = _require_pending(pending_id)
+        # Idempotency guard: a promoted row stays review_status='approved' and is
+        # stamped with _PROMOTED_NOTE. promote_one only checks review_status, so a
+        # repeat approve (double-click, retried request) would otherwise re-promote
+        # and write a duplicate metric_value with a bogus restatement chain. Reject
+        # the same way promote_approved skips already-stamped rows.
+        if p.reviewer_notes == _PROMOTED_NOTE:
+            raise HTTPException(
+                status_code=409, detail=f"pending {pending_id} already promoted"
+            )
         repo.update_pending(pending_id, review_status="approved")
         metric_value_id = promote_one(repo, pending_id)
         return {"pending_id": pending_id, "metric_value_id": metric_value_id}

@@ -14,10 +14,16 @@ const schema = z.object({
 export async function requestAgency(input: unknown): Promise<{ ok: boolean }> {
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false };
-  await db.insert(agencyRequests).values({
-    agencyId: parsed.data.agencyId ?? null,
-    requestedName: parsed.data.requestedName ?? null,
-    email: parsed.data.email ?? null,
-  });
+  try {
+    await db.insert(agencyRequests).values({
+      agencyId: parsed.data.agencyId ?? null,
+      requestedName: parsed.data.requestedName ?? null,
+      email: parsed.data.email ?? null,
+    });
+  } catch {
+    // A stale/forged agencyId hits a foreign-key violation. Fail closed instead of
+    // rejecting — the action's contract is { ok: boolean }, never a thrown rejection.
+    return { ok: false };
+  }
   return { ok: true };
 }

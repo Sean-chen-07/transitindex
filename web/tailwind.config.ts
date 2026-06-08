@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 // Tokens are defined as CSS variables in src/app/globals.css (the single source of
 // truth, mirrored from DESIGN.md). Tailwind references them so utilities like
@@ -39,7 +40,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 };
 
 export default config;
