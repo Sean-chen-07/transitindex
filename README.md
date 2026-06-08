@@ -22,21 +22,20 @@ The 136-agency Canadian census is seeded. Loading real metric values (StatCan 23
 
 ## Document index
 
+All design, planning, and reference docs live under [`docs/`](docs/). **Start at [docs/STATUS.md](docs/STATUS.md)** — the single tracker of which docs are done, in-progress, or living references.
+
 | File | Contents |
 |---|---|
 | **README.md** (this file) | Orientation, invariants, decisions, open questions |
-| **data-model.md** | The database schema — entities, columns, rationale |
-| **phase-plan.md** | Phased roadmap, tech stack, ingestion strategy, launch agencies |
-| **source-registry.md** | Every launch agency × metric × specific data source + license |
-| **update-frequency.md** | Every agency × metric × finest available update frequency (monthly/quarterly/annual) |
-| **db/README.md** | How the schema is built, migrated, seeded, and tested (dbmate + psql) |
-| **ingest/README.md** | The Python ingestion package — layout, tests, wiring a real DB/LLM |
-| **web/README.md** | The Next.js web app — running it, the paywall and rank-safety invariants |
-| **docs/managing-data.md** | Plain-language guide to viewing, gap-checking, and hand-entering data |
-| **docs/data-dictionary.md** | Every metric — what it means, its unit, and (for ratios) the formula |
-| **docs/reference-ingest-cli.md** | Every ingestion CLI command (`python -m transitindex_ingest …`) and flag |
+| **[docs/STATUS.md](docs/STATUS.md)** | **Documentation status tracker** — every design/planning/reference doc + whether it's done, in-progress, or a living reference. Start here. |
+| **[docs/design/](docs/design/)** | Design docs — design system (DESIGN.md), data model, concrete schema, bulk-loader architecture |
+| **[docs/planning/](docs/planning/)** | Plans & specs — phase-plan, M1 web plan, MVP plan, lane-0 spec, backend-restructure + balance-sheet plans |
+| **[docs/reference/](docs/reference/)** | Reference — data dictionary, ingest CLI, managing-data how-to, source registry, update-frequency, FOI plan |
+| **[db/README.md](db/README.md)** | How the schema is built, migrated, seeded, and tested (dbmate + psql) |
+| **[ingest/README.md](ingest/README.md)** | The Python ingestion package — layout, tests, wiring a real DB/LLM |
+| **[web/README.md](web/README.md)** | The Next.js web app — running it, the paywall and rank-safety invariants |
 | **CHANGELOG.md** | What shipped in each release |
-| **TODOS.md** | Deferred work and open decisions |
+| **[TODOS.md](TODOS.md)** | Deferred work and open decisions |
 
 ## Non-negotiable invariants
 

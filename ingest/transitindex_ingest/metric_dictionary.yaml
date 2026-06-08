@@ -1,6 +1,6 @@
 # TransitIndex — per-metric data dictionary (single source of truth).
 #
-# This file is hand-authored. It drives the human doc (docs/data-dictionary.md),
+# This file is hand-authored. It drives the human doc (docs/reference/data-dictionary.md),
 # the PDF-extraction prompts, the FOI request templates, and the workbook's
 # inline definitions, via ingest/transitindex_ingest/dictionary.py.
 #

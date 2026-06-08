@@ -64,7 +64,7 @@ No purple/violet gradients. No decorative blobs. No icon-in-colored-circle featu
    tab so each tab's "as of" stays honest. Three plain-language sections: *What the agency owns*
    · *What it owes* · *Net position*. Raw dollars are paid-only and unranked; only
    `net_debt_per_capita` and `debt_to_assets` carry ranks. See
-   [balance-sheet-and-frequency-plan.md §5](balance-sheet-and-frequency-plan.md).
+   [balance-sheet-and-frequency-plan.md §5](../planning/balance-sheet-and-frequency-plan.md).
 4. **Rank display:** ordinal only ("3rd"); comparison set named **once per page**
    ("ranked vs all Canadian agencies"), not "(3 of 10)" on every number. Paid switches
    the set (region / province).

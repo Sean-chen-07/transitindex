@@ -8,7 +8,7 @@ This module LOADS that file, JOINS it with the structural catalog
 + which equations each metric participates in), and GENERATES the surfaces that
 must never drift from it:
 
-  - `docs/data-dictionary.md`              -- the human doc (`generate_markdown`)
+  - `docs/reference/data-dictionary.md`    -- the human doc (`generate_markdown`)
   - PDF-extraction prompt fragments        -- `pdf/llm.py` (Phase 4)
   - FOI request templates                  -- (Phase 4)
   - the workbook's inline definitions      -- `workbook.py` (Phase 3)
@@ -321,11 +321,11 @@ def foi_request_template(
 
 
 def write_markdown(path: Optional[str] = None) -> str:
-    """Write `docs/data-dictionary.md` (or `path`). Returns the path written."""
+    """Write `docs/reference/data-dictionary.md` (or `path`). Returns the path written."""
     if path is None:
-        # repo_root/ingest/transitindex_ingest/ -> repo_root/docs/data-dictionary.md
+        # repo_root/ingest/transitindex_ingest/ -> repo_root/docs/reference/data-dictionary.md
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        path = os.path.join(repo_root, "docs", "data-dictionary.md")
+        path = os.path.join(repo_root, "docs", "reference", "data-dictionary.md")
     with open(path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(generate_markdown())
     return path

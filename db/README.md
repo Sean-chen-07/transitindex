@@ -1,8 +1,8 @@
 # `db/` — TransitIndex schema (Lane 0)
 
 The database **contract**, owned by neither service. Built from
-[../schema-design.md](../schema-design.md) §3–4 and
-[../lane-0-foundation-spec.md](../lane-0-foundation-spec.md).
+[../docs/design/schema-design.md](../docs/design/schema-design.md) §3–4 and
+[../docs/planning/lane-0-foundation-spec.md](../docs/planning/lane-0-foundation-spec.md).
 
 - **Two schemas:** `core` (ingestion-written, web reads only) and `app` (web-written).
   The read-only contract is enforced by a least-privilege `web_reader` role, not by convention.

@@ -28,7 +28,7 @@ under [Environment](#environment) at the end.
 Fast, diff-aware bulk loads of open-data sources. Re-running supersedes only the
 rows that changed (identical rows are skipped, so no duplicates accumulate). Each
 writes a JSON result summary and exits `0` on success, `1` if a self-check fails.
-The design is described in [statcan-loader-design.md](../statcan-loader-design.md).
+The design is described in [statcan-loader-design.md](../design/statcan-loader-design.md).
 
 ### `statcan-load` (alias: `statcan`)
 
@@ -217,6 +217,6 @@ Settings live in the project-root `.env` (read by `config.load_config()`).
 ## Related
 
 - [managing-data.md](managing-data.md) — friendly, no-coding guide to the everyday data tasks (the workbook round-trip and the one-click bulk loaders).
-- [statcan-loader-design.md](../statcan-loader-design.md) — why the bulk loaders are diff-aware and how the fast path works.
-- [ingest/README.md](../ingest/README.md) — the Python package layout and how to run the tests.
+- [statcan-loader-design.md](../design/statcan-loader-design.md) — why the bulk loaders are diff-aware and how the fast path works.
+- [ingest/README.md](../../ingest/README.md) — the Python package layout and how to run the tests.
 - [data-dictionary.md](data-dictionary.md) — what each metric means, its unit, and (for ratios) its formula.

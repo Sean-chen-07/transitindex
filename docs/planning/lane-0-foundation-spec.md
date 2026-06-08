@@ -2,7 +2,7 @@
 **Status:** Ready to build (Phase 1 plan approved for this slice) | **Authored:** 2026-05-30 via `/spec`
 **Scope:** The blocking foundation only. Ends with a runnable, tested, seeded Postgres 16 database that both build lanes depend on. No application code in this spec.
 
-> This is the bridge from the locked design ([phase-plan.md](phase-plan.md), [data-model.md](data-model.md), [schema-design.md](schema-design.md)) to an executable build. Table definitions are authoritative in [schema-design.md](schema-design.md); this spec adds the build-specific layer (file breakdown, tooling, seed contents, tests, acceptance criteria) and records the deltas decided in the 2026-05-30 spec session.
+> This is the bridge from the locked design ([phase-plan.md](phase-plan.md), [data-model.md](../design/data-model.md), [schema-design.md](../design/schema-design.md)) to an executable build. Table definitions are authoritative in [schema-design.md](../design/schema-design.md); this spec adds the build-specific layer (file breakdown, tooling, seed contents, tests, acceptance criteria) and records the deltas decided in the 2026-05-30 spec session.
 
 ---
 
@@ -26,7 +26,7 @@ TransitIndex has a fully reviewed design but zero code. Every downstream lane �
 
 ## Current State
 - **Not a git repo yet.** Project root `C:\Users\chenc\Projects\transitindex\` holds only planning docs (`*.md`) and `.claude/`.
-- Schema decisions locked in [schema-design.md §5](schema-design.md): `core`/`app` split, `text`+CHECK enums, `text[]` mode arrays, single-value+`crosscheck_value`, DB-trigger audit, no min-denominator, raw-file `archive_uri`.
+- Schema decisions locked in [schema-design.md §5](../design/schema-design.md): `core`/`app` split, `text`+CHECK enums, `text[]` mode arrays, single-value+`crosscheck_value`, DB-trigger audit, no min-denominator, raw-file `archive_uri`.
 
 ---
 
@@ -55,7 +55,7 @@ transitindex/
 ## What Lane 0 delivers
 1. **`git init`** + `.gitignore` (ignores `.env`, `node_modules/`, `__pycache__/`, `.venv/`, dbmate local artifacts).
 2. **dbmate installed and wired** to the Supabase connection.
-3. **Migration files** building the entire `core` + `app` schema from [schema-design.md](schema-design.md) §3–4: every table, CHECK constraint, FK, index, the `one_current_value` partial unique index (PG15+ `NULLS NOT DISTINCT`), and the audit trigger.
+3. **Migration files** building the entire `core` + `app` schema from [schema-design.md](../design/schema-design.md) §3–4: every table, CHECK constraint, FK, index, the `one_current_value` partial unique index (PG15+ `NULLS NOT DISTINCT`), and the audit trigger.
 4. **Role/grant migration** (the piece schema-design.md §6 lists as not-yet-covered): a least-privilege `web_reader` role with `SELECT` on `core` and read/write on `app` only — making "web is a pure reader" enforceable, not aspirational.
 5. **Seed files** — reference/dimension data only (no metric values; those come from adapters): 10 modes, 10 agencies, the agency↔mode links, the **20** universal metric definitions, and the `source_feeds` rows.
 6. **Test harness** — plain-SQL assertion tests run via `psql -f`, proving the invariants below.
