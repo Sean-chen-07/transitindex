@@ -21,6 +21,22 @@ def test_parse_number_accounting_parentheses_are_negative():
     assert parse_number("(0)") == Decimal("0")
 
 
+def test_parse_number_english_comma_thousands():
+    # Comma thousands separators are stripped, NOT read as a decimal point. Before the
+    # fix "1,234" silently became 1.234 (1000x too small) and "250,000,000" raised.
+    assert parse_number("1,234") == Decimal("1234")
+    assert parse_number("250,000,000") == Decimal("250000000")
+    assert parse_number("1,234.56") == Decimal("1234.56")
+    assert parse_number("(1,234)") == Decimal("-1234")
+
+
+def test_parse_number_french_comma_decimal_still_works():
+    # A lone comma trailing 1-2 digits stays a decimal separator, including alongside
+    # French space-thousands ("1 234,56" -> 1234.56).
+    assert parse_number("12,5") == Decimal("12.5")
+    assert parse_number("1 234,56") == Decimal("1234.56")
+
+
 # --- apply_scale_sign -------------------------------------------------------
 
 

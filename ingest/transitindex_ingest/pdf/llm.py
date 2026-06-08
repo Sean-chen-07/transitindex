@@ -13,6 +13,7 @@ number parser are stdlib-pure; the Anthropic SDK is imported lazily inside
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Optional, Protocol, runtime_checkable
@@ -164,8 +165,10 @@ EXTRACTION_TOOL = {
 def parse_number(raw: object) -> Decimal:
     """Parse a number string into Decimal, tolerating Canadian/French formats.
 
-    Handles space / non-breaking-space thousands separators ('1 234 567') and a
-    comma decimal ('12,5'). Plain ints/Decimals pass straight through.
+    Handles space / non-breaking-space thousands separators ('1 234 567'),
+    English-Canadian comma thousands separators ('1,234', '250,000,000',
+    '1,234.56'), and a French comma decimal ('12,5'). Plain ints/Decimals pass
+    straight through.
     """
     if isinstance(raw, Decimal):
         return raw
@@ -180,9 +183,19 @@ def parse_number(raw: object) -> Decimal:
     # Strip space-family thousands separators (regular, non-breaking, narrow nbsp).
     for sep in (" ", " ", " "):
         text = text.replace(sep, "")
-    # Comma decimal -> dot decimal (only meaningful once spaces are gone).
-    if "," in text and "." not in text:
-        text = text.replace(",", ".")
+    # Disambiguate the comma (only meaningful once spaces are gone). With a period
+    # present the comma can only be an English thousands separator ("1,234.56" ->
+    # "1234.56"). Otherwise a lone comma trailing 1-2 digits is a French/European
+    # decimal ("12,5" -> "12.5"); any other comma grouping is English thousands
+    # separators ("250,000,000" / "1,234" -> strip them). The previous code treated
+    # every comma as a decimal point, silently turning "1,234" into 1.234.
+    if "." in text:
+        text = text.replace(",", "")
+    elif "," in text:
+        if re.fullmatch(r"-?\d+,\d{1,2}", text):
+            text = text.replace(",", ".")
+        else:
+            text = text.replace(",", "")
     try:
         value = Decimal(text)
     except InvalidOperation as exc:

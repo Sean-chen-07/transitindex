@@ -140,6 +140,20 @@ def test_approve_promotes_exactly_one_and_flips_status(loaded_repo, client):
     assert current is not None and current.id == mv_id
 
 
+def test_second_approve_is_rejected_and_promotes_nothing(loaded_repo, client):
+    """A repeat approve (double-click / retry) must not re-promote: it would
+    write a duplicate metric_value with a bogus restatement chain."""
+    pid = client.get("/pending").json()[0]["id"]
+
+    first = client.post(f"/pending/{pid}/approve")
+    assert first.status_code == 200
+    after_first = len(loaded_repo._values)  # noqa: SLF001
+
+    second = client.post(f"/pending/{pid}/approve")
+    assert second.status_code == 409
+    assert len(loaded_repo._values) == after_first  # noqa: SLF001 - no new value
+
+
 def test_reject_promotes_nothing(loaded_repo, client):
     pid = client.get("/pending").json()[0]["id"]
     before = len(loaded_repo._values)  # noqa: SLF001

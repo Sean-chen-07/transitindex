@@ -1,8 +1,9 @@
 import type Stripe from "stripe";
 import { eq } from "drizzle-orm";
 import { db } from "@/server/db";
-import { users, conversionEvents } from "@/db/schema";
+import { users } from "@/db/schema";
 import { stripe } from "@/lib/stripe";
+import { recordPaidConversionOnce } from "@/server/billing/conversions";
 
 // Node runtime: the Edge runtime can't give us the exact raw bytes Stripe signed, and the
 // SDK's signature verification needs the unparsed body.
@@ -67,7 +68,8 @@ export async function POST(req: Request): Promise<Response> {
             ...(paid ? { subscriptionStatus: "active" } : {}),
           })
           .where(eq(users.id, userId));
-        if (paid) await db.insert(conversionEvents).values({ eventType: "paid", userId });
+        // Idempotent on redelivery (Stripe re-sends events); see recordPaidConversionOnce.
+        if (paid) await recordPaidConversionOnce(userId);
       }
       break;
     }
