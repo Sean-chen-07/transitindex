@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ZiJdnShJOsrSKfDlnV6kdXBJZan1Igs1zokFtqjGoh2x2QE6koldVxePzZtKVui
+\restrict 8yghBE68puhEM8nUlcekG5X0imIFkmY3kzPea9U6KuldG6kChGNadDO2gCyE7i4
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.4
@@ -279,6 +279,19 @@ ALTER TABLE core.feed_runs ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
 
 
 --
+-- Name: metric_equations; Type: TABLE; Schema: core; Owner: -
+--
+
+CREATE TABLE core.metric_equations (
+    equation_code text NOT NULL,
+    kind text NOT NULL,
+    defines text,
+    display text NOT NULL,
+    CONSTRAINT metric_equations_kind_check CHECK ((kind = ANY (ARRAY['sum'::text, 'ratio'::text])))
+);
+
+
+--
 -- Name: metric_ranks; Type: TABLE; Schema: core; Owner: -
 --
 
@@ -332,6 +345,42 @@ CREATE TABLE core.metric_value_audit (
 
 ALTER TABLE core.metric_value_audit ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME core.metric_value_audit_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: metric_value_derivation_inputs; Type: TABLE; Schema: core; Owner: -
+--
+
+CREATE TABLE core.metric_value_derivation_inputs (
+    derivation_id bigint NOT NULL,
+    input_metric_value_id bigint NOT NULL
+);
+
+
+--
+-- Name: metric_value_derivations; Type: TABLE; Schema: core; Owner: -
+--
+
+CREATE TABLE core.metric_value_derivations (
+    id bigint NOT NULL,
+    metric_value_id bigint NOT NULL,
+    equation_code text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: metric_value_derivations_id_seq; Type: SEQUENCE; Schema: core; Owner: -
+--
+
+ALTER TABLE core.metric_value_derivations ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME core.metric_value_derivations_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -441,7 +490,8 @@ CREATE TABLE core.modes (
     id bigint NOT NULL,
     code text NOT NULL,
     display_name text NOT NULL,
-    description text
+    description text,
+    capacity_weight smallint
 );
 
 
@@ -554,7 +604,7 @@ CREATE TABLE core.source_documents (
     verified_at timestamp with time zone,
     verified_by text,
     CONSTRAINT source_documents_document_type_check CHECK ((document_type = ANY (ARRAY['annual_report'::text, 'quarterly_update'::text, 'budget'::text, 'ceo_report'::text, 'board_report'::text, 'statcan_table'::text, 'open_data_csv'::text, 'gtfs'::text, 'manual_entry'::text, 'press_release'::text]))),
-    CONSTRAINT source_documents_license_check CHECK ((license = ANY (ARRAY['statcan_open'::text, 'ogl_toronto'::text, 'ogl_ottawa'::text, 'ogl_calgary'::text, 'ogl_edmonton'::text, 'ogl_montreal'::text, 'ogl_metrovancouver'::text, 'ogl_mississauga'::text, 'public_document'::text])))
+    CONSTRAINT source_documents_license_check CHECK ((license = ANY (ARRAY['statcan_open'::text, 'ogl_toronto'::text, 'ogl_ottawa'::text, 'ogl_calgary'::text, 'ogl_edmonton'::text, 'ogl_montreal'::text, 'ogl_metrovancouver'::text, 'ogl_mississauga'::text, 'ogl_hamilton'::text, 'public_document'::text])))
 );
 
 
@@ -706,6 +756,14 @@ ALTER TABLE ONLY core.feed_runs
 
 
 --
+-- Name: metric_equations metric_equations_pkey; Type: CONSTRAINT; Schema: core; Owner: -
+--
+
+ALTER TABLE ONLY core.metric_equations
+    ADD CONSTRAINT metric_equations_pkey PRIMARY KEY (equation_code);
+
+
+--
 -- Name: metric_ranks metric_ranks_pkey; Type: CONSTRAINT; Schema: core; Owner: -
 --
 
@@ -719,6 +777,22 @@ ALTER TABLE ONLY core.metric_ranks
 
 ALTER TABLE ONLY core.metric_value_audit
     ADD CONSTRAINT metric_value_audit_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: metric_value_derivation_inputs metric_value_derivation_inputs_pkey; Type: CONSTRAINT; Schema: core; Owner: -
+--
+
+ALTER TABLE ONLY core.metric_value_derivation_inputs
+    ADD CONSTRAINT metric_value_derivation_inputs_pkey PRIMARY KEY (derivation_id, input_metric_value_id);
+
+
+--
+-- Name: metric_value_derivations metric_value_derivations_pkey; Type: CONSTRAINT; Schema: core; Owner: -
+--
+
+ALTER TABLE ONLY core.metric_value_derivations
+    ADD CONSTRAINT metric_value_derivations_pkey PRIMARY KEY (id);
 
 
 --
@@ -829,6 +903,13 @@ CREATE INDEX agencies_parent_idx ON core.agencies USING btree (parent_agency_id)
 --
 
 CREATE INDEX agencies_subdivision_idx ON core.agencies USING btree (subdivision);
+
+
+--
+-- Name: metric_value_derivations_value_idx; Type: INDEX; Schema: core; Owner: -
+--
+
+CREATE UNIQUE INDEX metric_value_derivations_value_idx ON core.metric_value_derivations USING btree (metric_value_id);
 
 
 --
@@ -948,6 +1029,14 @@ ALTER TABLE ONLY core.feed_runs
 
 
 --
+-- Name: metric_equations metric_equations_defines_fkey; Type: FK CONSTRAINT; Schema: core; Owner: -
+--
+
+ALTER TABLE ONLY core.metric_equations
+    ADD CONSTRAINT metric_equations_defines_fkey FOREIGN KEY (defines) REFERENCES core.metrics(code);
+
+
+--
 -- Name: metric_ranks metric_ranks_agency_id_fkey; Type: FK CONSTRAINT; Schema: core; Owner: -
 --
 
@@ -977,6 +1066,30 @@ ALTER TABLE ONLY core.metric_ranks
 
 ALTER TABLE ONLY core.metric_value_audit
     ADD CONSTRAINT metric_value_audit_metric_value_id_fkey FOREIGN KEY (metric_value_id) REFERENCES core.metric_values(id) ON DELETE CASCADE;
+
+
+--
+-- Name: metric_value_derivation_inputs metric_value_derivation_inputs_derivation_id_fkey; Type: FK CONSTRAINT; Schema: core; Owner: -
+--
+
+ALTER TABLE ONLY core.metric_value_derivation_inputs
+    ADD CONSTRAINT metric_value_derivation_inputs_derivation_id_fkey FOREIGN KEY (derivation_id) REFERENCES core.metric_value_derivations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: metric_value_derivation_inputs metric_value_derivation_inputs_input_metric_value_id_fkey; Type: FK CONSTRAINT; Schema: core; Owner: -
+--
+
+ALTER TABLE ONLY core.metric_value_derivation_inputs
+    ADD CONSTRAINT metric_value_derivation_inputs_input_metric_value_id_fkey FOREIGN KEY (input_metric_value_id) REFERENCES core.metric_values(id) ON DELETE CASCADE;
+
+
+--
+-- Name: metric_value_derivations metric_value_derivations_metric_value_id_fkey; Type: FK CONSTRAINT; Schema: core; Owner: -
+--
+
+ALTER TABLE ONLY core.metric_value_derivations
+    ADD CONSTRAINT metric_value_derivations_metric_value_id_fkey FOREIGN KEY (metric_value_id) REFERENCES core.metric_values(id) ON DELETE CASCADE;
 
 
 --
@@ -1176,10 +1289,31 @@ GRANT SELECT ON TABLE core.feed_runs TO web_reader;
 
 
 --
+-- Name: TABLE metric_equations; Type: ACL; Schema: core; Owner: -
+--
+
+GRANT SELECT ON TABLE core.metric_equations TO web_reader;
+
+
+--
 -- Name: TABLE metric_ranks; Type: ACL; Schema: core; Owner: -
 --
 
 GRANT SELECT ON TABLE core.metric_ranks TO web_reader;
+
+
+--
+-- Name: TABLE metric_value_derivation_inputs; Type: ACL; Schema: core; Owner: -
+--
+
+GRANT SELECT ON TABLE core.metric_value_derivation_inputs TO web_reader;
+
+
+--
+-- Name: TABLE metric_value_derivations; Type: ACL; Schema: core; Owner: -
+--
+
+GRANT SELECT ON TABLE core.metric_value_derivations TO web_reader;
 
 
 --
@@ -1235,5 +1369,5 @@ GRANT SELECT ON TABLE core.source_feeds TO web_reader;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ZiJdnShJOsrSKfDlnV6kdXBJZan1Igs1zokFtqjGoh2x2QE6koldVxePzZtKVui
+\unrestrict 8yghBE68puhEM8nUlcekG5X0imIFkmY3kzPea9U6KuldG6kChGNadDO2gCyE7i4
 

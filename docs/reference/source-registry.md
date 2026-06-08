@@ -53,7 +53,7 @@ Derived metrics (farebox recovery ratio, cost per rider, cost per hour, subsidy 
 > Also note: the *Typology:* label in each agency section below is **descriptive only** — typology was
 > dropped as a stored field 2026-05-30.
 
-> **Balance-sheet expansion (2026-05-31, [balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-plan.md)):**
+> **Balance-sheet expansion (2026-05-31, [balance-sheet-and-frequency-plan.md](../planning/balance-sheet-and-frequency-plan.md)):**
 > +11 metrics → catalog of **31**. The 8 sourced balance-sheet lines (`total_financial_assets`,
 > `total_liabilities`, `total_non_financial_assets`, `total_assets`, `tangible_capital_assets`,
 > `accumulated_surplus`, `long_term_debt`, `cash_and_investments`) come from each agency's

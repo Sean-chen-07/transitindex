@@ -177,7 +177,7 @@ Resolutions captured in phase-plan.md "Architecture — eng re-review" + data-mo
   then `import-xlsx`. Priority columns: annual_ridership, operating_expenses, operating_revenue.
 
 ## Data expansion — balance sheets + native frequency (2026-05-31)
-Full plan: [balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-plan.md).
+Full plan: [balance-sheet-and-frequency-plan.md](docs/planning/balance-sheet-and-frequency-plan.md).
 
 > **Mostly DELIVERED in v0.0.3.0** (the backend restructure folded this in). DONE: `quarterly_period()`;
 > 11 balance-sheet metrics seeded (`refdata.METRICS` + `04_metrics.sql`, parity-tested); `net_debt` /

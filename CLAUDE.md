@@ -66,6 +66,27 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
+## Docs & status tracking
+
+All design / planning / reference docs live under `docs/` (`docs/design/`, `docs/planning/`,
+`docs/reference/`). The cross-cutting work-item ledger `TODOS.md` stays at the repo root.
+Archive obsolete docs under `docs/archive/` (create it when first needed).
+
+**`docs/STATUS.md` is the single source of truth for documentation status.**
+
+- **At session start:** read `docs/STATUS.md` to see what is built (`done`), partial
+  (`in-progress`), reference-only (`living`), or has a stale header. Trust STATUS over any
+  individual doc's own header — several doc headers claim "not started" / "pre-build" but
+  are actually shipped.
+- **At session end:** update `docs/STATUS.md` whenever a doc's real build status changed, or
+  a doc was added / moved / archived. Update the row's Status + Scope to match the *code
+  reality* (verify against `db/migrations/`, `ingest/`, `web/src/`), add or relocate rows as
+  needed, and bump the **Last updated** date.
+- Do **not** hand-edit `docs/reference/data-dictionary.md` — it is generated
+  (`python -m transitindex_ingest.dictionary`).
+
+---
+
 ## gstack
 
 Use /browse from gstack for all web browsing. Never use mcp__claude-in-chrome__* tools.

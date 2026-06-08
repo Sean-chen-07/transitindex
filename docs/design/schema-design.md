@@ -307,7 +307,7 @@ wall-hit → gate-view → checkout-start → paid.
 | + | Archive raw **non-API** source files to cloud | ✅ **Yes** — `archive_uri` (link-rot insurance + re-extraction) |
 | 7 | Agency `typology` tag | ❌ **Dropped (2026-05-30)** — modes + `service_area_population` carry scale; `metric_ranks.comparison_set` → `all\|subdivision`. See lane-0-foundation-spec.md. |
 | 8 | Launch metric catalog | ✅ **20 metrics** (14 sourced + 6 derived) — full financial-statement set. Seed detail in lane-0-foundation-spec.md + source-registry.md. |
-| 9 | Balance-sheet expansion (2026-05-31) | ✅ Catalog **20 → 31** (+8 sourced balance-sheet lines, +3 derived). **No table migration** — `metric_values` absorbs them. Balance-sheet dollar lines carry `comparable_flag=false` (size, not performance; never ranked); only `debt_to_assets` + `net_debt_per_capita` rank. `crosscheck_value` now also holds the *printed* net debt from the PDF path. See [balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-plan.md). |
+| 9 | Balance-sheet expansion (2026-05-31) | ✅ Catalog **20 → 31** (+8 sourced balance-sheet lines, +3 derived). **No table migration** — `metric_values` absorbs them. Balance-sheet dollar lines carry `comparable_flag=false` (size, not performance; never ranked); only `debt_to_assets` + `net_debt_per_capita` rank. `crosscheck_value` now also holds the *printed* net debt from the PDF path. See [balance-sheet-and-frequency-plan.md](../planning/balance-sheet-and-frequency-plan.md). |
 
 **Gaps I added beyond data-model.md** (the build needs them): `source_feeds` + `feed_runs`,
 `agency_requests`, `conversion_events`, pending-value provenance fields, `crosscheck_value` +

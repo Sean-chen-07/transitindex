@@ -145,7 +145,7 @@ The web app is a pure reader; ranks and derived ratios are computed in the data 
 
 ## Balance-sheet metric family + carry-forward (2026-05-31)
 
-Added by [balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-plan.md). **No table
+Added by [balance-sheet-and-frequency-plan.md](../planning/balance-sheet-and-frequency-plan.md). **No table
 migration** — these live in `metric_values` like every other metric. The catalog grows **20 → 31**.
 
 - **8 sourced balance-sheet line items** (PSAB / PS 1201 statement of financial position):

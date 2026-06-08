@@ -38,56 +38,68 @@ This creates a file called **`transitindex-data.xlsx`** in the `ingest` folder.
 (Because the database is empty today, the spreadsheet comes out blank and ready
 to fill — that's expected.)
 
-Open it in Excel. It has six tabs along the bottom:
+Open it in Excel. Along the bottom you'll see these tabs:
 
 1. **How to use** — the same plain instructions, right inside the file.
-2. **Data Dictionary** — what every number means, its unit, and — handily — a
-   **Sheet** column telling you which tab to type it on.
-3. **Monthly** — month-by-month ridership and fare revenue.
-4. **Annual Fundamentals** — the once-a-year operating numbers (service hours,
-   costs, fleet, and so on), one row per agency per year.
-5. **Balance Sheet** — the agency's once-a-year financial position (assets,
-   liabilities), from the audited financial statements.
-6. **Gaps** — a quick count, for each row, of how many numbers are filled in
-   versus still missing. Use this to see what's left to do.
+2. **Data Dictionary** — what every number means: a plain-language description,
+   its unit, whether you **type** it ("Sourced") or it's **worked out for you**
+   ("Calculated"), the formula for the calculated ones, and how often it's
+   normally reported.
+3. **One tab per agency** — TTC, STM, TransLink, and so on. These are where you
+   type — each agency has its own tab.
+
+### What an agency tab looks like
+
+An agency tab is a grid. **Down the left** is one row per number we track
+(ridership, operating revenue, service hours, costs, and so on). **Across the
+top**, the columns run left to right by year, and each year is split into the
+twelve months, the four quarters, a year-to-date total, and the full-year total:
+
+```
+Jan Feb Mar  Q1  |  Apr May Jun  Q2  |  Jul Aug Sep  Q3  |  Oct Nov Dec  Q4  |  YTD  |  Year
+```
+
+At the bottom of every agency tab is a small **Fleet** section: one row per
+vehicle type (Bus, Subway, Light rail, Commuter rail, Streetcar), plus a
+**Fleet scale** row that's worked out for you.
 
 ### The colour code
 
-The same three colours mean the same thing on every tab:
+The two colours mean the same thing everywhere:
 
 - **White cells** — type here.
-- **Grey cells** — worked out automatically (yearly totals, ratios, accounting
-  checks). **Don't type in them** — anything you put there is ignored and
-  recalculated.
-- **Light-yellow cells** — optional, only needed for the rare quarterly case. A
-  blank light-yellow cell is perfectly normal.
+- **Grey cells** — worked out automatically (the quarter, year-to-date and
+  full-year totals, the ratios, and Fleet scale). **Don't type in them** —
+  anything you put there is ignored and recalculated.
 
 ## Step 2 — Add data
 
-Open the **Data Dictionary** tab if you're not sure where a number goes — its
-**Sheet** column points you to the right tab. Otherwise:
+Open your agency's tab (for example **TTC**) — everything for that agency goes on
+that one tab. Open the **Data Dictionary** tab any time you're unsure what a
+number means.
 
-- **Monthly tab** — for ridership and fare revenue. Type each month you have;
-  the **yearly total is worked out for you** when you import. If a city only
-  publishes a yearly number, skip this tab and use Annual Fundamentals instead.
-- **Annual Fundamentals tab** — the once-a-year operating numbers. Ridership and
-  fare revenue show up here too, but as a **grey yearly total** — you don't
-  re-type them, they come from the Monthly tab.
-- **Balance Sheet tab** — the eight financial-position lines from the audited
-  statements. **Net Debt** and the two **Check** columns are grey: they're
-  worked out for you so you can eyeball that the numbers add up.
+- **Ridership and Operating revenue** — type each **month** you have, in the
+  white month cells. The quarter, year-to-date and full-year totals fill in for
+  you.
+- **Every other yearly number** (service hours, costs, fleet age, the
+  balance-sheet lines, and so on) — type it **once**, in that row's **Year**
+  column. The month and quarter cells on those rows are greyed out — you don't
+  use them.
+- **Fleet** — in the Fleet section at the bottom, type the number of vehicles for
+  each mode (Bus, Subway, Light rail, Commuter rail, Streetcar) in the **Year**
+  column. The **Fleet scale** row is worked out for you.
+- **Calculated rows** (ratios like farebox recovery and cost per rider, and net
+  debt) show a grey formula in the **Year** column — they fill themselves in once
+  their inputs are present. You never type them.
 
 Type real numbers straight from your source (an annual report, a budget, an
 open-data file). Leave anything you don't have **blank** — never guess.
 
-**About the Period column** (on Annual Fundamentals and Balance Sheet). Each row
-already has its Period filled in for you:
-
-- **2024** means the calendar year 2024 (most agencies).
-- **FY2024-25** means a financial year ending in spring 2025 — for **Metrolinx**
-  and **BC Transit**, whose year ends in March.
-- **2024-Q1** means the first quarter of 2024. Only **TransLink** reports its
-  balance sheet this often; you'd type this one in yourself for that rare case.
+**About the year columns.** The year across the top is just the calendar year —
+**2024** means calendar-year 2024 for most agencies. **Metrolinx** and **BC
+Transit** run their financial year to the end of March; for them, the column
+labelled **2024** means their 2024–25 financial year. There's nothing to set —
+just type each agency's figures under the matching year.
 
 ## Step 3 — Save it back
 
@@ -97,9 +109,10 @@ When you're done editing, save the Excel file, then run:
 python -m transitindex_ingest import-xlsx transitindex-data.xlsx
 ```
 
-This reads your white cells, saves them into the database, **adds up the months
-into yearly totals**, works out the calculated metrics (ratios, net debt), and
-refreshes the rankings. You'll see a short summary of how many values were saved.
+This reads your white cells, saves them into the database, **rolls the months up
+into quarter and yearly totals**, works out the calculated metrics (ratios, net
+debt, Fleet scale), and refreshes the rankings. You'll see a short summary of how
+many values were saved.
 
 To confirm the round-trip worked, run the export again and reopen the file —
 your numbers (and the grey calculated cells) should now be there:

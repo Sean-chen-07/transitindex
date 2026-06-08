@@ -20,7 +20,7 @@ lives in audited annual financial statements, so its native cadence is **annual*
 universal *quarterly* balance sheets are **not** promised. **TransLink** is the one agency that
 publishes a quarterly statement of financial position; show it quarterly, everyone else annual.
 Small agencies (MiWay, Burlington) appear inside their municipality's consolidated annual
-statements. See [balance-sheet-and-frequency-plan.md](balance-sheet-and-frequency-plan.md).
+statements. See [balance-sheet-and-frequency-plan.md](../planning/balance-sheet-and-frequency-plan.md).
 
 **Why farebox recovery is stuck at annual:** it's `revenue / expenses`, and *expenses* come from audited year-end statements for almost every agency. A derived metric can never refresh faster than its slowest input. So the headline farebox number is annual for 9 of 10 agencies — **TransLink is the only exception** (publishes it quarterly).
 
@@ -125,7 +125,7 @@ known value forward** into the headline, labelled "as of FY2024 · carried forwa
 stale-feed treatment. It is **never** written into the database (no fabricated rows), **never**
 ranked, and trend charts show a **gap** rather than a flat line. Blanks in the Excel workbook stay
 blank — the website carries forward, the editor never types a guessed number. Full rule in
-[balance-sheet-and-frequency-plan.md §3](balance-sheet-and-frequency-plan.md).
+[balance-sheet-and-frequency-plan.md §3](../planning/balance-sheet-and-frequency-plan.md).
 
 ---
 
