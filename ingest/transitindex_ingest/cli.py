@@ -299,6 +299,163 @@ def cmd_pdf_smoke(args) -> int:
     return 0
 
 
+def _build_storage():
+    """Return a SupabaseStorage from config, or None after printing why not."""
+    from .storage import SupabaseStorage
+
+    try:
+        return SupabaseStorage.from_config(load_config())
+    except RuntimeError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return None
+
+
+def cmd_docs_sync(args) -> int:
+    """Upload local PDFs to cloud storage and (re)build the core.documents catalog."""
+    from . import catalog
+
+    if args.dry_run:
+        recognised, skipped = catalog.plan_local_pdfs(args.pdf_dir)
+        print(f"would upload : {len(recognised)} PDF(s)")
+        for fn, spec in recognised:
+            print(f"  {fn:42s} -> {spec.agency_slug:18s} {spec.year} {spec.doc_type} [{spec.author_label}]")
+        print(f"skipped      : {len(skipped)} (not launch-set files)")
+        for fn, reason in skipped:
+            print(f"  - {fn}: {reason}")
+        print("\n(dry run -- nothing uploaded; drop --dry-run to do it for real.)")
+        return 0
+
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+    storage = _build_storage()
+    if storage is None:
+        return 2
+
+    summary = catalog.sync_local_pdfs(repo, storage, args.pdf_dir)
+    print(f"bucket        : {storage.bucket}")
+    print(f"uploaded      : {summary['uploaded']} PDF(s) -> catalog rows")
+    print(f"skipped       : {len(summary['skipped'])} (not launch-set files)")
+    for fn, reason in summary["skipped"]:
+        print(f"  - {fn}: {reason}")
+    print("next step     : python -m transitindex_ingest docs-list  (see the scan queue)")
+    return 0
+
+
+def cmd_docs_upload(args) -> int:
+    """Upload one PDF (with explicit metadata) and catalog it. The go-forward path."""
+    from . import catalog
+    from .storage import sha256_hex
+
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+    storage = _build_storage()
+    if storage is None:
+        return 2
+
+    try:
+        agency_id = repo.agency_id(args.agency)
+    except ValueError:
+        print(f"error: unknown agency slug {args.agency!r} (must be a seeded agency).", file=sys.stderr)
+        return 2
+
+    data = Path(args.pdf).read_bytes()
+    key = catalog.storage_key_for(args.agency, Path(args.pdf).name)
+    storage.ensure_bucket()
+    storage.upload(key, data)
+    doc_id = repo.upsert_document(
+        agency_id=agency_id,
+        year=args.year,
+        doc_type=args.doc_type,
+        author_label=args.author,
+        storage_key=key,
+        source_url=args.source_url,
+        file_hash=sha256_hex(data),
+        file_bytes=len(data),
+    )
+    print(f"uploaded      : {key} ({len(data)} bytes)")
+    print(f"catalog id    : {doc_id} (status unscanned)")
+    return 0
+
+
+def cmd_docs_list(args) -> int:
+    """List the core.documents catalog (the scan queue)."""
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+    slug_by_id = {repo.agency_id(s): s for s in _seeded_slugs(repo)}
+    rows = repo.list_documents(status=args.status)
+    label = f" with status={args.status}" if args.status else ""
+    print(f"{len(rows)} document(s){label}")
+    for d in rows:
+        agency = slug_by_id.get(d.agency_id, f"agency#{d.agency_id}")
+        extra = ""
+        if d.scan_status == "scanned" and d.staged_count is not None:
+            extra = f" staged={d.staged_count}"
+        elif d.scan_status == "failed" and d.last_error:
+            extra = f" error={d.last_error[:60]!r}"
+        print(f"  #{d.id:<3} [{d.scan_status:9}] {agency:18} {d.year} {d.doc_type} [{d.author_label}]{extra}")
+    return 0
+
+
+def cmd_docs_scan(args) -> int:
+    """Scan one cataloged document (CLI twin of the console Scan button)."""
+    from .scan import scan_document
+
+    cfg = load_config()
+    if not cfg.anthropic_api_key:
+        print("error: scanning needs ANTHROPIC_API_KEY in .env (it calls the Anthropic API).", file=sys.stderr)
+        return 2
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+    storage = _build_storage()
+    if storage is None:
+        return 2
+
+    result = scan_document(repo, storage, args.id, cfg=cfg)
+    if result["ok"]:
+        print(f"scanned       : doc #{args.id} -> {result['staged_count']} pending value(s) for review")
+        print("Tier 2: nothing is promoted until a reviewer approves it.")
+        return 0
+    print(f"scan FAILED   : doc #{args.id}: {result['error']}", file=sys.stderr)
+    return 1
+
+
+def cmd_docs_verify(args) -> int:
+    """Download every cataloged file and confirm its hash matches the cloud copy."""
+    from . import catalog
+
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+    storage = _build_storage()
+    if storage is None:
+        return 2
+
+    result = catalog.verify_uploads(repo, storage)
+    print(f"checked       : {result['checked']} file(s)")
+    print(f"mismatches    : {len(result['mismatches'])}")
+    for k in result["mismatches"]:
+        print(f"  ! {k}")
+    if result["missing_hash"]:
+        print(f"missing hash  : {len(result['missing_hash'])}")
+        for k in result["missing_hash"]:
+            print(f"  ? {k}")
+    print(f"result        : {'OK -- safe to delete local copies' if result['ok'] else 'NOT OK -- keep local copies'}")
+    return 0 if result["ok"] else 1
+
+
+def _seeded_slugs(repo) -> list[str]:
+    """The launch agency slugs, for id->slug display."""
+    from .refdata import AGENCIES
+
+    out = []
+    for slug in AGENCIES:
+        try:
+            repo.agency_id(slug)
+            out.append(slug)
+        except ValueError:
+            continue
+    return out
+
+
 def cmd_export_xlsx(args) -> int:
     """Build the editable per-agency time-series .xlsx workbook (one tab per agency)."""
     from . import workbook
@@ -415,7 +572,28 @@ def cmd_review(args) -> int:
         return 2
     from .review.app import create_app
 
-    uvicorn.run(create_app(repo, token=cfg.review_api_token), host=args.host, port=args.port)
+    # Wire the documents-console Scan button to the real scan path when storage +
+    # the Anthropic key are configured. Missing keys -> scanner=None: review still
+    # works and the console shows a "scanning unavailable" notice (no crash).
+    scanner = None
+    if cfg.supabase_url and cfg.supabase_service_role_key and cfg.anthropic_api_key:
+        from .scan import scan_document
+        from .storage import SupabaseStorage
+
+        storage = SupabaseStorage.from_config(cfg)
+        scanner = lambda document_id: scan_document(repo, storage, document_id, cfg=cfg)
+    else:
+        print(
+            "[note] documents console: Scan disabled until SUPABASE_URL, "
+            "SUPABASE_SERVICE_ROLE_KEY and ANTHROPIC_API_KEY are all set in .env.",
+            file=sys.stderr,
+        )
+
+    uvicorn.run(
+        create_app(repo, token=cfg.review_api_token, scanner=scanner),
+        host=args.host,
+        port=args.port,
+    )
     return 0
 
 
@@ -567,10 +745,40 @@ def build_parser() -> argparse.ArgumentParser:
     )
     lp.set_defaults(func=cmd_pending)
 
-    vp = sub.add_parser("review", help="Serve the FastAPI human review queue.")
+    vp = sub.add_parser("review", help="Serve the review queue + documents/scan console.")
     vp.add_argument("--host", default="127.0.0.1")
     vp.add_argument("--port", type=int, default=8000)
     vp.set_defaults(func=cmd_review)
+
+    _DOC_TYPES = [
+        "annual_report", "financial_statement", "service_plan",
+        "business_plan", "community_report",
+    ]
+
+    ds = sub.add_parser("docs-sync", help="Upload local PDFs to cloud storage + build the catalog.")
+    ds.add_argument("--pdf-dir", dest="pdf_dir", default="pdfs", help="Folder of PDFs (default: pdfs).")
+    ds.add_argument("--dry-run", action="store_true", help="Classify + report only; upload nothing.")
+    ds.set_defaults(func=cmd_docs_sync)
+
+    du = sub.add_parser("docs-upload", help="Upload ONE PDF with explicit metadata + catalog it.")
+    du.add_argument("pdf", help="Path to the PDF.")
+    du.add_argument("--agency", required=True, help="Agency slug (e.g. ttc).")
+    du.add_argument("--year", type=int, required=True, help="Nominal report year.")
+    du.add_argument("--doc-type", dest="doc_type", required=True, choices=_DOC_TYPES)
+    du.add_argument("--author", required=True, choices=["T", "C"], help="T = transit-own, C = city.")
+    du.add_argument("--source-url", dest="source_url", default=None, help="Where the PDF came from.")
+    du.set_defaults(func=cmd_docs_upload)
+
+    dl = sub.add_parser("docs-list", help="List the documents catalog (the scan queue).")
+    dl.add_argument("--status", default=None, help="Filter by scan_status (unscanned/scanned/failed).")
+    dl.set_defaults(func=cmd_docs_list)
+
+    dsc = sub.add_parser("docs-scan", help="Scan one cataloged document (stage values for review).")
+    dsc.add_argument("id", type=int, help="Catalog document id (see docs-list).")
+    dsc.set_defaults(func=cmd_docs_scan)
+
+    dv = sub.add_parser("docs-verify", help="Verify each cataloged file hashes to its cloud copy.")
+    dv.set_defaults(func=cmd_docs_verify)
 
     return p
 
