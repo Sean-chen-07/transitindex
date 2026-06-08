@@ -69,7 +69,7 @@ def _detail(repo: Repository, p: PendingValue) -> dict:
     return row
 
 
-def create_app(repo: Repository, *, token: Optional[str] = None):
+def create_app(repo: Repository, *, token: Optional[str] = None, scanner=None):
     """Build the FastAPI review app over `repo`.
 
     Mutating endpoints (approve/reject/edit) require an
@@ -77,6 +77,9 @@ def create_app(repo: Repository, *, token: Optional[str] = None):
     only door into live metric_values (Invariant #1), so they are never open.
     Read endpoints stay open. When `token` is None every mutating request is
     rejected (fail closed); the CLI refuses to serve without a configured token.
+
+    `scanner`, when supplied, is a callable(document_id) -> result dict that the
+    mounted documents console uses for its Scan buttons (see review/console.py).
     """
     from fastapi import Body, Depends, FastAPI, Header, HTTPException
 
@@ -146,5 +149,9 @@ def create_app(repo: Repository, *, token: Optional[str] = None):
             reviewer_notes=reviewer_notes,
         )
         return _detail(repo, _require_pending(pending_id))
+
+    from .console import mount_console
+
+    mount_console(app, repo, scanner=scanner)
 
     return app

@@ -12,7 +12,7 @@
 > tracks reality and is maintained, not a build plan · `stale-header` = built, but the
 > doc's own header/status line is out of date and should be refreshed.
 >
-> **Last updated:** 2026-06-07
+> **Last updated:** 2026-06-08
 
 ## Design (`docs/design/`)
 
@@ -44,6 +44,7 @@
 | [source-registry.md](reference/source-registry.md) | in-progress | Maps each launch agency × metric to its source + license/tier + adapter build order. Metric catalog shipped (32 codes); only 2 of ~13 source adapters built; agency-source matrix + adapter roadmap + license tables largely unbuilt. |
 | [update-frequency.md](reference/update-frequency.md) | living | Finest update frequency / publication lag / source per agency × metric; three-speed model. Schema requirement satisfied; most cadence adapters seeded-but-disabled with no code; carry-forward UI absent. Actively maintained. |
 | [foi-sourcing-plan.md](reference/foi-sourcing-plan.md) | in-progress | Data-sourcing strategy + FOI playbook (FOI = fallback), per-agency channel table, request templates. Only request templates landed in code; central "kill synthetic gold fixture" action still open (see TODOS.md). |
+| [pdf-storage-and-scanning.md](reference/pdf-storage-and-scanning.md) | living | Raw PDFs in Supabase Storage (bucket `annual-reports`) + `core.documents` catalog/scan-queue (migration 016) + `docs-*` CLI + Scan button on the review console. Shipped: storage.py, catalog.py, scan.py, review/console.py; 64 PDFs uploaded + cataloged, local copies removed. |
 
 ## Cross-cutting (repo root)
 

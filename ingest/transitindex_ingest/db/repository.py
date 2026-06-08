@@ -26,6 +26,7 @@ from typing import Optional, Protocol, runtime_checkable
 
 from ..contract import MetricValueRecord, SourceRef
 from .models import (
+    Document,
     Metric,
     MetricRankRow,
     MetricValue,
@@ -87,6 +88,46 @@ class Repository(Protocol):
         """Return the id of the core.source_documents row for `source`, creating
         it if absent. Identity is (source_url, document_type) when a url exists,
         else a per-document new row."""
+        ...
+
+    # --- document catalog (core.documents) ----------------------------------
+
+    def upsert_document(
+        self,
+        *,
+        agency_id: int,
+        year: int,
+        doc_type: str,
+        author_label: str,
+        storage_key: str,
+        source_url: Optional[str] = None,
+        file_hash: Optional[str] = None,
+        file_bytes: Optional[int] = None,
+    ) -> int:
+        """Insert or update a core.documents catalog row; return its id.
+
+        Identity is storage_key (one row per stored file). On a re-upload the
+        hash/size/source_url refresh in place; scan_status is NOT reset here."""
+        ...
+
+    def list_documents(self, status: Optional[str] = None) -> list[Document]:
+        """List catalog rows, optionally filtered by scan_status, newest queue
+        first (unscanned before scanned), then by agency/year."""
+        ...
+
+    def get_document(self, document_id: int) -> Optional[Document]:
+        """Fetch one core.documents row by id, or None."""
+        ...
+
+    def mark_document_scanned(
+        self, document_id: int, *, source_document_id: Optional[int], staged_count: int
+    ) -> None:
+        """Flip a catalog row to scan_status='scanned', recording the linked
+        source_documents row and how many pending values the scan staged."""
+        ...
+
+    def mark_document_failed(self, document_id: int, *, error: str) -> None:
+        """Flip a catalog row to scan_status='failed' with the error message."""
         ...
 
     # --- staging (core.pending_values) --------------------------------------

@@ -17,6 +17,7 @@ from typing import Optional
 from ..contract import MetricValueRecord, SourceRef
 from ..refdata import AGENCIES, METRICS, MODES, SOURCE_FEEDS
 from .models import (
+    Document,
     Metric,
     MetricRankRow,
     MetricValue,
@@ -65,6 +66,10 @@ class InMemoryRepository:
 
         # secondary identity index for documents: (source_url, document_type) -> id
         self._doc_by_url: dict[tuple[str, str], int] = {}
+
+        # the PDF catalog (core.documents): id -> Document, plus storage_key -> id
+        self._catalog: dict[int, Document] = {}
+        self._catalog_by_key: dict[str, int] = {}
 
         # auto-increment counters
         self._seq: dict[str, int] = {}
@@ -182,6 +187,90 @@ class InMemoryRepository:
         if source.source_url is not None:
             self._doc_by_url[(source.source_url, source.document_type)] = did
         return did
+
+    # --- document catalog (core.documents) ----------------------------------
+
+    def upsert_document(
+        self,
+        *,
+        agency_id: int,
+        year: int,
+        doc_type: str,
+        author_label: str,
+        storage_key: str,
+        source_url: Optional[str] = None,
+        file_hash: Optional[str] = None,
+        file_bytes: Optional[int] = None,
+    ) -> int:
+        from dataclasses import replace
+
+        existing_id = self._catalog_by_key.get(storage_key)
+        if existing_id is not None:
+            # Re-upload: refresh hash/size/source_url; leave scan state untouched.
+            self._catalog[existing_id] = replace(
+                self._catalog[existing_id],
+                agency_id=agency_id,
+                year=year,
+                doc_type=doc_type,
+                author_label=author_label,
+                source_url=source_url,
+                file_hash=file_hash,
+                file_bytes=file_bytes,
+            )
+            return existing_id
+        did = self._next("catalog")
+        self._catalog[did] = Document(
+            id=did,
+            agency_id=agency_id,
+            year=year,
+            doc_type=doc_type,
+            author_label=author_label,
+            storage_key=storage_key,
+            source_url=source_url,
+            file_hash=file_hash,
+            file_bytes=file_bytes,
+            scan_status="unscanned",
+            scanned_at=None,
+            staged_count=None,
+            last_error=None,
+            source_document_id=None,
+        )
+        self._catalog_by_key[storage_key] = did
+        return did
+
+    def list_documents(self, status: Optional[str] = None) -> list[Document]:
+        rows = [d for d in self._catalog.values() if status is None or d.scan_status == status]
+        # unscanned first (the work queue), then by agency, year, doc_type.
+        order = {"unscanned": 0, "failed": 1, "scanned": 2}
+        return sorted(
+            rows,
+            key=lambda d: (order.get(d.scan_status, 9), d.agency_id, d.year, d.doc_type),
+        )
+
+    def get_document(self, document_id: int) -> Optional[Document]:
+        return self._catalog.get(document_id)
+
+    def mark_document_scanned(
+        self, document_id: int, *, source_document_id: Optional[int], staged_count: int
+    ) -> None:
+        from dataclasses import replace
+        from datetime import datetime, timezone
+
+        self._catalog[document_id] = replace(
+            self._catalog[document_id],
+            scan_status="scanned",
+            scanned_at=datetime.now(timezone.utc),
+            staged_count=staged_count,
+            last_error=None,
+            source_document_id=source_document_id,
+        )
+
+    def mark_document_failed(self, document_id: int, *, error: str) -> None:
+        from dataclasses import replace
+
+        self._catalog[document_id] = replace(
+            self._catalog[document_id], scan_status="failed", last_error=error
+        )
 
     # --- staging -------------------------------------------------------------
 

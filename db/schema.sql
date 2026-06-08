@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 8yghBE68puhEM8nUlcekG5X0imIFkmY3kzPea9U6KuldG6kChGNadDO2gCyE7i4
+\restrict IqnstAZtK7CSvZJBJfXChLOquqVcT9lEJ9sh7Oa6dNc1UD7oq2Bgp05RZ7aNP8w
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.4
@@ -243,6 +243,47 @@ CREATE TABLE core.agency_modes (
     year_started smallint,
     status text DEFAULT 'active'::text NOT NULL,
     CONSTRAINT agency_modes_status_check CHECK ((status = ANY (ARRAY['active'::text, 'planned'::text, 'discontinued'::text])))
+);
+
+
+--
+-- Name: documents; Type: TABLE; Schema: core; Owner: -
+--
+
+CREATE TABLE core.documents (
+    id bigint NOT NULL,
+    agency_id bigint NOT NULL,
+    year smallint NOT NULL,
+    doc_type text NOT NULL,
+    author_label text NOT NULL,
+    storage_key text NOT NULL,
+    source_url text,
+    file_hash text,
+    file_bytes bigint,
+    scan_status text DEFAULT 'unscanned'::text NOT NULL,
+    scanned_at timestamp with time zone,
+    staged_count integer,
+    last_error text,
+    source_document_id bigint,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT documents_author_label_check CHECK ((author_label = ANY (ARRAY['T'::text, 'C'::text]))),
+    CONSTRAINT documents_doc_type_check CHECK ((doc_type = ANY (ARRAY['annual_report'::text, 'financial_statement'::text, 'service_plan'::text, 'business_plan'::text, 'community_report'::text]))),
+    CONSTRAINT documents_scan_status_check CHECK ((scan_status = ANY (ARRAY['unscanned'::text, 'scanned'::text, 'failed'::text])))
+);
+
+
+--
+-- Name: documents_id_seq; Type: SEQUENCE; Schema: core; Owner: -
+--
+
+ALTER TABLE core.documents ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME core.documents_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
 );
 
 
@@ -748,6 +789,30 @@ ALTER TABLE ONLY core.agency_modes
 
 
 --
+-- Name: documents documents_agency_id_year_doc_type_author_label_key; Type: CONSTRAINT; Schema: core; Owner: -
+--
+
+ALTER TABLE ONLY core.documents
+    ADD CONSTRAINT documents_agency_id_year_doc_type_author_label_key UNIQUE (agency_id, year, doc_type, author_label);
+
+
+--
+-- Name: documents documents_pkey; Type: CONSTRAINT; Schema: core; Owner: -
+--
+
+ALTER TABLE ONLY core.documents
+    ADD CONSTRAINT documents_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: documents documents_storage_key_key; Type: CONSTRAINT; Schema: core; Owner: -
+--
+
+ALTER TABLE ONLY core.documents
+    ADD CONSTRAINT documents_storage_key_key UNIQUE (storage_key);
+
+
+--
 -- Name: feed_runs feed_runs_pkey; Type: CONSTRAINT; Schema: core; Owner: -
 --
 
@@ -906,6 +971,13 @@ CREATE INDEX agencies_subdivision_idx ON core.agencies USING btree (subdivision)
 
 
 --
+-- Name: documents_scan_status_idx; Type: INDEX; Schema: core; Owner: -
+--
+
+CREATE INDEX documents_scan_status_idx ON core.documents USING btree (scan_status);
+
+
+--
 -- Name: metric_value_derivations_value_idx; Type: INDEX; Schema: core; Owner: -
 --
 
@@ -1018,6 +1090,22 @@ ALTER TABLE ONLY core.agency_modes
 
 ALTER TABLE ONLY core.agency_modes
     ADD CONSTRAINT agency_modes_mode_id_fkey FOREIGN KEY (mode_id) REFERENCES core.modes(id);
+
+
+--
+-- Name: documents documents_agency_id_fkey; Type: FK CONSTRAINT; Schema: core; Owner: -
+--
+
+ALTER TABLE ONLY core.documents
+    ADD CONSTRAINT documents_agency_id_fkey FOREIGN KEY (agency_id) REFERENCES core.agencies(id) ON DELETE CASCADE;
+
+
+--
+-- Name: documents documents_source_document_id_fkey; Type: FK CONSTRAINT; Schema: core; Owner: -
+--
+
+ALTER TABLE ONLY core.documents
+    ADD CONSTRAINT documents_source_document_id_fkey FOREIGN KEY (source_document_id) REFERENCES core.source_documents(id) ON DELETE SET NULL;
 
 
 --
@@ -1282,6 +1370,13 @@ GRANT SELECT ON TABLE core.agency_modes TO web_reader;
 
 
 --
+-- Name: TABLE documents; Type: ACL; Schema: core; Owner: -
+--
+
+GRANT SELECT ON TABLE core.documents TO web_reader;
+
+
+--
 -- Name: TABLE feed_runs; Type: ACL; Schema: core; Owner: -
 --
 
@@ -1369,5 +1464,5 @@ GRANT SELECT ON TABLE core.source_feeds TO web_reader;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 8yghBE68puhEM8nUlcekG5X0imIFkmY3kzPea9U6KuldG6kChGNadDO2gCyE7i4
+\unrestrict IqnstAZtK7CSvZJBJfXChLOquqVcT9lEJ9sh7Oa6dNc1UD7oq2Bgp05RZ7aNP8w
 
