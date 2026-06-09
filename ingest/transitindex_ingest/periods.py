@@ -73,6 +73,27 @@ def annual_period(agency_slug: str, year: int) -> Period:
     return Period("annual_fiscal", start, end, label)
 
 
+def annual_period_from_end_year(agency_slug: str, end_year: int) -> Period:
+    """Build the annual period given the calendar year the reporting year ENDS in.
+
+    This is the convention sources state directly (and that the PDF extractor
+    emits): an annual figure is named by the year its reporting period ends in.
+    A calendar agency's "2024" ends in 2024, so end_year IS the start year. A
+    fiscal agency named by its end year -- e.g. the fiscal year ending March
+    2024 (which runs April 2023 -> March 2024) -- started the prior calendar
+    year, so the start year is end_year - 1.
+
+    `annual_period` itself keeps its START-year contract (relied on by the
+    workbook and rollup jobs); this helper just translates an end-year into it.
+    """
+    agency = AGENCIES.get(agency_slug)
+    if agency is None:
+        raise ValueError(f"unknown agency_slug: {agency_slug!r}")
+    fy_end_month = agency["fiscal_year_end_month"]
+    start_year = end_year if fy_end_month == 12 else end_year - 1
+    return annual_period(agency_slug, start_year)
+
+
 def quarterly_period(year: int, quarter: int) -> Period:
     """Build a calendar-quarter period, e.g. (2024, 1) -> '2024-Q1' (Jan–Mar).
 

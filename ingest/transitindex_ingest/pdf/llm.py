@@ -78,6 +78,10 @@ else, and NEVER compute ratios or per-rider figures -- those are derived later):
 Rules:
 - One result per (metric, reporting period). Use the period the figure reports
   on (period_kind 'annual' with period_year, or 'monthly' with period_month).
+- period_year is the calendar year the reporting period ENDS in. A calendar-year
+  agency's 2024 figure -> 2024. A fiscal-year agency is named by its end year:
+  a fiscal year running April 2023 -> March 2024 -> period_year 2024. Put the
+  fiscal-year span (e.g. "fiscal year ending March 2024") in `note`.
 - Report the number EXACTLY AS PRINTED, as a plain number (no thousands
   separators). Do NOT scale it yourself: set `printed_scale` to the table's
   stated units ('units'|'thousands'|'millions') and the code applies the
@@ -121,7 +125,10 @@ EXTRACTION_TOOL = {
                             "type": "string",
                             "enum": ["annual", "monthly"],
                         },
-                        "period_year": {"type": "integer"},
+                        "period_year": {
+                            "type": "integer",
+                            "description": "Calendar year the reporting period ENDS in (a fiscal year ending March 2024 -> 2024).",
+                        },
                         "period_month": {"type": ["integer", "null"]},
                         "page_number": {"type": "integer"},
                         "confidence": {

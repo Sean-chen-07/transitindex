@@ -5,6 +5,8 @@ from __future__ import annotations
 from decimal import Decimal
 
 from transitindex_ingest.periods import (
+    annual_period,
+    annual_period_from_end_year,
     fiscal_year_months,
     quarterly_period,
     roll_up,
@@ -119,3 +121,32 @@ def test_ytd_period_rejects_full_year_count():
 
     with pytest.raises(ValueError):
         ytd_period("ttc", 2025, 12)
+
+
+# --- annual_period_from_end_year (the extractor's end-year convention) -------
+
+
+def test_end_year_helper_is_noop_for_calendar_agency():
+    # A calendar agency's reporting year ends in the same year it is named for.
+    p = annual_period_from_end_year("ttc", 2024)
+    assert p.period_type == "annual_calendar"
+    assert p.label == "2024"
+    assert (p.start.isoformat(), p.end.isoformat()) == ("2024-01-01", "2024-12-31")
+    assert p == annual_period("ttc", 2024)
+
+
+def test_end_year_helper_shifts_fiscal_agency_back_one_year():
+    # "Fiscal year ending March 2024" (Apr 2023 -> Mar 2024) is named 2024 by the
+    # extractor; it must land in FY2023-24, not FY2024-25.
+    p = annual_period_from_end_year("metrolinx", 2024)
+    assert p.period_type == "annual_fiscal"
+    assert p.label == "FY2023-24"
+    assert (p.start.isoformat(), p.end.isoformat()) == ("2023-04-01", "2024-03-31")
+    assert p == annual_period("metrolinx", 2023)  # same as the start-year builder
+
+
+def test_end_year_helper_rejects_unknown_agency():
+    import pytest
+
+    with pytest.raises(ValueError):
+        annual_period_from_end_year("not-an-agency", 2024)
