@@ -2,6 +2,45 @@
 
 All notable changes to TransitIndex.
 
+## [0.0.5.0] - 2026-06-10
+
+### Added
+
+#### A redesigned agency page: two tabs, charts, full statements
+- **Every agency now opens to a two-tab page.** *Highlights* shows six headline numbers
+  (ridership, operating revenue, on-time performance, cost per rider, subsidy per rider,
+  fleet scale), each with its rank, a neutral up/down arrow versus the prior year, and a
+  click-to-open history chart — over compact tables of the efficiency ratios and the
+  service/fleet figures. *Financials* lays the numbers out like the agency's audited
+  statements (Statement of Operations, then Statement of Financial Position) with every
+  year as its own column.
+- **Charts for the numbers people track over time** (Recharts): a smooth monthly line for
+  ridership and revenue (with a Yearly/Monthly toggle), bars for sparse yearly figures.
+  A missing year shows as a gap, never an invented zero.
+
+#### Download an agency's data
+- **Members can download a single agency's full financial grid as a CSV** from the
+  Financials tab — every line, every year, opens straight in Excel. One agency at a time,
+  from its own page.
+
+### Changed
+
+#### Viewing every number is now free
+- **The paywall is gone from viewing.** Every number, chart, and statement is visible to
+  everyone with no login — previously raw numbers were members-only. A membership now buys
+  one thing: downloading an agency's dataset. (Pricing is still being decided.)
+
+### Fixed
+- **Fiscal-year figures land in the right year.** Corrected an off-by-one in PDF
+  extraction and the data-entry workbook so a fiscal year ending in March 2024 is recorded
+  as 2024, not 2023.
+
+#### Behind the scenes — more trustworthy extraction
+- The PDF reader now finds financial statements in French as well as English reports,
+  records the printed label and table each figure came from, and runs accounting cross-checks
+  (assets, liabilities, expense components) as figures are staged — so a wrong number is
+  flagged for review before it could ever be published.
+
 ## [0.0.4.0] - 2026-06-08
 
 ### Added
