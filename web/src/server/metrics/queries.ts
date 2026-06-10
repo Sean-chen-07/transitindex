@@ -1,36 +1,28 @@
 import "server-only";
-import { and, eq, asc, inArray } from "drizzle-orm";
+import { and, eq, asc, isNull } from "drizzle-orm";
 import { db } from "@/server/db";
-import {
-  metricValues,
-  metrics,
-  reportingPeriods,
-  metricValueSources,
-  sourceDocuments,
-  metricRanks,
-} from "@/db/schema";
+import { metricValues, metrics, reportingPeriods, metricRanks } from "@/db/schema";
 import { getAgencyBySlug } from "@/server/data/agencies";
 import { getLatestRankedPeriodPerMetric } from "@/server/data/ranks";
 import { FREE_COMPARISON_SET } from "@/server/data/constants";
-import type { RawMetricRow } from "./transform";
-import type { MetricProvenance } from "./types";
+import type { RawMetricSeries } from "./transform";
 
 /**
- * THE ONLY module permitted to read raw value-bearing tables (metric_values,
- * metric_value_sources). Guarded by the ESLint no-restricted-imports rule: nothing
- * but access.ts may import this module. It returns raw rows; the choke point decides
- * whether they become a Free (value-stripped) or Paid view.
+ * THE ONLY module permitted to read the raw value-bearing table (core.metric_values).
+ * Guarded by the ESLint no-restricted-imports rule: nothing but access.ts may import
+ * this module, so every value read stays on one audited path.
  *
- * At the seed-only DB there are no metric_values, so this returns [] and every detail
- * page renders "fundamentals pending".
+ * One entry per metric: the is_current=true, system-wide (mode_id IS NULL) rows across
+ * all periods ARE the series, ordered chronologically. Per-mode rows are a future
+ * surface. At the seed-only DB there are no metric_values, so this returns [] and the
+ * detail page renders "fundamentals pending".
  */
-export async function getRawMetricSeries(slug: string): Promise<RawMetricRow[]> {
+export async function getRawMetricSeries(slug: string): Promise<RawMetricSeries[]> {
   const agency = await getAgencyBySlug(slug);
   if (!agency) return [];
 
-  const currents = await db
+  const rows = await db
     .select({
-      valueId: metricValues.id,
       metricId: metricValues.metricId,
       metricCode: metrics.code,
       displayName: metrics.displayName,
@@ -40,33 +32,22 @@ export async function getRawMetricSeries(slug: string): Promise<RawMetricRow[]> 
       value: metricValues.value,
       currency: metricValues.currency,
       periodId: metricValues.reportingPeriodId,
+      periodType: reportingPeriods.periodType,
       periodLabel: reportingPeriods.label,
+      endDate: reportingPeriods.endDate,
     })
     .from(metricValues)
     .innerJoin(metrics, eq(metricValues.metricId, metrics.id))
     .innerJoin(reportingPeriods, eq(metricValues.reportingPeriodId, reportingPeriods.id))
-    .where(and(eq(metricValues.agencyId, agency.id), eq(metricValues.isCurrent, true)));
-  if (currents.length === 0) return [];
-
-  // Full history for trends (ordered chronologically).
-  const history = await db
-    .select({
-      metricId: metricValues.metricId,
-      serviceScope: metricValues.serviceScope,
-      value: metricValues.value,
-      periodLabel: reportingPeriods.label,
-    })
-    .from(metricValues)
-    .innerJoin(reportingPeriods, eq(metricValues.reportingPeriodId, reportingPeriods.id))
-    .where(eq(metricValues.agencyId, agency.id))
+    .where(
+      and(
+        eq(metricValues.agencyId, agency.id),
+        eq(metricValues.isCurrent, true),
+        isNull(metricValues.modeId),
+      ),
+    )
     .orderBy(asc(reportingPeriods.endDate));
-  const trendByKey = new Map<string, { periodLabel: string; value: number }[]>();
-  for (const h of history) {
-    const key = `${h.metricId}:${h.serviceScope}`;
-    const arr = trendByKey.get(key) ?? [];
-    arr.push({ periodLabel: h.periodLabel, value: Number(h.value) });
-    trendByKey.set(key, arr);
-  }
+  if (rows.length === 0) return [];
 
   // Free-cohort ranks for the agency, indexed by metric+period.
   const ranks = await db
@@ -88,52 +69,46 @@ export async function getRawMetricSeries(slug: string): Promise<RawMetricRow[]> 
 
   const latestByMetric = await getLatestRankedPeriodPerMetric();
 
-  // Page-level provenance for the current value ids.
-  const valueIds = currents.map((c) => c.valueId);
-  const provRows = valueIds.length
-    ? await db
-        .select({
-          metricValueId: metricValueSources.metricValueId,
-          sourceTitle: sourceDocuments.title,
-          sourceUrl: sourceDocuments.sourceUrl,
-          pageNumber: metricValueSources.pageNumber,
-          tableReference: metricValueSources.tableReference,
-          license: sourceDocuments.license,
-        })
-        .from(metricValueSources)
-        .innerJoin(sourceDocuments, eq(metricValueSources.sourceDocumentId, sourceDocuments.id))
-        .where(inArray(metricValueSources.metricValueId, valueIds))
-    : [];
-  const provByValueId = new Map<number, MetricProvenance[]>();
-  for (const p of provRows) {
-    const arr = provByValueId.get(p.metricValueId) ?? [];
-    arr.push({
-      sourceTitle: p.sourceTitle,
-      sourceUrl: p.sourceUrl,
-      pageNumber: p.pageNumber,
-      tableReference: p.tableReference,
-      license: p.license,
-    });
-    provByValueId.set(p.metricValueId, arr);
+  // Group the chronologically-ordered rows per metric.
+  const byMetric = new Map<number, typeof rows>();
+  for (const row of rows) {
+    const list = byMetric.get(row.metricId) ?? [];
+    list.push(row);
+    byMetric.set(row.metricId, list);
   }
 
-  return currents.map((c) => {
-    const cohort = latestByMetric.get(c.metricId);
-    const rankInfo = cohort ? rankByKey.get(`${c.metricId}:${cohort.periodId}`) : undefined;
-    return {
-      metricCode: c.metricCode,
-      displayName: c.displayName,
-      unit: c.unit,
-      higherIsBetter: c.higherIsBetter,
-      serviceScope: c.serviceScope,
+  const out: RawMetricSeries[] = [];
+  for (const [metricId, metricRows] of byMetric) {
+    // Scope preference: 'total' when present, else the lexically-first scope (deterministic).
+    const scopes = [...new Set(metricRows.map((r) => r.serviceScope))];
+    const scope = scopes.includes("total") ? "total" : scopes.reduce((a, b) => (a < b ? a : b));
+    const kept = metricRows.filter((r) => r.serviceScope === scope);
+    const head = kept[0];
+    if (!head) continue; // unreachable: scope comes from the rows themselves
+    const latest = kept[kept.length - 1] ?? head;
+
+    const cohort = latestByMetric.get(metricId);
+    const rankInfo = cohort ? rankByKey.get(`${metricId}:${cohort.periodId}`) : undefined;
+    const points = kept.map((r) => ({
+      periodId: r.periodId,
+      periodType: r.periodType,
+      periodLabel: r.periodLabel,
+      endDate: r.endDate,
+      value: Number(r.value), // drizzle numeric comes back as a string
+    }));
+
+    out.push({
+      metricCode: head.metricCode,
+      displayName: head.displayName,
+      unit: latest.unit,
+      higherIsBetter: head.higherIsBetter,
+      serviceScope: scope,
+      currency: latest.currency,
       rank: rankInfo?.rank ?? null,
       denominator: rankInfo?.denominator ?? null,
-      value: Number(c.value),
-      currency: c.currency,
-      periodLabel: c.periodLabel,
-      trend: trendByKey.get(`${c.metricId}:${c.serviceScope}`) ?? [],
-      provenance: provByValueId.get(c.valueId) ?? [],
-      hasComparablePeriod: cohort ? c.periodId === cohort.periodId : false,
-    };
-  });
+      hasComparablePeriod: cohort ? points.some((p) => p.periodId === cohort.periodId) : false,
+      points,
+    });
+  }
+  return out;
 }

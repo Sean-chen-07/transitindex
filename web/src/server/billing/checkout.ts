@@ -13,15 +13,27 @@ import { stripe } from "@/lib/stripe";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 /**
- * Start a $20/year subscription checkout. Auth-required: an anonymous caller is sent to
- * sign-in first (callbackUrl=/account so they land back here after). We pass the bigint
- * app.users.id as client_reference_id so the webhook can map the completed session back to
- * our user — subscription_status is NEVER written here, only by the webhook.
+ * Start a subscription checkout. The price comes from the STRIPE_PRICE_ID env price
+ * object; TODO(pricing): update copy sites when pricing is decided. Auth-required: an
+ * anonymous caller is sent to sign-in first (callbackUrl=returnTo so they land back where
+ * they started). returnTo is read from the posted form when it is a same-site path
+ * (starts with "/", not "//" — never a caller-supplied scheme/host); calls without a form
+ * (the account page) default to /account. We pass the bigint app.users.id as
+ * client_reference_id so the webhook can map the completed session back to our user —
+ * subscription_status is NEVER written here, only by the webhook.
  */
-export async function createCheckoutSession(): Promise<void> {
+export async function createCheckoutSession(formData?: FormData): Promise<void> {
+  const rawReturnTo = formData?.get("returnTo");
+  const returnTo =
+    typeof rawReturnTo === "string" &&
+    rawReturnTo.startsWith("/") &&
+    !rawReturnTo.startsWith("//")
+      ? rawReturnTo
+      : "/account";
+
   const session = await getSession();
   if (!session?.userId) {
-    redirect("/sign-in?callbackUrl=/account");
+    redirect(`/sign-in?callbackUrl=${encodeURIComponent(returnTo)}`);
   }
 
   const [user] = await db
@@ -37,8 +49,8 @@ export async function createCheckoutSession(): Promise<void> {
     // Stamp the bigint user id on the subscription so customer.subscription.* webhooks can
     // map back to the user without depending on checkout.session.completed arriving first.
     subscription_data: { metadata: { userId: String(session.userId) } },
-    success_url: `${siteUrl}/account?checkout=success`,
-    cancel_url: `${siteUrl}/account?checkout=cancel`,
+    success_url: `${siteUrl}${returnTo}?checkout=success`,
+    cancel_url: `${siteUrl}${returnTo}?checkout=cancel`,
   });
 
   // Funnel instrumentation — the user reached Stripe. Same INSERT shape as

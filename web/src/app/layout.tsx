@@ -13,11 +13,11 @@ export const metadata: Metadata = {
     template: "%s · TransitIndex",
   },
   description:
-    "A free directory of Canadian transit agencies ranked on the fundamentals. Ranks are free; the raw numbers are membership-only.",
+    "A free directory of Canadian transit agencies ranked on the fundamentals. Every rank and every number is free to view.",
   openGraph: {
     title: "TransitIndex — Canadian transit agency fundamentals",
     description:
-      "A free directory of Canadian transit agencies ranked on the fundamentals. Ranks are free; the raw numbers are membership-only.",
+      "A free directory of Canadian transit agencies ranked on the fundamentals. Every rank and every number is free to view.",
     siteName: "TransitIndex",
     type: "website",
   },
@@ -47,8 +47,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <div className="mx-auto max-w-5xl px-4 py-10">{children}</div>
         <footer className="mt-16 border-t border-line">
           <div className="mx-auto max-w-5xl px-4 py-6 text-xs leading-relaxed text-ink-3">
-            Ranks are free and computed from public sources. Raw numbers are
-            membership-only. Nothing is estimated; every figure is cited per agency.
+            Every rank and every number is free to view, computed from public sources.
+            Nothing is estimated; every figure is cited per agency.
           </div>
         </footer>
       </body>
