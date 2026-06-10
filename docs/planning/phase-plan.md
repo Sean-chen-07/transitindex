@@ -239,6 +239,10 @@ to **DESIGN.md**. Initial design completeness **3/10 → 9/10**. 12 decisions ma
 - **PAID** — `Open full data` → a full-depth **spreadsheet** (financial-statement tabs:
   Ridership & Service / Financials / Fleet & Assets / Trends) with real numbers, rank,
   period, as-of, YoY, and a sparkline per metric.
+  *(Superseded 2026-06-09: detail view is now **two tabs** — Highlights + Financials — and the free/paid
+  model is **inverted** — viewing is unlimited & free; the paid product is per-agency dataset download by
+  subscription, so the GATE/metering below no longer applies. See
+  [../design/detail-view-metrics.md §6](../design/detail-view-metrics.md).)*
 - **GATE** — **1 free detail view per visitor per month** (cookie soft-meter), then the
   paywall. The server renders detail pages (Googlebot + first-click-from-search see them →
   indexable); the meter walls the 2nd+ human view. $20/yr Stripe. *(Revised from a pure

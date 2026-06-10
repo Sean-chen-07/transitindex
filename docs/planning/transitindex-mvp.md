@@ -23,6 +23,14 @@ finished product. Kill/scale line (from the design doc): of the first 10 buyers
 personally approached, >=3 pay -> scale the PDF treadmill; 0-2 pay -> pivot to a
 free-public model (Approach C) or stop.
 
+> **⚠️ Monetization superseded 2026-06-09 — the Approach C pivot was taken by decision.** The free/paid
+> model in this doc (FREE = ranks, PAID = the raw *numbers*; the "will someone pay ~$20/yr to *see* the
+> numbers" demand test) was **inverted**: **viewing is now unlimited and free; the paid product is
+> per-agency dataset *download* by subscription** (pricing TBD). The kill/scale line above and the
+> "Free/paid split" scope bullet below describe the prior model and are kept for history. Decision +
+> reconciliation: [../design/detail-view-metrics.md §6](../design/detail-view-metrics.md),
+> [../../TODOS.md](../../TODOS.md).
+
 ## Sequencing decision (D1)
 Reconcile phase-plan.md to the office-hours MVP. "The plan" is now the ~1-week demand
 test, NOT the old "seed-data UI first -> accounts -> real pipeline last" order.

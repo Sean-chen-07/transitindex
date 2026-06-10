@@ -12,13 +12,14 @@
 > tracks reality and is maintained, not a build plan · `stale-header` = built, but the
 > doc's own header/status line is out of date and should be refreshed.
 >
-> **Last updated:** 2026-06-08
+> **Last updated:** 2026-06-09
 
 ## Design (`docs/design/`)
 
 | Doc | Status | Scope |
 |-----|--------|-------|
-| [DESIGN.md](design/DESIGN.md) | in-progress | Web design system (two-mood thesis, tokens, typography, components). Card grid + 6 free metrics + fleet-scale shipped. **Gap:** the 5 financial-statement detail tabs (Ridership&Service / Financials / Fleet&Assets / Financial Position / Trends) are not built — detail UI is a Snapshot/Trends switch. |
+| [DESIGN.md](design/DESIGN.md) | in-progress | Web design system (two-mood thesis, tokens, typography, components). Card grid + 6 free metrics + fleet-scale shipped. **Detail view redesigned 2026-06-09** (status note + Component #3 superseded): the 5-tab spreadsheet → **2 tabs (Highlights + Financials)**, spec'd in detail-view-metrics.md. **Gap:** neither the old nor the new detail tabs are built — detail UI is still a Snapshot/Trends switch. |
+| [detail-view-metrics.md](design/detail-view-metrics.md) | in-progress | **New 2026-06-09.** Source of truth for the agency detail page: 2 tabs (Highlights hero boxes + ratios/service tables · Financials all-years statement grid), all 32 metrics placed, history-display + rank-badge rules, Recharts. **Spec only — not built.** Access model **decided 2026-06-09**: viewing unlimited & free, paid product = per-agency dataset download by subscription (supersedes the rank-gate; un-gating code change still pending). |
 | [data-model.md](design/data-model.md) | done | Conceptual data model: flat metric layer, provenance, mixed-frequency periods, ranks layer, balance-sheet family, equation graph. All entities exist in db/schema.sql + migrations 001-015. *Header says "Proposed (pre-build)" — stale.* |
 | [schema-design.md](design/schema-design.md) | done | Concrete build-ready Postgres schema (types, constraints, indexes, locked decisions). Every table/index/decision shipped under db/migrations/. Near-duplicate of data-model.md (see merge candidates). *Header says "pre-migration" — stale.* |
 | [statcan-loader-design.md](design/statcan-loader-design.md) | done | Architecture for the fast, idempotent, diff-aware StatCan + Hamilton bulk loader. Shipped in commit 17a466b (jobs/bulk_load.py, CLI statcan-load/hamilton-load, .bat wrappers). *Header says "PLAN ONLY — no code" — stale.* |
@@ -32,7 +33,7 @@
 | [M1-WEB-PLAN.md](planning/M1-WEB-PLAN.md) | in-progress | M1 web build plan: free directory, detail pages, $20/yr Stripe paywall, server-only choke point. All code shipped; only Step 9 (live StatCan rank backfill in prod) outstanding. |
 | [lane-0-foundation-spec.md](planning/lane-0-foundation-spec.md) | done | Build spec for the DB foundation (migrations, roles, seeds, tests, acceptance criteria). All 7 migrations + seeds + tests present; extended past spec (migrations 008-015). *Header "nothing committed" — stale.* |
 | [backend-restructure-brief.md](planning/backend-restructure-brief.md) | done | Brief for equation graph + period rollup + per-metric dictionary + DB/workbook restructure. All four goals shipped (equations.py, migrations 012-015, dictionary). *Header "Not started" — stale.* |
-| [balance-sheet-and-frequency-plan.md](planning/balance-sheet-and-frequency-plan.md) | in-progress | PSAB balance-sheet family + native monthly/quarterly frequency + carry-forward + workbook + web Financial Position tab. Ingest/DB shipped (11 metrics, migration 014, ratios). **Gaps:** web "Financial Position" tab (0 files in web/), 6-sheet workbook superseded by per-agency tabs, PSAB identity checks live in solver not flags.py. |
+| [balance-sheet-and-frequency-plan.md](planning/balance-sheet-and-frequency-plan.md) | in-progress | PSAB balance-sheet family + native monthly/quarterly frequency + carry-forward + workbook + web balance-sheet display. Ingest/DB shipped (11 metrics, migration 014, ratios). **Gaps:** web balance-sheet not built (0 files in web/) — §5's standalone "Financial Position" tab **superseded 2026-06-09**, now Section B of the single Financials tab (see detail-view-metrics.md); 6-sheet workbook superseded by per-agency tabs; PSAB identity checks live in solver not flags.py. |
 
 ## Reference (`docs/reference/`)
 

@@ -146,6 +146,14 @@ unreadable for a non-technical user. The Monthly sheet is purely additive granul
 
 ## 5. Website — where the new data lives & how it renders
 
+> **Superseded 2026-06-09 (detail-view redesign).** The standalone **"Financial Position" tab** is now
+> **Section B of a single "Financials" tab** (Statement of Operations + Statement of Financial Position,
+> all years as columns), part of a two-tab detail page. The 3-section balance-sheet layout, the
+> "fiscal year-end snapshot" caption, per-row period/as-of, and the carry-forward/gap rules below are all
+> preserved — only the tab packaging changed. The free-vs-paid mechanism in this section is also under
+> review (see §6 of that spec). New source of truth:
+> [../design/detail-view-metrics.md](../design/detail-view-metrics.md).
+
 - **New fifth tab: "Financial Position"** (peer to *Ridership & Service / Financials / Fleet &
   Assets / Trends*). A balance sheet is a point-in-time *stock* statement with a different "as of"
   grammar and cadence (annual) than the flow-based *Financials* tab — separating them keeps each

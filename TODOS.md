@@ -96,6 +96,9 @@ Outstanding (need a product/data or design decision):
   while the table lists the same metrics "not yet ranked" with no period/year label, so rows
   read as duplicates. Show the period per row + reconcile the rank wording. Touches the
   metrics read layer, not just CSS. (Overlaps the period-comparability work above.)
+  **→ Addressed by the 2-tab detail redesign (2026-06-09):** rank badges show only on the 6
+  directory-card metrics; every row shows its value with its own period; no rank/blank duplication.
+  See "Build the redesigned detail view" above + [detail-view-metrics.md](docs/design/detail-view-metrics.md).
 - **F4 — mode-color left bar has no visible legend; 126/136 bars are one yellow (P3).**
   sr-only label + expand pills cover a11y, but the color does little for a collapsed sighted
   view. Add a small legend or accept it's decorative. (Related to the WCAG "mode group by
@@ -233,8 +236,27 @@ Build tasks, roughly in order:
 
 ## Open decisions (from README + design doc)
 - Legibility vs neutrality (recommend: strictly factual, no editorial grade).
-- Everything-paid vs free-public (revisit toward Approach C if conversion is weak).
+- **Everything-paid vs free-public — ✅ DECIDED FREE-PUBLIC (2026-06-09).** Model: **viewing is unlimited
+  and free** (no rank-gate, no metering, no login to read); the **paid product is data download by
+  subscription, one agency at a time** (CSV/Excel of the all-years statement grid). Pricing + subscription
+  mechanics deferred ("deal with it later"); bulk / multi-agency export stays the pre-existing "build when
+  a researcher asks" deferral. **Inverts** the shipped free=ranks / paid=numbers model (the $20/yr demand
+  test). Doc reconciliation done — superseding pointers in detail-view-metrics §6, DESIGN.md,
+  transitindex-mvp, M1-WEB-PLAN, phase-plan. **Code change pending** (see build task below).
 - DB host: Neon vs Supabase. Restatement display. Provenance granularity (page-level at launch).
+
+### Build the redesigned detail view (2-tab) — P2
+- **What:** Rebuild the agency detail page (`web/src/app/agency/[slug]/page.tsx`) from the
+  Snapshot/Trends switch to **two tabs — Highlights + Financials** — per
+  [detail-view-metrics.md](docs/design/detail-view-metrics.md). Highlights = 6 hero boxes (rank badge +
+  neutral YoY arrow + click-to-expand Recharts history chart) over two value tables (ratios |
+  service&fleet, current value only). Financials = Statement of Operations + Statement of Financial
+  Position with all years as columns. Add Recharts.
+- **Why:** Current detail UI is the "mess" the redesign fixes; also resolves design-review **F3** below.
+- **Access change (decided — related code work):** un-gate the detail numbers so **all viewing is free**
+  (the server choke point in `web/src/server/metrics/` currently strips raw values for unauthenticated
+  users), and add a **per-agency dataset download** (CSV/Excel of the all-years grid) behind the
+  subscription. Can land after the presentation; until it does, the live site still gates numbers.
 
 ## DX / API (deferred — flagged by plan-devex-review 2026-05-30)
 
