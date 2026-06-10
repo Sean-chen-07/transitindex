@@ -15,7 +15,7 @@ from typing import Callable, Optional
 
 from ..contract import DocumentType, License, MetricValueRecord, SourceRef
 from ..db.repository import Repository
-from ..periods import annual_period, monthly_period
+from ..periods import annual_period_from_end_year, monthly_period
 from .extract import Page
 from .extractor import Extractor, ExtractionRequest, LegacyTextExtractor
 from .llm import LOW_CONFIDENCE_THRESHOLD, EXTRACTION_SYSTEM_PROMPT, ExtractedValue, LLMClient
@@ -51,7 +51,12 @@ def _period_for(agency_slug: str, ev: ExtractedValue):
             raise ValueError("monthly value missing period_month")
         return monthly_period(ev.period_year, ev.period_month)
     if ev.period_kind == "annual":
-        return annual_period(agency_slug, ev.period_year)
+        # The extractor names an annual figure by the year its reporting period
+        # ENDS in (a fiscal agency's "year ending March 2024" comes back as
+        # 2024). annual_period_from_end_year translates that to the right fiscal
+        # span (FY2023-24) for the two fiscal agencies and is a no-op for the
+        # 19 calendar agencies.
+        return annual_period_from_end_year(agency_slug, ev.period_year)
     raise ValueError(f"unsupported period_kind: {ev.period_kind!r}")
 
 

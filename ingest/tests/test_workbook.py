@@ -28,11 +28,14 @@ def _load(path):
 
 
 def _year_block(ws, year: int) -> int:
-    """1-based start column of `year`'s 18-col block on an agency tab."""
+    """1-based start column of `year`'s 18-col block on an agency tab.
+
+    `year` is the START year; matches a bare-year header or a fiscal 'FY2024-25'
+    label (parsed back to its start year), exactly as import does."""
     col = workbook._FIRST_YEAR_COL
     while col <= ws.max_column:
         raw = ws.cell(row=workbook._YEAR_HEADER_ROW, column=col).value
-        if raw is not None and int(raw) == year:
+        if raw is not None and workbook._parse_year_header(raw) == year:
             return col
         col += workbook.YEAR_BLOCK_WIDTH
     raise AssertionError(f"year block {year} not found")
@@ -251,6 +254,22 @@ def test_fiscal_agency_imports_under_fiscal_period(repo, tmp_path):
     ap = annual_period("metrolinx", 2023)
     assert ap.period_type == "annual_fiscal" and ap.label == "FY2023-24"
     assert _current(repo, "metrolinx", ap, "operating_expenses").value == Decimal("7000")
+
+
+def test_year_header_label_is_fiscal_for_fiscal_agency_and_plain_for_calendar(repo, tmp_path):
+    out = str(tmp_path / "wb.xlsx")
+    workbook.export_workbook(repo, out, [2023])
+    wb = _load(out)
+
+    # Fiscal agency: the block header literally reads the fiscal label.
+    mx = wb["Metrolinx"]
+    mx_col = _year_block(mx, 2023)
+    assert mx.cell(row=workbook._YEAR_HEADER_ROW, column=mx_col).value == "FY2023-24"
+
+    # Calendar agency: still a bare integer.
+    ttc = wb["TTC"]
+    ttc_col = _year_block(ttc, 2023)
+    assert ttc.cell(row=workbook._YEAR_HEADER_ROW, column=ttc_col).value == 2023
 
 
 def test_per_mode_fleet_imports_with_mode_id_and_aggregates_capacity(repo, tmp_path):

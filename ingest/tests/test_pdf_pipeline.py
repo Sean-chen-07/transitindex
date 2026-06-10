@@ -161,12 +161,14 @@ def test_fiscal_year_period_mapping_for_metrolinx():
         llm_client=FakeLLMClient(values),
     )
     p = repo.get_pending_value(pid)
-    # metrolinx FYE month 3 -> fiscal year 2024-04-01..2025-03-31, label 'FY2024-25'
+    # metrolinx FYE month 3, and the extractor names a fiscal year by the year it
+    # ENDS in: period_year=2024 is "fiscal year ending March 2024" = Apr 2023 ->
+    # Mar 2024, label 'FY2023-24' (NOT FY2024-25 -- that off-by-one was the bug).
     period = repo.get_or_create_reporting_period(
         "annual_fiscal",
-        date(2024, 4, 1),
-        date(2025, 3, 31),
-        "FY2024-25",
+        date(2023, 4, 1),
+        date(2024, 3, 31),
+        "FY2023-24",
     )
     assert p.reporting_period_id == period
 
