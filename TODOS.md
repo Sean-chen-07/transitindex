@@ -96,7 +96,7 @@ Outstanding (need a product/data or design decision):
   while the table lists the same metrics "not yet ranked" with no period/year label, so rows
   read as duplicates. Show the period per row + reconcile the rank wording. Touches the
   metrics read layer, not just CSS. (Overlaps the period-comparability work above.)
-  **→ Addressed by the 2-tab detail redesign (2026-06-09):** rank badges show only on the 6
+  **→ ✓ Resolved by the 2-tab detail redesign (shipped 2026-06-10):** rank badges show only on the 6
   directory-card metrics; every row shows its value with its own period; no rank/blank duplication.
   See "Build the redesigned detail view" above + [detail-view-metrics.md](docs/design/detail-view-metrics.md).
 - **F4 — mode-color left bar has no visible legend; 126/136 bars are one yellow (P3).**
@@ -189,9 +189,11 @@ Full plan: [balance-sheet-and-frequency-plan.md](docs/planning/balance-sheet-and
 > SUM identities (asset split, net-debt, accumulated-surplus) cross-checked by the solver;
 > `parse_number` accounting-negatives fixed; the `printed_scale`/`printed_sign` extraction tool fields
 > (model declares, code applies). The equation/derivation tables needed migrations after all
-> (013 — the plan's "no migration" held for the metrics, not the graph). STILL DEFERRED: the 6-sheet
-> workbook redesign; the locate-then-read EN+FR statement anchors + page-image feeding; explicit PSAB
-> component-bounds checks in `flags.py`; carry-forward web display; gold fixtures (need real verified data).
+> (013 — the plan's "no migration" held for the metrics, not the graph). 2026-06-10: the EN+FR
+> statement anchors landed in the `claude_pdf.py` prefilter; the PSAB asset-split + accumulated-surplus
+> identities landed in `flags.py` `sum_mismatch` (and run at staging via `validate_cohort` in `run_pdf`);
+> `printed_label`/`table_reference` tool fields now flow into notes + provenance. STILL DEFERRED: the
+> 6-sheet workbook redesign; carry-forward web display; gold fixtures (need real verified data).
 
 Build tasks, roughly in order:
 
@@ -242,21 +244,24 @@ Build tasks, roughly in order:
   mechanics deferred ("deal with it later"); bulk / multi-agency export stays the pre-existing "build when
   a researcher asks" deferral. **Inverts** the shipped free=ranks / paid=numbers model (the $20/yr demand
   test). Doc reconciliation done — superseding pointers in detail-view-metrics §6, DESIGN.md,
-  transitindex-mvp, M1-WEB-PLAN, phase-plan. **Code change pending** (see build task below).
+  transitindex-mvp, M1-WEB-PLAN, phase-plan. **Code change shipped 2026-06-10** (see build task below).
+  Decisions locked 2026-06-09: **CSV only** (no .xlsx); download = **the financials statement grid**;
+  no quota (per-agency = visit each agency's page); demo agency removed; after subscribing the user
+  returns to the agency page they came from. **Pricing still TBD** — TODO(pricing) markers in
+  subscribe-dialog.tsx, checkout.ts, account/page.tsx; the live charge is whatever STRIPE_PRICE_ID points at.
 - DB host: Neon vs Supabase. Restatement display. Provenance granularity (page-level at launch).
 
-### Build the redesigned detail view (2-tab) — P2
-- **What:** Rebuild the agency detail page (`web/src/app/agency/[slug]/page.tsx`) from the
-  Snapshot/Trends switch to **two tabs — Highlights + Financials** — per
+### ~~Build the redesigned detail view (2-tab)~~ ✓ — P2
+- **Completed 2026-06-10 (branch detail-view-redesign):** two tabs (Highlights + Financials) per
   [detail-view-metrics.md](docs/design/detail-view-metrics.md). Highlights = 6 hero boxes (rank badge +
-  neutral YoY arrow + click-to-expand Recharts history chart) over two value tables (ratios |
-  service&fleet, current value only). Financials = Statement of Operations + Statement of Financial
-  Position with all years as columns. Add Recharts.
-- **Why:** Current detail UI is the "mess" the redesign fixes; also resolves design-review **F3** below.
-- **Access change (decided — related code work):** un-gate the detail numbers so **all viewing is free**
-  (the server choke point in `web/src/server/metrics/` currently strips raw values for unauthenticated
-  users), and add a **per-agency dataset download** (CSV/Excel of the all-years grid) behind the
-  subscription. Can land after the presentation; until it does, the live site still gates numbers.
+  neutral YoY arrow + click-to-expand Recharts chart, Yearly/Monthly toggle on the two monthly heroes)
+  over the ratios | service&fleet value tables. Financials = both statements, all years as columns,
+  blank-never-zero, with the gated CSV download button. Recharts 3.8.1 added. Resolves **F3** below.
+- **Access change shipped with it:** the viewing gate is removed (raw numbers reach everyone — the
+  choke-point *structure* in `web/src/server/metrics/` is kept, it just no longer strips), the demo
+  agency is removed, and the subscription now gates `/api/agency/[slug]/download` (CSV of the
+  financials grid; session + `isPaid` checked live per request). New contract tests:
+  `detail-model.test.ts`, `csv.test.ts`; `web/CLAUDE.md` invariants rewritten to match.
 
 ## DX / API (deferred — flagged by plan-devex-review 2026-05-30)
 
@@ -314,10 +319,11 @@ audit trail in `phase-plan.md` (RE-REVIEW section); evidence in
   guard, but the plan invariant + Failure Modes T2 still claim it. Either re-introduce a
   UI-rendered scope flag (BC Transit = Victoria, Metrolinx = GO+UP) in `metric_values.notes`,
   or delete the invariant/T2 claim. As-is, BC Transit (Victoria-only) ranks vs TTC whole-system.
-- **Wire live validation into the real path.** `staging._default_validator` passes
-  `prior_value=None` (YoY flag can never fire); the PDF path passes `validator=None`. Wire
-  `prior_value` + `validate_cohort` into `stage_records`; pass the real validator into
-  `run_pdf`; auto-flag PDF↔StatCan disagreement. Otherwise "20 reviews/agency not 200" is unbacked.
+- **Wire live validation into the real path.** *Mostly done 2026-06-10:* the PDF path
+  (`scan.py` + `cli.py` `pdf` command) now passes the real `validate` into `run_pdf`, and
+  `run_pdf` always runs `validate_cohort` per reporting period (the sum/PSAB identities fire at
+  staging). STILL OPEN: `prior_value` stays `None` everywhere (the prior-year repo lookup doesn't
+  exist, so `yoy_spike` can't fire on live runs) + auto-flag PDF↔StatCan disagreement.
 - **Postgres-backed CI test.** All 135 tests run on `InMemoryRepository` (which reimplements
   the invariants in Python). Add a CI job that applies `db/migrations`, runs `db/tests/*.sql`,
   and round-trips `PostgresRepository` so the real `one_current_value` index / audit trigger /
