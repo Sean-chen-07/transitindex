@@ -191,6 +191,78 @@ def test_sum_mismatch_no_anchor_is_silent(make_record):
     assert sum_mismatch(cohort) == []
 
 
+# --- sum_mismatch: PSAB balance-sheet identities -----------------------------
+
+
+def _balance_sheet_cohort(make_record, financial, non_financial, assets,
+                          surplus=None, liabilities=None):
+    """Build a cohort of statement-of-financial-position records (one agency+period).
+
+    Anchored on total_assets. Identity 3: financial + non_financial == assets.
+    Identity 4 (when surplus + liabilities given): surplus == assets - liabilities.
+    """
+    common = dict(
+        agency_slug="ttc",
+        period_type="annual_calendar",
+        period_start=date(2024, 1, 1),
+        period_end=date(2024, 12, 31),
+        period_label="2024",
+        service_scope="system_wide",
+        quality="preliminary",
+        unit="CAD",
+        currency="CAD",
+    )
+    rows = [
+        make_record(metric_code="total_financial_assets", value=Decimal(financial), **common),
+        make_record(metric_code="total_non_financial_assets", value=Decimal(non_financial), **common),
+        make_record(metric_code="total_assets", value=Decimal(assets), **common),
+    ]
+    if liabilities is not None:
+        rows.append(make_record(metric_code="total_liabilities", value=Decimal(liabilities), **common))
+    if surplus is not None:
+        rows.append(make_record(metric_code="accumulated_surplus", value=Decimal(surplus), **common))
+    return rows
+
+
+def test_sum_mismatch_silent_when_asset_split_reconciles(make_record):
+    # Identity 3: 40 + 60 = 100 == total_assets.
+    cohort = _balance_sheet_cohort(make_record, financial="40", non_financial="60", assets="100")
+    assert sum_mismatch(cohort) == []
+
+
+def test_sum_mismatch_fires_on_broken_asset_split(make_record):
+    # Identity 3: 40 + 50 = 90, but total_assets says 100 -> 10% off, > 2%.
+    cohort = _balance_sheet_cohort(make_record, financial="40", non_financial="50", assets="100")
+    assert sum_mismatch(cohort) == [SUM_MISMATCH]
+
+
+def test_sum_mismatch_fires_on_broken_accumulated_surplus(make_record):
+    # Identity 4: assets 100 - liabilities 30 = expected surplus 70; reported 90 -> 20% off.
+    cohort = _balance_sheet_cohort(
+        make_record, financial="40", non_financial="60", assets="100",
+        liabilities="30", surplus="90",
+    )
+    assert sum_mismatch(cohort) == [SUM_MISMATCH]
+
+
+def test_sum_mismatch_silent_when_accumulated_surplus_reconciles(make_record):
+    # Identity 4: assets 100 - liabilities 30 = surplus 70, exact.
+    cohort = _balance_sheet_cohort(
+        make_record, financial="40", non_financial="60", assets="100",
+        liabilities="30", surplus="70",
+    )
+    assert sum_mismatch(cohort) == []
+
+
+def test_sum_mismatch_no_assets_anchor_is_silent(make_record):
+    # No total_assets row -> neither PSAB identity can be checked.
+    cohort = [
+        make_record(metric_code="total_financial_assets", value=Decimal("40"), unit="CAD"),
+        make_record(metric_code="total_non_financial_assets", value=Decimal("60"), unit="CAD"),
+    ]
+    assert sum_mismatch(cohort) == []
+
+
 # --- composers ---------------------------------------------------------------
 
 

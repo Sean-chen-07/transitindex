@@ -7,6 +7,7 @@ import { db } from "@/server/db";
 import { users, conversionEvents } from "@/db/schema";
 import { getSession } from "@/server/entitlement";
 import { stripe } from "@/lib/stripe";
+import { safeReturnTo } from "@/lib/safe-return-to";
 
 // The site origin Stripe redirects back to. NEXT_PUBLIC_SITE_URL is the canonical origin
 // (e.g. https://transitindex.ca); we only read it server-side here.
@@ -23,13 +24,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
  * subscription_status is NEVER written here, only by the webhook.
  */
 export async function createCheckoutSession(formData?: FormData): Promise<void> {
-  const rawReturnTo = formData?.get("returnTo");
-  const returnTo =
-    typeof rawReturnTo === "string" &&
-    rawReturnTo.startsWith("/") &&
-    !rawReturnTo.startsWith("//")
-      ? rawReturnTo
-      : "/account";
+  const returnTo = safeReturnTo(formData?.get("returnTo"));
 
   const session = await getSession();
   if (!session?.userId) {

@@ -318,6 +318,62 @@ def test_extraction_tool_enum_locked_to_sourced_metrics():
     assert enum == [code for code, m in METRICS.items() if not m["is_derived"]]
 
 
+def test_notes_combine_note_label_and_quote_in_order():
+    """The reviewer note joins note, printed_label, and source_quote with ' | '.
+
+    Pins the assembled string so the audit-trail format (used by reviewers to
+    locate a figure on the page) can't silently regress.
+    """
+    from transitindex_ingest.pdf.pipeline import _notes_for
+
+    ev = ExtractedValue(
+        metric_code="total_assets",
+        value=Decimal("100"),
+        unit="CAD",
+        period_kind="annual",
+        period_year=2024,
+        page_number=12,
+        confidence=Decimal("0.9"),
+        note="restated",
+        printed_label="Total assets",
+        source_quote="Total assets 100,000",
+    )
+    assert _notes_for(ev) == (
+        'restated | label: "Total assets" | quote: "Total assets 100,000"'
+    )
+
+
+def test_notes_are_none_when_nothing_to_record():
+    from transitindex_ingest.pdf.pipeline import _notes_for
+
+    ev = ExtractedValue(
+        metric_code="ridership",
+        value=Decimal("100"),
+        unit="count",
+        period_kind="annual",
+        period_year=2024,
+        page_number=1,
+        confidence=Decimal("0.9"),
+    )
+    assert _notes_for(ev) is None
+
+
+def test_notes_label_only_when_note_and_quote_absent():
+    from transitindex_ingest.pdf.pipeline import _notes_for
+
+    ev = ExtractedValue(
+        metric_code="net_debt",
+        value=Decimal("50"),
+        unit="CAD",
+        period_kind="annual",
+        period_year=2024,
+        page_number=8,
+        confidence=Decimal("0.9"),
+        printed_label="Net debt",
+    )
+    assert _notes_for(ev) == 'label: "Net debt"'
+
+
 def test_system_prompt_lists_sourced_codes_and_demands_low_confidence():
     assert "ridership" in EXTRACTION_SYSTEM_PROMPT
     assert "operating_expenses" in EXTRACTION_SYSTEM_PROMPT
