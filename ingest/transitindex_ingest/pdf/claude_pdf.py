@@ -114,6 +114,19 @@ _METRIC_KEYWORDS: tuple[str, ...] = (
     "fleet", "buses", "vehicle", "streetcar", "train",
     "on-time", "on time", "punctual", "reliabilit", "performance",
     "employee", "position", "staff", "headcount", "fte",
+    # EN + FR financial-statement anchors (page text is lowercased before
+    # matching; keep accented forms AND unaccented variants, since text
+    # extraction commonly strips accents).
+    "statement of financial position", "etat de la situation financiere",
+    "état de la situation financière",
+    "statement of operations", "état des résultats", "etat des resultats",
+    "net debt", "dette nette",
+    "tangible capital", "immobilisations corporelles",
+    "financial assets", "actifs financiers",
+    "liabilities", "passif",
+    "accumulated surplus", "excédent accumulé", "excedent accumule",
+    "achalandage", "heures de service",
+    "kilomètres parcourus", "kilometres parcourus",
 )
 # A run of digits (optionally with thousands/decimal separators) -- a data-density proxy.
 _NUMBER_RE = re.compile(r"\d[\d,.]*\d")

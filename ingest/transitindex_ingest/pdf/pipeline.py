@@ -16,6 +16,7 @@ from typing import Callable, Optional
 from ..contract import DocumentType, License, MetricValueRecord, SourceRef
 from ..db.repository import Repository
 from ..periods import annual_period_from_end_year, monthly_period
+from ..validation import validate_cohort
 from .extract import Page
 from .extractor import Extractor, ExtractionRequest, LegacyTextExtractor
 from .llm import LOW_CONFIDENCE_THRESHOLD, EXTRACTION_SYSTEM_PROMPT, ExtractedValue, LLMClient
@@ -61,11 +62,15 @@ def _period_for(agency_slug: str, ev: ExtractedValue):
 
 
 def _notes_for(ev: ExtractedValue) -> Optional[str]:
-    """Combine the value's note and verbatim source_quote for the reviewer."""
+    """Combine the value's note, printed line label, and verbatim source_quote."""
+    parts: list[str] = []
+    if ev.note:
+        parts.append(ev.note)
+    if ev.printed_label:
+        parts.append(f'label: "{ev.printed_label}"')
     if ev.source_quote:
-        quote = f'quote: "{ev.source_quote}"'
-        return f"{ev.note} | {quote}" if ev.note else quote
-    return ev.note
+        parts.append(f'quote: "{ev.source_quote}"')
+    return " | ".join(parts) if parts else None
 
 
 def _to_record(agency_slug: str, ev: ExtractedValue, meta: SourceRefMeta) -> MetricValueRecord:
@@ -81,6 +86,7 @@ def _to_record(agency_slug: str, ev: ExtractedValue, meta: SourceRefMeta) -> Met
         archive_uri=meta.archive_uri,
         file_hash=meta.file_hash,
         page_number=ev.page_number,
+        table_reference=ev.table_reference,
         confidence=ev.confidence,
     )
     return MetricValueRecord(
@@ -117,9 +123,9 @@ def run_pdf(
     path is read as raw bytes (handed to the extractor); a pre-extracted page
     list [(page_number, text), ...] flows through as `pages`. Resolves the
     agency up front so a bad slug fails fast. Each extracted value becomes a
-    'pending' core.pending_values row, carrying validator flags plus
-    'low_confidence' when confidence is below the threshold. Nothing here
-    promotes to metric_values.
+    'pending' core.pending_values row, carrying validator flags, the per-period
+    cohort reconciliation flags (validate_cohort), plus 'low_confidence' when
+    confidence is below the threshold. Nothing here promotes to metric_values.
     """
     if extractor is not None and llm_client is not None:
         raise ValueError("pass either extractor= or llm_client=, not both")
@@ -142,12 +148,25 @@ def run_pdf(
     )
     extracted = extractor.extract(request).values
 
-    pending_ids: list[int] = []
-    for ev in extracted:
-        record = _to_record(agency_slug, ev, source_ref_meta)
+    records = [(ev, _to_record(agency_slug, ev, source_ref_meta)) for ev in extracted]
 
+    # Set-level reconciliation: group the batch by reporting period and run the
+    # cohort identities (validate_cohort / sum_mismatch) over each group. A
+    # cohort flag lands on EVERY record in its group, so the reviewer sees the
+    # whole period that failed to reconcile.
+    by_period: dict[tuple, list[MetricValueRecord]] = {}
+    for _, record in records:
+        key = (record.period_start, record.period_end, record.period_type)
+        by_period.setdefault(key, []).append(record)
+    cohort_flags = {key: validate_cohort(group) for key, group in by_period.items()}
+
+    pending_ids: list[int] = []
+    for ev, record in records:
         flags = validator(repo, record) if validator is not None else []
         flags = list(flags)
+        for flag in cohort_flags[(record.period_start, record.period_end, record.period_type)]:
+            if flag not in flags:
+                flags.append(flag)
         if ev.confidence < LOW_CONFIDENCE_THRESHOLD and "low_confidence" not in flags:
             flags.append("low_confidence")
 

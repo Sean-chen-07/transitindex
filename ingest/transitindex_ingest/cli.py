@@ -157,6 +157,7 @@ def cmd_pdf(args) -> int:
     """Tier 2: extract metrics from a PDF into the review queue (never promotes)."""
     from .pdf.claude_pdf import ClaudePdfExtractor
     from .pdf.pipeline import SourceRefMeta, run_pdf
+    from .validation.flags import validate
 
     cfg = load_config()
     if not cfg.anthropic_api_key:
@@ -180,7 +181,16 @@ def cmd_pdf(args) -> int:
         extractor = ClaudePdfExtractor(api_key=cfg.anthropic_api_key, **common)
     meta = SourceRefMeta(document_type=args.doc_type, title=args.title, source_url=args.url)
     try:
-        pending_ids = run_pdf(repo, args.pdf, args.agency, source_ref_meta=meta, extractor=extractor)
+        # Row-level validation flags on every staged value. prior_value stays
+        # None: the prior-year lookup needs a repo query that does not exist yet.
+        pending_ids = run_pdf(
+            repo,
+            args.pdf,
+            args.agency,
+            source_ref_meta=meta,
+            extractor=extractor,
+            validator=lambda repo, record: validate(record),
+        )
     except ModuleNotFoundError:
         print(
             "error: the real PDF path needs pypdf and the anthropic SDK "

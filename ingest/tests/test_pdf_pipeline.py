@@ -302,6 +302,22 @@ def test_unknown_agency_fails_fast(repo):
         )
 
 
+def test_extraction_tool_enum_locked_to_sourced_metrics():
+    """The tool's metric_code enum IS the non-derived METRICS set -- exactly.
+
+    This locks the extractor to the published metric set: adding/removing a
+    metric in refdata.METRICS updates the enum automatically, and any drift
+    (a hand-edited enum, a derived code sneaking in) fails here.
+    """
+    from transitindex_ingest.pdf.llm import EXTRACTION_TOOL
+    from transitindex_ingest.refdata import METRICS
+
+    enum = EXTRACTION_TOOL["input_schema"]["properties"]["values"]["items"][
+        "properties"
+    ]["metric_code"]["enum"]
+    assert enum == [code for code, m in METRICS.items() if not m["is_derived"]]
+
+
 def test_system_prompt_lists_sourced_codes_and_demands_low_confidence():
     assert "ridership" in EXTRACTION_SYSTEM_PROMPT
     assert "operating_expenses" in EXTRACTION_SYSTEM_PROMPT

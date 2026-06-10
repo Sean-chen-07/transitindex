@@ -15,6 +15,7 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
+from transitindex_ingest.db.memory import InMemoryRepository
 from transitindex_ingest.eval.gold import (
     ExtractedAssessment,
     load_gold,
@@ -22,8 +23,9 @@ from transitindex_ingest.eval.gold import (
     run_eval_through_pipeline,
 )
 from transitindex_ingest.pdf.extract import pages_from_text
-from transitindex_ingest.pdf.llm import ExtractedValue
-from transitindex_ingest.pdf.pipeline import SourceRefMeta
+from transitindex_ingest.pdf.llm import ExtractedValue, FakeLLMClient, _row_to_value
+from transitindex_ingest.pdf.pipeline import SourceRefMeta, run_pdf
+from transitindex_ingest.validation.flags import validate
 
 GOLD_DIR = Path(__file__).parent / "fixtures" / "gold"
 GOLD = load_gold(GOLD_DIR / "ttc_annual_2024.json")
@@ -152,3 +154,105 @@ def test_empty_extraction_has_defined_scores():
     assert report.precision == 1.0
     assert report.flag_recall == 0.0
     assert all(not r.matched for r in report.rows)
+
+
+# --- should-flag traps: the wrong-number failure modes, end-to-end -----------
+# Synthetic values throughout: these prove the flagging machinery catches the
+# traps, not that the figures are real. (Re-seeding gold fixtures with verified
+# published numbers is a separate data task.)
+
+
+def _validator(priors=None):
+    """The production-style validator: validation.flags.validate per record.
+
+    `priors` (metric_code -> prior-year Decimal) stands in for the prior-year
+    repo lookup that does not exist yet; production passes prior_value=None.
+    """
+    priors = priors or {}
+
+    def _run(repo, record):
+        return validate(record, prior_value=priors.get(record.metric_code))
+
+    return _run
+
+
+def test_thousandfold_value_vs_prior_year_earns_yoy_spike():
+    """The in-thousands mistake: a figure 1000x last year's comes back flagged."""
+    scenario = [_ev("operating_revenue", "1310000000000", "CAD", "0.95")]  # 1000x
+    report = run_eval_through_pipeline(
+        GOLD,
+        scenario,
+        "ttc",
+        PAGES,
+        source_ref_meta=META,
+        validator=_validator(priors={"operating_revenue": Decimal("1310000000")}),
+    )
+    rev = next(r for r in report.rows if r.metric_code == "operating_revenue")
+    assert rev.flagged and "yoy_spike" in rev.flags
+
+
+def test_bracketed_negative_arrives_signed_and_lands_negative():
+    """An accounting-bracketed figure reported as printed_sign='negative' must
+    land negative in the staged row (code applies scale and sign, not the model)."""
+    row = {
+        "metric_code": "accumulated_surplus",
+        "value": "1,234",
+        "unit": "CAD",
+        "period_kind": "annual",
+        "period_year": 2024,
+        "page_number": 4,
+        "confidence": 0.9,
+        "printed_scale": "thousands",
+        "printed_sign": "negative",
+    }
+    ev = _row_to_value(row)
+    assert ev.value == Decimal("-1234000")  # raw * 1000 * -1, applied in code
+
+    repo = InMemoryRepository()
+    (pid,) = run_pdf(
+        repo,
+        PAGES,
+        "ttc",
+        source_ref_meta=META,
+        llm_client=FakeLLMClient([ev]),
+        validator=_validator(),
+    )
+    assert repo.get_pending_value(pid).value == Decimal("-1234000")
+
+
+def test_non_reconciling_expense_cohort_earns_sum_mismatch():
+    """labour+energy+materials deliberately != operating_expenses -> the cohort
+    earns sum_mismatch through run_pdf's own validate_cohort wiring."""
+    scenario = [
+        _ev("labour_cost", "60000000", "CAD", "0.95"),
+        _ev("energy_fuel_cost", "20000000", "CAD", "0.95"),
+        _ev("materials_services_cost", "50000000", "CAD", "0.95"),
+        _ev("operating_expenses", "100000000", "CAD", "0.95"),  # parts sum to 130M
+    ]
+    report = run_eval_through_pipeline(
+        GOLD, scenario, "ttc", PAGES, source_ref_meta=META, validator=_validator()
+    )
+    exp = next(r for r in report.rows if r.metric_code == "operating_expenses")
+    assert exp.flagged and "sum_mismatch" in exp.flags
+
+
+def test_broken_asset_split_identity_earns_sum_mismatch():
+    """total_financial + total_non_financial deliberately != total_assets ->
+    every record in the cohort carries sum_mismatch (the PSAB identity)."""
+    scenario = [
+        _ev("total_financial_assets", "60000000", "CAD", "0.95"),
+        _ev("total_non_financial_assets", "20000000", "CAD", "0.95"),
+        _ev("total_assets", "100000000", "CAD", "0.95"),  # split sums to 80M
+    ]
+    repo = InMemoryRepository()
+    pending_ids = run_pdf(
+        repo,
+        PAGES,
+        "ttc",
+        source_ref_meta=META,
+        llm_client=FakeLLMClient(scenario),
+        validator=_validator(),
+    )
+    assert pending_ids
+    for pid in pending_ids:
+        assert "sum_mismatch" in repo.get_pending_value(pid).flags
