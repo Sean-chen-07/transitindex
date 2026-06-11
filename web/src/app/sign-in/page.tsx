@@ -5,7 +5,7 @@ import { signIn } from "@/server/auth";
 
 export const metadata: Metadata = {
   title: "Sign in",
-  description: "Sign in to TransitIndex to open the full data.",
+  description: "Sign in to your TransitIndex account.",
 };
 
 // Server-rendered. The two forms post to server actions that call Auth.js signIn — no

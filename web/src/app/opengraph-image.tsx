@@ -62,7 +62,7 @@ export default function OpengraphImage() {
             Every Canadian transit agency, ranked on the fundamentals.
           </div>
           <div style={{ fontSize: "32px", color: "#5f5b52" }}>
-            Ranks are free. The raw numbers are membership-only.
+            Every rank and every number, free to view.
           </div>
         </div>
       </div>

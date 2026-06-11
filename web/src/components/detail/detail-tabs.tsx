@@ -4,22 +4,23 @@ import * as React from "react";
 import { cn } from "@/lib/cn";
 
 /**
- * Minimal two-panel tab switch for the detail page (Snapshot / Trends). Both panels are
- * server-rendered and passed in as props — the client only toggles which one is visible,
- * so no value crosses the network that the server didn't already decide to reveal.
+ * Minimal two-panel tab switch for the detail page (Highlights / Financials,
+ * docs/design/detail-view-metrics.md §1). Both panels are server-rendered and passed in
+ * as props — the client only toggles which one is visible, so no value crosses the
+ * network that the server didn't already decide to reveal.
  */
 export function DetailTabs({
-  snapshot,
-  trends,
+  highlights,
+  financials,
 }: {
-  snapshot: React.ReactNode;
-  trends: React.ReactNode;
+  highlights: React.ReactNode;
+  financials: React.ReactNode;
 }) {
-  const [tab, setTab] = React.useState<"snapshot" | "trends">("snapshot");
+  const [tab, setTab] = React.useState<"highlights" | "financials">("highlights");
   return (
     <section className="mt-8">
       <div role="tablist" aria-label="Data views" className="flex gap-1 border-b border-grid">
-        {(["snapshot", "trends"] as const).map((t) => (
+        {(["highlights", "financials"] as const).map((t) => (
           <button
             key={t}
             role="tab"
@@ -34,15 +35,15 @@ export function DetailTabs({
                 : "text-ink-3 hover:text-ink-2",
             )}
           >
-            {t === "snapshot" ? "Snapshot" : "Trends"}
+            {t === "highlights" ? "Highlights" : "Financials"}
           </button>
         ))}
       </div>
-      <div role="tabpanel" id="panel-snapshot" aria-labelledby="tab-snapshot" hidden={tab !== "snapshot"}>
-        {snapshot}
+      <div role="tabpanel" id="panel-highlights" aria-labelledby="tab-highlights" hidden={tab !== "highlights"}>
+        {highlights}
       </div>
-      <div role="tabpanel" id="panel-trends" aria-labelledby="tab-trends" hidden={tab !== "trends"}>
-        {trends}
+      <div role="tabpanel" id="panel-financials" aria-labelledby="tab-financials" hidden={tab !== "financials"}>
+        {financials}
       </div>
     </section>
   );

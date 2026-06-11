@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { toOrdinal, rankLabel, srRankLabel, provinceName, MIN_DENOMINATOR } from "@/lib/format";
+import {
+  toOrdinal,
+  rankLabel,
+  srRankLabel,
+  provinceName,
+  formatMetricValue,
+  formatYoy,
+  MIN_DENOMINATOR,
+} from "@/lib/format";
 
 describe("toOrdinal", () => {
   it("formats common ordinals", () => {
@@ -55,6 +63,52 @@ describe("srRankLabel", () => {
   it("never reads a suppressed rank as a number", () => {
     expect(srRankLabel({ rank: 1, denominator: 2 })).toBe("not yet ranked");
     expect(srRankLabel({ rank: null, denominator: null })).toBe("not yet ranked");
+  });
+});
+
+describe("formatMetricValue", () => {
+  it("CAD: compact from 100k, plain dollars-and-cents below", () => {
+    expect(formatMetricValue(1_420_000_000, "CAD", "CAD", { compact: true })).toBe("$1.42B");
+    expect(formatMetricValue(9_800_000, "CAD", "CAD", { compact: true })).toBe("$9.8M");
+    expect(formatMetricValue(4.6, "CAD", "CAD", { compact: true })).toBe("$4.60");
+    expect(formatMetricValue(85_000, "CAD", "CAD", { compact: true })).toBe("$85,000");
+  });
+  it("CAD: non-compact stays a full number", () => {
+    expect(formatMetricValue(1_420_000_000, "CAD", "CAD")).toBe("$1,420,000,000");
+  });
+  it("CAD: negative keeps the sign ahead of the symbol", () => {
+    expect(formatMetricValue(-5_000_000, "CAD", "CAD", { compact: true })).toBe("-$5M");
+  });
+  it("%: max 1dp", () => {
+    expect(formatMetricValue(81, "%", null)).toBe("81%");
+    expect(formatMetricValue(58.34, "%", null)).toBe("58.3%");
+  });
+  it("count: compact number, no unit word", () => {
+    expect(formatMetricValue(4_800, "count", null, { compact: true })).toBe("4,800");
+    expect(formatMetricValue(521_000_000, "count", null, { compact: true })).toBe("521M");
+  });
+  it("hours / km carry their unit word", () => {
+    expect(formatMetricValue(9_800_000, "hours", null, { compact: true })).toBe("9.8M hrs");
+    expect(formatMetricValue(220_000_000, "km", null, { compact: true })).toBe("220M km");
+  });
+  it("years: fixed 1dp", () => {
+    expect(formatMetricValue(7.4, "years", null)).toBe("7.4 yrs");
+    expect(formatMetricValue(7, "years", null)).toBe("7.0 yrs");
+  });
+  it("CAD/hr and trips/hr", () => {
+    expect(formatMetricValue(185, "CAD/hr", "CAD")).toBe("$185/hr");
+    expect(formatMetricValue(52, "trips/hr", null)).toBe("52");
+  });
+  it("falls back to number + unit", () => {
+    expect(formatMetricValue(12, "widgets", null)).toBe("12 widgets");
+  });
+});
+
+describe("formatYoy", () => {
+  it("absolute value, 1dp — the arrow carries the sign", () => {
+    expect(formatYoy(4.2)).toBe("4.2%");
+    expect(formatYoy(-1.3)).toBe("1.3%");
+    expect(formatYoy(0)).toBe("0.0%");
   });
 });
 

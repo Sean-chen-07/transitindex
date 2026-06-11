@@ -14,8 +14,8 @@ function modeGroup(modes: string[]): { cls: string; label: string } {
   return { cls: "bg-mode-yellow", label: "Bus" };
 }
 
-// The free "fundamentals" (chosen in the 2026-06-06 design review). Free payload is rank-only
-// — these are ORDINALS, never raw numbers (raw values live behind the gate on the detail page).
+// The free "fundamentals" (chosen in the 2026-06-06 design review). The card payload is
+// rank-only — these are ORDINALS, never raw numbers (raw values live on the detail page).
 // Farebox (redundant with subsidy) was dropped; the 6 slots fill the grid-cols-3 grid as a
 // clean 3×2.
 const METRIC_SLOTS: { label: string; codes: string[] }[] = [

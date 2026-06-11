@@ -50,7 +50,7 @@ export default async function AccountPage({
 
       {checkout === "success" && (
         <div className="mb-6 rounded-card border border-teal/40 bg-teal-soft p-4 text-sm text-ink">
-          You&apos;re in — thanks for joining. Every raw figure is now unlocked.
+          You&apos;re in — downloads are now unlocked on every agency page.
         </div>
       )}
       {checkout === "cancel" && (
@@ -63,7 +63,8 @@ export default async function AccountPage({
         <div className="rounded-card border border-line bg-card p-6">
           <p className="font-semibold text-ink">Membership active</p>
           <p className="mb-4 mt-1 text-sm text-ink-2">
-            Every raw figure, reporting period, and source is unlocked across all agencies.
+            You can download any agency&apos;s full dataset from its page — viewing is free
+            for everyone, always.
           </p>
           <form
             action={async () => {
@@ -78,10 +79,10 @@ export default async function AccountPage({
         </div>
       ) : (
         <div className="rounded-card border border-line bg-card p-6">
-          <p className="font-semibold text-ink">Open the full data — $20/year</p>
+          <p className="font-semibold text-ink">Download agency datasets</p>
           <p className="mb-4 mt-1 text-sm text-ink-2">
-            Ranks are always free. A membership unlocks every raw figure, its reporting
-            period, and the exact source — for all agencies.
+            Viewing every number is free. A membership adds downloads: each agency&apos;s
+            all-years data grid as a CSV, one agency at a time.
           </p>
           <form
             action={async () => {
@@ -89,8 +90,9 @@ export default async function AccountPage({
               await createCheckoutSession();
             }}
           >
+            {/* TODO(pricing): add price copy when pricing is decided */}
             <Button type="submit" variant="primary" className="w-full">
-              Subscribe — $20/year
+              Subscribe
             </Button>
           </form>
         </div>

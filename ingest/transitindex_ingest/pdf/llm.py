@@ -20,9 +20,9 @@ from typing import Optional, Protocol, runtime_checkable
 
 from ..refdata import METRICS
 
-# The 14 sourced metrics are the only ones the model may emit. Derived metrics
-# (average_fare, farebox_recovery_ratio, ...) are computed downstream, never
-# read off a page.
+# The sourced metrics (every non-derived code in METRICS) are the only ones the
+# model may emit. Derived metrics (average_fare, farebox_recovery_ratio, ...)
+# are computed downstream, never read off a page.
 SOURCED_METRIC_CODES: tuple[str, ...] = tuple(
     code for code, m in METRICS.items() if not m["is_derived"]
 )
@@ -53,6 +53,8 @@ class ExtractedValue:
     source_quote: Optional[str] = None  # verbatim snippet the number was read from (verify/review aid)
     printed_scale: str = "units"  # 'units' | 'thousands' | 'millions' (the table's stated units)
     printed_sign: str = "positive"  # 'negative' for accounting parentheses, e.g. (1,234)
+    printed_label: Optional[str] = None  # verbatim printed row/line label the number was read from
+    table_reference: Optional[str] = None  # statement/note/schedule id, e.g. "Note 7", "Schedule 2"
 
 
 @runtime_checkable
@@ -78,6 +80,10 @@ else, and NEVER compute ratios or per-rider figures -- those are derived later):
 Rules:
 - One result per (metric, reporting period). Use the period the figure reports
   on (period_kind 'annual' with period_year, or 'monthly' with period_month).
+- period_year is the calendar year the reporting period ENDS in. A calendar-year
+  agency's 2024 figure -> 2024. A fiscal-year agency is named by its end year:
+  a fiscal year running April 2023 -> March 2024 -> period_year 2024. Put the
+  fiscal-year span (e.g. "fiscal year ending March 2024") in `note`.
 - Report the number EXACTLY AS PRINTED, as a plain number (no thousands
   separators). Do NOT scale it yourself: set `printed_scale` to the table's
   stated units ('units'|'thousands'|'millions') and the code applies the
@@ -91,6 +97,14 @@ Rules:
   emit it with LOW confidence (below 0.7) rather than guessing or omitting it --
   do not silently drop uncertain figures. Never fabricate a value.
 - Put any caveat (footnote, restated, partial year) in `note`.
+- For financial-statement lines, set `printed_label` to the exact printed line
+  label (e.g. "Tangible capital assets") and `table_reference` to the statement,
+  note, or schedule it came from (e.g. "Statement of Financial Position",
+  "Note 7", "Schedule 2").
+- Consolidated municipalities: if a city-wide financial statement does NOT break
+  out the transit agency as its own segment/schedule, do NOT map the city-wide
+  figures to the agency -- skip them and record the gap in `note`. Never
+  attribute a whole municipality's balance sheet to its transit system.
 
 Return your answer ONLY by calling the `record_metrics` tool.
 """
@@ -121,7 +135,10 @@ EXTRACTION_TOOL = {
                             "type": "string",
                             "enum": ["annual", "monthly"],
                         },
-                        "period_year": {"type": "integer"},
+                        "period_year": {
+                            "type": "integer",
+                            "description": "Calendar year the reporting period ENDS in (a fiscal year ending March 2024 -> 2024).",
+                        },
                         "period_month": {"type": ["integer", "null"]},
                         "page_number": {"type": "integer"},
                         "confidence": {
@@ -143,6 +160,14 @@ EXTRACTION_TOOL = {
                             "type": "string",
                             "enum": ["positive", "negative"],
                             "description": "'negative' for accounting parentheses, e.g. (1,234).",
+                        },
+                        "printed_label": {
+                            "type": ["string", "null"],
+                            "description": "Verbatim printed row/line label the number was read from.",
+                        },
+                        "table_reference": {
+                            "type": ["string", "null"],
+                            "description": "Statement/note/schedule id, e.g. 'Note 7', 'Schedule 2'.",
                         },
                     },
                     "required": [
@@ -242,6 +267,8 @@ def _row_to_value(row: dict) -> ExtractedValue:
         source_quote=row.get("source_quote"),
         printed_scale=printed_scale,
         printed_sign=printed_sign,
+        printed_label=row.get("printed_label"),
+        table_reference=row.get("table_reference"),
     )
 
 

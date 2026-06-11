@@ -36,8 +36,37 @@ export/import, so merely importing this module never requires either.
 
 from __future__ import annotations
 
+import re
+from typing import Optional
+
 from .equations import RatioEquation, defining_equation
 from .refdata import METRICS, MODE_CAPACITY_WEIGHT, NON_RANKABLE_METRICS
+
+# A fiscal agency's year-block header is written as its real fiscal label
+# ('FY2024-25'); the leading 4-digit year IS the START year annual_period wants.
+_FY_HEADER_RE = re.compile(r"^FY(\d{4})-\d{2}$")
+
+
+def _parse_year_header(raw: object) -> Optional[int]:
+    """Read a year-block header back to its START-year integer, or None.
+
+    Calendar agencies write a bare year (2024); fiscal agencies write the fiscal
+    label ('FY2024-25'). Both resolve to the integer `annual_period(slug, year)`
+    expects (the calendar year the reporting year starts in)."""
+    if raw is None:
+        return None
+    if isinstance(raw, bool):  # guard: bool is an int subclass
+        return None
+    if isinstance(raw, (int, float)):
+        return int(raw)
+    text = str(raw).strip()
+    m = _FY_HEADER_RE.match(text)
+    if m:
+        return int(m.group(1))
+    try:
+        return int(text)
+    except ValueError:
+        return None
 
 # --- Metric groupings, agency + mode names -----------------------------------
 
@@ -325,9 +354,10 @@ def _build_howto_sheet(wb) -> None:
          "and recalculated on the server.", False),
         ("", False),
         ("A note on years", True),
-        ("Most agencies report on the calendar year. Metrolinx and BC Transit end "
-         "their financial year in March; for them, the year column labelled e.g. "
-         "'2024' means their 2024-25 fiscal year.", False),
+        ("Most agencies report on the calendar year, so their columns are labelled "
+         "by year (e.g. '2024'). Metrolinx and BC Transit end their financial year "
+         "in March; their columns are labelled like 'FY2024-25', meaning the fiscal "
+         "year running April 2024 to March 2025.", False),
         ("", False),
         ("When you're done", True),
         ("Save the file and run the import command. Your numbers go into the "
@@ -392,7 +422,12 @@ def _build_agency_sheet(wb, slug, short_name, years, names, repo, index) -> int:
     last_col = _FIRST_YEAR_COL + len(years) * YEAR_BLOCK_WIDTH - 1
     for yi, year in enumerate(years):
         ystart = _year_start_col(yi)
-        yh = ws.cell(row=_YEAR_HEADER_ROW, column=ystart, value=int(year))
+        # Fiscal agencies (Metrolinx, BC Transit) get their real fiscal label
+        # ('FY2024-25') as the block header so a fiscal year is never shown as a
+        # bare calendar year; calendar agencies keep the plain integer.
+        ap = annual_period(slug, year)
+        header = ap.label if ap.period_type == "annual_fiscal" else int(year)
+        yh = ws.cell(row=_YEAR_HEADER_ROW, column=ystart, value=header)
         yh.font = bold
         yh.alignment = Alignment(horizontal="center")
         ws.merge_cells(
@@ -599,10 +634,11 @@ def import_workbook(repo, path: str) -> dict:
             raw = ws.cell(row=_YEAR_HEADER_ROW, column=col).value
             if raw is None:
                 break
-            try:
-                year_blocks.append((int(raw), col))
-            except (TypeError, ValueError):
+            year = _parse_year_header(raw)  # handles bare years and 'FY2024-25'
+            if year is None:
                 warnings.append(f"{short_name}: unreadable year header {raw!r}")
+            else:
+                year_blocks.append((year, col))
             col += YEAR_BLOCK_WIDTH
 
         for r in range(_FIRST_DATA_ROW, ws.max_row + 1):

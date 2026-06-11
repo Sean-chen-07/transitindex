@@ -56,7 +56,9 @@ No purple/violet gradients. No decorative blobs. No icon-in-colored-circle featu
    grid (ordinals "1st"), 1–2 peek metrics + chevron. **Expands in place** (accordion).
 2. **Expand panel (free):** all ranks (each with its own "as of"), trend **shape**
    (exact values locked), `Open full data →` (paid). Scroll past to next agency, no back button.
-3. **Spreadsheet (paid):** financial-statement tabs — *Ridership & Service / Financials /
+3. **Spreadsheet (paid):** *(Superseded 2026-06-09 — the detail view is now **two tabs**, Highlights +
+   Financials; see [detail-view-metrics.md](detail-view-metrics.md) and the 2026-06-09 status note below.)*
+   financial-statement tabs — *Ridership & Service / Financials /
    Fleet & Assets / **Financial Position** / Trends*. Columns: Metric · Value (tabular,
    right-aligned) · Rank · Period · As of · YoY · 5-yr sparkline. Zebra rows, hairline grid,
    hover tint. The **Financial Position** tab (added 2026-05-31) holds the balance sheet — a
@@ -186,3 +188,32 @@ calendar year: `M1 M2 M3 Q1 … Q4 → YTD → Year`, where Q/YTD/Year are read-
 overwriting a sourced value). The detail page's **Trends tab**
 (`web/src/components/detail/trends-grid.tsx`, paid-only) renders the same grid. **Calendar year**
 (fiscal-only annual figures are shown separately, never forced into a calendar cell).
+
+## Status update 2026-06-09 — detail view is two tabs (Highlights + Financials), not the 5-tab spreadsheet
+
+The detail page is redesigned from the **5-tab dense spreadsheet** (Component #3: *Ridership & Service /
+Financials / Fleet & Assets / Financial Position / Trends*) to **two tabs**. Full metric-by-metric spec
+in **[detail-view-metrics.md](detail-view-metrics.md)** (the new source of truth for the detail page).
+
+- **Highlights** — six **hero boxes** (exactly the directory-card metrics: ridership · operating revenue ·
+  on-time · cost/rider · subsidy/rider · fleet scale), each with a **neutral up/down arrow vs the prior
+  year** (direction only — the no-green/red-grade rule still holds) and a **click-to-expand history chart**.
+  Beneath them, the efficiency ratios and service/fleet metrics as two compact value tables — **current
+  value only, no charts**.
+- **Financials** — the audited statements with **every year as a column**: *Statement of Operations* then
+  *Statement of Financial Position*. The old **"Financial Position" 5th tab is folded in** as the second
+  section (its 3-section layout + "fiscal year-end snapshot" caption preserved).
+
+**Mood shift:** the "PAID detail = dense spreadsheet (Bloomberg)" half of the design thesis softens — only
+the Financials grid stays dense; Highlights is the friendly, chart-led surface. Charts use **Recharts**
+(line for the 3 monthly metrics, bars for sparse annual series); gaps/carry-forward render per the rules
+above (a missing year is a break in the line, never interpolated).
+
+**Rank badges** now appear only on the six directory-card metrics; all other detail rows show the value
+without a rank. **Access model — ✅ DECIDED 2026-06-09: viewing is unlimited and free; the paid product is
+per-agency dataset download by subscription** (pricing TBD). This **inverts** the free=ranks/paid=numbers
+model in this file's design thesis and Components #2/#5 — those now describe a **superseded gate**: the
+"free→paid = soft cards → the numbers" story no longer holds (the numbers are free; the *download* is paid),
+and the Component #5 paywall dialog becomes a **subscribe-to-download** prompt. The detail numbers must be
+un-gated in code (currently still stripped server-side) — see [detail-view-metrics.md §6](detail-view-metrics.md)
+and [TODOS.md](../../TODOS.md).

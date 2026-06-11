@@ -26,6 +26,14 @@ The thinnest revenue-capable web app: a free, crawlable directory of 10 Canadian
 (ranks only), agency detail pages, and a $20/year Stripe gate that unlocks raw numbers. This plan is
 the single source of truth for the `web/` build.
 
+> **⚠️ Monetization superseded 2026-06-09.** The "$20/year Stripe gate that unlocks raw numbers" no longer
+> describes the product: **all viewing is now free** (numbers, charts, statements — no gate), and the paid
+> product is **per-agency dataset download by subscription** (pricing TBD). The read-layer and paywall
+> *integrity* machinery below (server-only choke point, disjoint free/paid types) still stands as built,
+> but the line it enforces moves from "numbers" to "download". Detail-page presentation also redesigned to
+> two tabs. See [../design/detail-view-metrics.md §6](../design/detail-view-metrics.md) and
+> [../../TODOS.md](../../TODOS.md).
+
 ---
 
 ## 1. Goal & guardrails

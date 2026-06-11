@@ -161,12 +161,14 @@ def test_fiscal_year_period_mapping_for_metrolinx():
         llm_client=FakeLLMClient(values),
     )
     p = repo.get_pending_value(pid)
-    # metrolinx FYE month 3 -> fiscal year 2024-04-01..2025-03-31, label 'FY2024-25'
+    # metrolinx FYE month 3, and the extractor names a fiscal year by the year it
+    # ENDS in: period_year=2024 is "fiscal year ending March 2024" = Apr 2023 ->
+    # Mar 2024, label 'FY2023-24' (NOT FY2024-25 -- that off-by-one was the bug).
     period = repo.get_or_create_reporting_period(
         "annual_fiscal",
-        date(2024, 4, 1),
-        date(2025, 3, 31),
-        "FY2024-25",
+        date(2023, 4, 1),
+        date(2024, 3, 31),
+        "FY2023-24",
     )
     assert p.reporting_period_id == period
 
@@ -298,6 +300,78 @@ def test_unknown_agency_fails_fast(repo):
             source_ref_meta=META,
             llm_client=FakeLLMClient([]),
         )
+
+
+def test_extraction_tool_enum_locked_to_sourced_metrics():
+    """The tool's metric_code enum IS the non-derived METRICS set -- exactly.
+
+    This locks the extractor to the published metric set: adding/removing a
+    metric in refdata.METRICS updates the enum automatically, and any drift
+    (a hand-edited enum, a derived code sneaking in) fails here.
+    """
+    from transitindex_ingest.pdf.llm import EXTRACTION_TOOL
+    from transitindex_ingest.refdata import METRICS
+
+    enum = EXTRACTION_TOOL["input_schema"]["properties"]["values"]["items"][
+        "properties"
+    ]["metric_code"]["enum"]
+    assert enum == [code for code, m in METRICS.items() if not m["is_derived"]]
+
+
+def test_notes_combine_note_label_and_quote_in_order():
+    """The reviewer note joins note, printed_label, and source_quote with ' | '.
+
+    Pins the assembled string so the audit-trail format (used by reviewers to
+    locate a figure on the page) can't silently regress.
+    """
+    from transitindex_ingest.pdf.pipeline import _notes_for
+
+    ev = ExtractedValue(
+        metric_code="total_assets",
+        value=Decimal("100"),
+        unit="CAD",
+        period_kind="annual",
+        period_year=2024,
+        page_number=12,
+        confidence=Decimal("0.9"),
+        note="restated",
+        printed_label="Total assets",
+        source_quote="Total assets 100,000",
+    )
+    assert _notes_for(ev) == (
+        'restated | label: "Total assets" | quote: "Total assets 100,000"'
+    )
+
+
+def test_notes_are_none_when_nothing_to_record():
+    from transitindex_ingest.pdf.pipeline import _notes_for
+
+    ev = ExtractedValue(
+        metric_code="ridership",
+        value=Decimal("100"),
+        unit="count",
+        period_kind="annual",
+        period_year=2024,
+        page_number=1,
+        confidence=Decimal("0.9"),
+    )
+    assert _notes_for(ev) is None
+
+
+def test_notes_label_only_when_note_and_quote_absent():
+    from transitindex_ingest.pdf.pipeline import _notes_for
+
+    ev = ExtractedValue(
+        metric_code="net_debt",
+        value=Decimal("50"),
+        unit="CAD",
+        period_kind="annual",
+        period_year=2024,
+        page_number=8,
+        confidence=Decimal("0.9"),
+        printed_label="Net debt",
+    )
+    assert _notes_for(ev) == 'label: "Net debt"'
 
 
 def test_system_prompt_lists_sourced_codes_and_demands_low_confidence():
