@@ -33,8 +33,15 @@ REVIEW_CONFIDENCE = Decimal("0.5")
 
 
 def _key(v: ExtractedValue):
-    """The identity a value is matched on across models: metric + period."""
-    return (v.metric_code, v.period_kind, v.period_year, v.period_month)
+    """The identity a value is matched on across models: metric + period + scope + basis."""
+    return (
+        v.metric_code,
+        v.period_kind,
+        v.period_year,
+        v.period_month,
+        v.service_scope,
+        v.basis,
+    )
 
 
 def _with_note(existing, addition: str) -> str:

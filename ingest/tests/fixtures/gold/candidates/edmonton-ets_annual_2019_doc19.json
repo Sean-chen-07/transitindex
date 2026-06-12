@@ -1,0 +1,164 @@
+{
+  "agency_slug": "edmonton-ets",
+  "period_year": 2019,
+  "period_kind": "annual",
+  "description": "CANDIDATE — UNCONFIRMED, do not use in eval until moved to gold/. Auto-derived from the recorded smoke run: one record per metric (highest confidence reading), restricted to annual figures for the document's own year. Units are the canonical refdata unit. The reviewer checks each row against its `evidence` (page / quote / note), fixes or deletes wrong rows, sets `should_flag: true` on ambiguous figures, then renames to <slug>_annual_<year>.json and moves the file into gold/.",
+  "records": [
+    {
+      "metric_code": "accumulated_surplus",
+      "true_value": "14928500000.0",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 23,
+        "conf": "0.5",
+        "quote": "Accumulated Surplus $ 14,928.5",
+        "note": "⚠ chunks disagree — 14928500000.0, 14928471000, 14928471000, 14928471000, 43887000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "capital_expenditure",
+      "true_value": "1259242000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 63,
+        "conf": "0.5",
+        "quote": "Acquisition of tangible capital assets (1,259,242)",
+        "note": "City-wide acquisition of tangible capital assets; ⚠ chunks disagree — 1259242000, 1256300000.0, 1259200000.0, 1406174000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "cash_and_investments",
+      "true_value": "578300000.0",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 24,
+        "conf": "0.5",
+        "quote": "the City's cash position decreased to $578.3 million from $852.0 million in 2018",
+        "note": "Cash and cash equivalents only; investments of $1,937.2M reported separately; ⚠ chunks disagree — 578300000.0, 578308000, 578308000, 1937192000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "labour_cost",
+      "true_value": "1636500000.0",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 41,
+        "conf": "0.5",
+        "quote": "Salaries, wages and benefits $ 1,636.5 $ 1,614.1 $ 22.4",
+        "note": "2019 Actual, consolidated City salaries, wages and benefits (not transit-specific); ⚠ chunks disagree — 1636500000.0, 1636498000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "long_term_debt",
+      "true_value": "3202765000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 60,
+        "conf": "0.5",
+        "quote": "Long-term debt (Note 11) 3,202,765",
+        "note": "⚠ chunks disagree — 3202765000, 3202765000, 3202800000.0, 3202800000.0, 3790040000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "materials_services_cost",
+      "true_value": "347781000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 106,
+        "conf": "0.5",
+        "quote": "Contracted and general services  347,781",
+        "note": "City-wide consolidated 'Contracted and general services'; uncertain mapping"
+      }
+    },
+    {
+      "metric_code": "operating_expenses",
+      "true_value": "3189700000.0",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 40,
+        "conf": "0.5",
+        "quote": "Operating Expenses $ 3,227.6 $ 3,189.7 $ 37.9 $ 3,029.4 $ 160.3",
+        "note": "2019 Actual, consolidated City of Edmonton operating expenses; ⚠ chunks disagree — 3189700000.0, 3189700000.0, 3189683000, 3189683000, 549237000, 61936000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "operating_revenue",
+      "true_value": "3120000000.0",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 37,
+        "conf": "0.5",
+        "quote": "Operating Revenues $ 3,210.0 $ 3,120.0 $ (90.0) $ 3,050.3 $ 69.7",
+        "note": "2019 Actual, consolidated City of Edmonton operating revenues; ⚠ chunks disagree — 3120000000.0, 3120000000.0, 3119983000, 56247000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "tangible_capital_assets",
+      "true_value": "12365000000.0",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 32,
+        "conf": "0.5",
+        "quote": "Tangible capital assets of $12,365.0 million",
+        "note": "⚠ chunks disagree — 12365000000.0, 12365026000, 12365026000, 12365000000.0, 12365026000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "total_financial_assets",
+      "true_value": "7284000000.0",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 23,
+        "conf": "0.5",
+        "quote": "Financial Assets $ 7,284.0",
+        "note": "⚠ chunks disagree — 7284000000.0, 7284013000, 7284013000, 34363000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "total_liabilities",
+      "true_value": "4796500000.0",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 23,
+        "conf": "0.5",
+        "quote": "Liabilities 4,796.5",
+        "note": "⚠ chunks disagree — 4796500000.0, 4796537000, 4796537000, 26340000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "total_non_financial_assets",
+      "true_value": "12441000000.0",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 23,
+        "conf": "0.5",
+        "quote": "Non-Financial Assets 12,441.0",
+        "note": "⚠ chunks disagree — 12441000000.0, 12440995000, 12440995000, 35864000 (reviewer confirm)"
+      }
+    }
+  ]
+}

@@ -670,3 +670,83 @@ def test_ensemble_imports_without_third_party():
     import transitindex_ingest.pdf.ensemble as ens  # must not raise
 
     assert hasattr(ens, "DualModelExtractor")
+
+
+# --- (e) merge key distinguishes service_scope + basis ----------------------
+
+from transitindex_ingest.pdf.ensemble import _key
+
+
+def _scoped_ev(*, service_scope="total", basis="actual"):
+    return ExtractedValue(
+        metric_code="ridership", value=Decimal("420000000"), unit="count",
+        period_kind="annual", period_year=2024, page_number=1,
+        confidence=Decimal("0.9"), service_scope=service_scope, basis=basis,
+    )
+
+
+def test_key_distinguishes_service_scope():
+    # Same metric/period; a mode_subset must not collide with the total.
+    assert _key(_scoped_ev(service_scope="total")) != _key(
+        _scoped_ev(service_scope="mode_subset")
+    )
+
+
+def test_key_distinguishes_basis():
+    # Same metric/period; a forecast must not collide with the actual.
+    assert _key(_scoped_ev(basis="actual")) != _key(_scoped_ev(basis="forecast"))
+
+
+def test_reconcile_scope_variants_do_not_collide():
+    # total vs mode_subset for the same metric/period -> two distinct values, no conflict.
+    out = reconcile({"opus": [_scoped_ev(service_scope="total"),
+                              _scoped_ev(service_scope="mode_subset")]})
+    assert len(out) == 2
+
+
+def test_reconcile_basis_variants_do_not_collide():
+    out = reconcile({"opus": [_scoped_ev(basis="actual"),
+                              _scoped_ev(basis="forecast")]})
+    assert len(out) == 2
+
+
+# --- (f) extraction tool exposes the scope/basis enums (not required) --------
+
+from transitindex_ingest.pdf.llm import EXTRACTION_TOOL
+
+
+def _tool_item_props():
+    return EXTRACTION_TOOL["input_schema"]["properties"]["values"]["items"]
+
+
+def test_extraction_tool_exposes_scope_and_basis_enums():
+    props = _tool_item_props()["properties"]
+    assert props["service_scope"]["enum"] == [
+        "total", "conventional", "specialized", "system_wide", "mode_subset", "city_wide",
+    ]
+    assert props["basis"]["enum"] == ["actual", "budget", "forecast", "restated"]
+
+
+def test_extraction_tool_scope_and_basis_not_required():
+    required = _tool_item_props()["required"]
+    assert "service_scope" not in required
+    assert "basis" not in required
+
+
+# --- (g) ExtractionRequest stays seam-compatible (new fields default) --------
+
+
+def test_extraction_request_constructs_without_new_args():
+    # The old call site (no doc context) still works; new fields default to None.
+    req = ExtractionRequest(agency_slug="ttc", pdf_bytes=b"x")
+    assert req.doc_type is None
+    assert req.author_label is None
+    assert req.doc_year is None
+
+
+def test_extraction_request_carries_doc_context():
+    req = ExtractionRequest(
+        agency_slug="ttc", pdf_bytes=b"x",
+        doc_type="budget", author_label="C", doc_year=2024,
+    )
+    assert (req.doc_type, req.author_label, req.doc_year) == ("budget", "C", 2024)

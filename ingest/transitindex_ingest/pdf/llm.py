@@ -31,6 +31,12 @@ SOURCED_METRIC_CODES: tuple[str, ...] = tuple(
 # pending -- it does not block, it signals the reviewer).
 LOW_CONFIDENCE_THRESHOLD = Decimal("0.7")
 
+# Confidence ceilings applied in _row_to_value when the model's source_quote does
+# not corroborate the printed digits (see quote_supports_value). A missing quote is
+# unverifiable; a quote whose digits don't match is a stronger red flag.
+QUOTE_MISSING_CONFIDENCE_CAP = Decimal("0.5")
+QUOTE_MISMATCH_CONFIDENCE_CAP = Decimal("0.3")
+
 
 @dataclass(frozen=True)
 class ExtractedValue:
@@ -53,8 +59,55 @@ class ExtractedValue:
     source_quote: Optional[str] = None  # verbatim snippet the number was read from (verify/review aid)
     printed_scale: str = "units"  # 'units' | 'thousands' | 'millions' (the table's stated units)
     printed_sign: str = "positive"  # 'negative' for accounting parentheses, e.g. (1,234)
+    service_scope: str = "total"  # 'total'|'conventional'|'specialized'|'system_wide'|'mode_subset'|'city_wide'
+    basis: str = "actual"  # 'actual'|'budget'|'forecast'|'restated'
     printed_label: Optional[str] = None  # verbatim printed row/line label the number was read from
     table_reference: Optional[str] = None  # statement/note/schedule id, e.g. "Note 7", "Schedule 2"
+
+
+def value_to_dict(v: ExtractedValue) -> dict:
+    """Serialize an ExtractedValue to a plain JSON-able dict (round-trips via
+    value_from_dict). Decimal fields become str(...); everything else is as-is."""
+    return {
+        "metric_code": v.metric_code,
+        "value": str(v.value),
+        "unit": v.unit,
+        "period_kind": v.period_kind,
+        "period_year": v.period_year,
+        "page_number": v.page_number,
+        "confidence": str(v.confidence),
+        "period_month": v.period_month,
+        "note": v.note,
+        "source_quote": v.source_quote,
+        "printed_scale": v.printed_scale,
+        "printed_sign": v.printed_sign,
+        "service_scope": v.service_scope,
+        "basis": v.basis,
+        "printed_label": v.printed_label,
+        "table_reference": v.table_reference,
+    }
+
+
+def value_from_dict(d: dict) -> ExtractedValue:
+    """Inverse of value_to_dict: Decimal fields parsed back via Decimal(...)."""
+    return ExtractedValue(
+        metric_code=d["metric_code"],
+        value=Decimal(d["value"]),
+        unit=d["unit"],
+        period_kind=d["period_kind"],
+        period_year=d["period_year"],
+        page_number=d["page_number"],
+        confidence=Decimal(d["confidence"]),
+        period_month=d["period_month"],
+        note=d["note"],
+        source_quote=d["source_quote"],
+        printed_scale=d["printed_scale"],
+        printed_sign=d["printed_sign"],
+        service_scope=d.get("service_scope", "total"),
+        basis=d.get("basis", "actual"),
+        printed_label=d.get("printed_label"),
+        table_reference=d.get("table_reference"),
+    )
 
 
 @runtime_checkable
@@ -96,7 +149,17 @@ Rules:
 - confidence is 0..1. If you are NOT sure a figure maps to one of the codes,
   emit it with LOW confidence (below 0.7) rather than guessing or omitting it --
   do not silently drop uncertain figures. Never fabricate a value.
+- source_quote is REQUIRED: the verbatim on-page text you read the number from,
+  containing the digits as printed.
 - Put any caveat (footnote, restated, partial year) in `note`.
+- service_scope: 'total' = whole agency. 'conventional'/'specialized'
+  (paratransit)/'system_wide' as labeled by the source. 'mode_subset' = one mode
+  only (bus-only, subway-only). 'city_wide' = a whole-city figure (city
+  consolidated statements), not the transit service.
+- basis: 'actual' = reported result; 'budget'/'forecast' = planned or projected
+  figures (multi-year plans, budget columns); 'restated' = a prior-year figure
+  restated.
+- A 'planned', 'projected', 'budget' or future-year figure is NEVER basis='actual'.
 - For financial-statement lines, set `printed_label` to the exact printed line
   label (e.g. "Tangible capital assets") and `table_reference` to the statement,
   note, or schedule it came from (e.g. "Statement of Financial Position",
@@ -161,6 +224,23 @@ EXTRACTION_TOOL = {
                             "enum": ["positive", "negative"],
                             "description": "'negative' for accounting parentheses, e.g. (1,234).",
                         },
+                        "service_scope": {
+                            "type": "string",
+                            "enum": [
+                                "total",
+                                "conventional",
+                                "specialized",
+                                "system_wide",
+                                "mode_subset",
+                                "city_wide",
+                            ],
+                            "description": "'total' = whole agency. 'conventional'/'specialized' (paratransit)/'system_wide' as labeled by the source. 'mode_subset' = one mode only (bus-only, subway-only). 'city_wide' = a whole-city figure (city consolidated statements), not the transit service.",
+                        },
+                        "basis": {
+                            "type": "string",
+                            "enum": ["actual", "budget", "forecast", "restated"],
+                            "description": "'actual' = reported result; 'budget'/'forecast' = planned or projected figures (multi-year plans, budget columns); 'restated' = a prior-year figure restated.",
+                        },
                         "printed_label": {
                             "type": ["string", "null"],
                             "description": "Verbatim printed row/line label the number was read from.",
@@ -178,6 +258,7 @@ EXTRACTION_TOOL = {
                         "period_year",
                         "page_number",
                         "confidence",
+                        "source_quote",
                     ],
                 },
             }
@@ -228,6 +309,42 @@ def parse_number(raw: object) -> Decimal:
     return -value if negative else value
 
 
+# Layout noise to drop before matching a printed value against a quote.
+_QUOTE_SPACES = (" ", " ", " ")  # regular, non-breaking, narrow nbsp
+_QUOTE_STRIP = _QUOTE_SPACES + (",", "(", ")")
+
+
+def _strip_chars(text: str, chars: tuple[str, ...]) -> str:
+    for ch in chars:
+        text = text.replace(ch, "")
+    return text
+
+
+def quote_supports_value(printed: str, quote: Optional[str]) -> Optional[str]:
+    """Does the source quote contain the value's printed digits?
+
+    Returns None when the quote contains the printed value, 'missing' when there
+    is no quote, and 'mismatch' when a quote exists but the digits aren't in it.
+    Both strings are normalized (spaces / commas / accounting parens stripped);
+    the comma-decimal variant of `printed` is also tried so an English-printed
+    "525.5" matches a French-quoted "525,5". Compare on the as-printed string,
+    never the scaled Decimal."""
+    if quote is None or quote.strip() == "":
+        return "missing"
+    printed_norm = _strip_chars(printed, _QUOTE_STRIP)
+    quote_norm = _strip_chars(quote, _QUOTE_STRIP)
+    if printed_norm in quote_norm:
+        return None
+    # French quotes write a comma decimal ("525,5"); the English-printed "525.5"
+    # would have lost its comma in normalization, so match the decimal variant
+    # against a comma-preserving normalization of the quote.
+    if "." in printed:
+        comma_variant = _strip_chars(printed, _QUOTE_SPACES).replace(".", ",")
+        if comma_variant in _strip_chars(quote, _QUOTE_SPACES + ("(", ")")):
+            return None
+    return "mismatch"
+
+
 # Multiplier for the model-declared printed_scale; code applies it (not the model).
 _SCALE_FACTOR = {
     "units": Decimal(1),
@@ -244,29 +361,53 @@ def apply_scale_sign(raw: Decimal, printed_scale: str, printed_sign: str) -> Dec
     return raw * factor * sign
 
 
+def _append_note(note: Optional[str], addition: str) -> str:
+    """Append addition to note, semicolon-separated, preserving any existing note."""
+    return f"{note}; {addition}" if note else addition
+
+
 def _row_to_value(row: dict) -> ExtractedValue:
     """Build an ExtractedValue from one structured-output row (tool input).
 
     The model reports the number as printed plus printed_scale/printed_sign; the
-    final value applies the scale multiplier and sign here in code."""
+    final value applies the scale multiplier and sign here in code. The free-text
+    `unit` is discarded in favour of the metric's canonical unit, and a missing or
+    non-corroborating `source_quote` caps confidence (see quote_supports_value)."""
     printed_scale = row.get("printed_scale") or "units"
     printed_sign = row.get("printed_sign") or "positive"
+    service_scope = row.get("service_scope") or "total"
+    basis = row.get("basis") or "actual"
     value = apply_scale_sign(parse_number(row["value"]), printed_scale, printed_sign)
+    confidence = Decimal(str(row["confidence"]))
+    note = row.get("note")
+    if basis == "restated":
+        note = _append_note(note, "restated figure")
+    source_quote = row.get("source_quote")
+    # Check the as-printed digits against the model's quote, never the scaled Decimal.
+    support = quote_supports_value(str(row["value"]), source_quote)
+    if support == "missing":
+        confidence = min(confidence, QUOTE_MISSING_CONFIDENCE_CAP)
+        note = _append_note(note, "no source quote")
+    elif support == "mismatch":
+        confidence = min(confidence, QUOTE_MISMATCH_CONFIDENCE_CAP)
+        note = _append_note(note, "⚠ value not found in its source quote")
     return ExtractedValue(
         metric_code=row["metric_code"],
         value=value,
-        unit=row["unit"],
+        unit=METRICS[row["metric_code"]]["unit"],
         period_kind=row["period_kind"],
         period_year=int(row["period_year"]),
         page_number=int(row["page_number"]),
-        confidence=Decimal(str(row["confidence"])),
+        confidence=confidence,
         period_month=(
             int(row["period_month"]) if row.get("period_month") is not None else None
         ),
-        note=row.get("note"),
-        source_quote=row.get("source_quote"),
+        note=note,
+        source_quote=source_quote,
         printed_scale=printed_scale,
         printed_sign=printed_sign,
+        service_scope=service_scope,
+        basis=basis,
         printed_label=row.get("printed_label"),
         table_reference=row.get("table_reference"),
     )

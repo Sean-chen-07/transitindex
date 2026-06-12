@@ -90,6 +90,9 @@ def scan_document(repo, storage, document_id: int, *, extractor=None, cfg=None) 
                 source_ref_meta=meta,
                 extractor=extractor,
                 validator=lambda repo, record: validate(record),
+                doc_type=doc.doc_type,
+                author_label=doc.author_label,
+                doc_year=doc.year,
             )
         finally:
             os.unlink(tmp.name)

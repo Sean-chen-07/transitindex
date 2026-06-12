@@ -12,7 +12,7 @@
 > tracks reality and is maintained, not a build plan · `stale-header` = built, but the
 > doc's own header/status line is out of date and should be refreshed.
 >
-> **Last updated:** 2026-06-10
+> **Last updated:** 2026-06-12
 
 ## Design (`docs/design/`)
 
@@ -34,6 +34,8 @@
 | [lane-0-foundation-spec.md](planning/lane-0-foundation-spec.md) | done | Build spec for the DB foundation (migrations, roles, seeds, tests, acceptance criteria). All 7 migrations + seeds + tests present; extended past spec (migrations 008-015). *Header "nothing committed" — stale.* |
 | [backend-restructure-brief.md](planning/backend-restructure-brief.md) | done | Brief for equation graph + period rollup + per-metric dictionary + DB/workbook restructure. All four goals shipped (equations.py, migrations 012-015, dictionary). *Header "Not started" — stale.* |
 | [balance-sheet-and-frequency-plan.md](planning/balance-sheet-and-frequency-plan.md) | in-progress | PSAB balance-sheet family + native monthly/quarterly frequency + carry-forward + workbook + web balance-sheet display. Ingest/DB shipped (11 metrics, migration 014, ratios). **2026-06-10:** web balance-sheet shipped as Section B of the Financials tab; §6's EN+FR statement anchors, printed_label/table_reference tool fields, and PSAB identities in flags.py (run at staging via validate_cohort in run_pdf) all landed. **Gaps:** carry-forward web display; gold fixtures need real verified values; prior_value (yoy) lookup not wired; 6-sheet workbook superseded by per-agency tabs. |
+| [pdf-extractor-plan-a-offline.md](planning/pdf-extractor-plan-a-offline.md) | done | **New 2026-06-12; offline Phases 0–1 BUILT + tested 2026-06-12.** Chunked-hybrid extractor improvement (from the 10-PDF smoke test, 38% review rate): smoke fixture baseline, per-segment recording + value serializers, gold candidates (3 docs in `tests/fixtures/gold/candidates/` awaiting the user's manual confirmation gate), 0.5% merge tolerance, canonical units from refdata, source-quote digit check, 0.3 confidence floor, sourced-currency sanity floor, dead per-chunk cache_control removal + page-label fix, chunk section/scale context, offline replay report (`eval/replay.py`). Suite green offline. Replay on the smoke fixture: conflicts 150→103, conf≤0.5 169→122. |
+| [pdf-extractor-plan-b-api.md](planning/pdf-extractor-plan-b-api.md) | in-progress | **New 2026-06-12; Phase 2 OFFLINE code BUILT + tested 2026-06-12 (steps 2.1–2.6) + per-segment model routing.** `service_scope`+`basis` enums on `ExtractedValue`/tool/merge `_key`, out-of-scope filtering (drop mode_subset/city_wide + budget/forecast, keep restated), doc-context (`doc_type`/`author_label`/`year`) plumbed through `ExtractionRequest`→`run_pdf`→`scan`→`cli`, definition-canon (`dictionary.extraction_guidance`) + doc-aware intro lines, text chunks→Sonnet & image batches→Opus (measured $0.89→$0.61/PDF), and `eval/smoke.py` runner. Suite green offline. **Held:** step 2.7 PAID run done once (validated scope split vs hand-read TTC 2019); Phases 3 (prefilter/Batch/Sonnet) & 4 (corroboration) gated; per-metric canonical definition work is next. |
 
 ## Reference (`docs/reference/`)
 

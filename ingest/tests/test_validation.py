@@ -105,6 +105,29 @@ def test_unit_mismatch_fires_on_negative_count(make_record):
     assert flags.unit_mismatch(rec) == UNIT_MISMATCH
 
 
+def test_unit_mismatch_fires_on_tiny_currency(make_record):
+    # total_assets is a "currency" metric; 39 CAD is garbage for agency finances.
+    rec = make_record(metric_code="total_assets", unit="CAD", value=Decimal("39"))
+    assert flags.unit_mismatch(rec) == UNIT_MISMATCH
+
+
+def test_unit_mismatch_silent_on_plausible_currency(make_record):
+    rec = make_record(metric_code="total_assets", unit="CAD", value=Decimal("39000000"))
+    assert flags.unit_mismatch(rec) is None
+
+
+def test_unit_mismatch_silent_on_small_count(make_record):
+    # fleet_size is a count, not currency; a small value is fine.
+    rec = make_record(metric_code="fleet_size", unit="count", value=Decimal("39"))
+    assert flags.unit_mismatch(rec) is None
+
+
+def test_unit_mismatch_silent_on_zero_currency(make_record):
+    # A reported 0 currency value isn't the tiny-magnitude garbage we're catching.
+    rec = make_record(metric_code="total_assets", unit="CAD", value=Decimal("0"))
+    assert flags.unit_mismatch(rec) is None
+
+
 # --- sum_mismatch (set-level) ------------------------------------------------
 
 

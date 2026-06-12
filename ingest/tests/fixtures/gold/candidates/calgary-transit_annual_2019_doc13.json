@@ -1,0 +1,177 @@
+{
+  "agency_slug": "calgary-transit",
+  "period_year": 2019,
+  "period_kind": "annual",
+  "description": "CANDIDATE — UNCONFIRMED, do not use in eval until moved to gold/. Auto-derived from the recorded smoke run: one record per metric (highest confidence reading), restricted to annual figures for the document's own year. Units are the canonical refdata unit. The reviewer checks each row against its `evidence` (page / quote / note), fixes or deletes wrong rows, sets `should_flag: true` on ambiguous figures, then renames to <slug>_annual_<year>.json and moves the file into gold/.",
+  "records": [
+    {
+      "metric_code": "accumulated_surplus",
+      "true_value": "21025406000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 40,
+        "conf": "0.5",
+        "quote": "ACCUMULATED SURPLUS (Note 17) $ 21,025,406",
+        "note": "⚠ chunks disagree — 21025406000, 21025406000, 21025406000, 21025000000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "capital_expenditure",
+      "true_value": "1160353000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 42,
+        "conf": "0.5",
+        "quote": "Acquisition of tangible capital assets (1,160,353)",
+        "note": "City-wide acquisition of tangible capital assets, not transit-specific; ⚠ chunks disagree — 1160353000, 1160353000, 1504384000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "cash_and_investments",
+      "true_value": "263209000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 40,
+        "conf": "0.5",
+        "quote": "Cash and cash equivalents (Note 2) $ 263,209",
+        "note": "Cash and cash equivalents only; separate Investments line of 4,230,756 also present; ⚠ chunks disagree — 263209000, 263209000, 4230756000, 4230756000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "labour_cost",
+      "true_value": "1980167000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 70,
+        "conf": "0.78",
+        "quote": "Salaries, wages and benefits $ 1,980,167",
+        "note": "City-wide consolidated salaries, wages and benefits; not transit-specific"
+      }
+    },
+    {
+      "metric_code": "long_term_debt",
+      "true_value": "2883447000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 40,
+        "conf": "0.5",
+        "quote": "Long-term debt (Note 14) 2,883,447",
+        "note": "⚠ chunks disagree — 2883447000, -2883447000, 2883447000, 2883447000, 2883447000, 1283320000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "materials_services_cost",
+      "true_value": "368262000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 70,
+        "conf": "0.7",
+        "quote": "Materials, equipment and supplies 368,262",
+        "note": "City-wide consolidated Materials, equipment and supplies; not transit-specific"
+      }
+    },
+    {
+      "metric_code": "operating_expenses",
+      "true_value": "607382000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 41,
+        "conf": "0.5",
+        "quote": "Public transit 470,760 607,382 567,655",
+        "note": "Public transit expense, Actual 2019; ⚠ chunks disagree — 607382000, 607382000, 607382000, 3913569000, 477437000, 607000000, 3913569000, 3914000000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "operating_revenue",
+      "true_value": "181450000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 84,
+        "conf": "0.5",
+        "quote": "Public transit 181,450 – 181,450",
+        "note": "Public transit sales of goods and services (operating revenue), Revenue by Source schedule; ⚠ chunks disagree — 181450000, 4171634000, 4171634000, 5272000000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "ridership",
+      "true_value": "106485000",
+      "unit": "count",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 96,
+        "conf": "0.9",
+        "quote": "Transit passenger trips, annual (000s) 106,485",
+        "note": null
+      }
+    },
+    {
+      "metric_code": "tangible_capital_assets",
+      "true_value": "18481951000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 40,
+        "conf": "0.5",
+        "quote": "Tangible capital assets (Notes 15 and 34) 18,481,951",
+        "note": "⚠ chunks disagree — 18481951000, 18481951000, 27242676000, 18481951000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "total_financial_assets",
+      "true_value": "7579593000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 40,
+        "conf": "0.5",
+        "quote": "7,579,593",
+        "note": "⚠ chunks disagree — 7579593000, 7579593000, 7579000000, 7579593000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "total_liabilities",
+      "true_value": "5122000000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 12,
+        "conf": "0.5",
+        "quote": "B. Liabilities $ 5,122 $ 5,370",
+        "note": "Consolidated City of Calgary; ⚠ chunks disagree — 5122000000, 5122483000, 5122483000, 5122483000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "total_non_financial_assets",
+      "true_value": "18568000000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 12,
+        "conf": "0.5",
+        "quote": "D. Non-Financial Assets $ 18,568 $ 17,776",
+        "note": "Consolidated City of Calgary; ⚠ chunks disagree — 18568000000, 18568296000, 18568296000 (reviewer confirm)"
+      }
+    }
+  ]
+}

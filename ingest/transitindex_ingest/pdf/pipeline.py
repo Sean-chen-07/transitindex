@@ -13,7 +13,7 @@ from datetime import date
 from pathlib import Path
 from typing import Callable, Optional
 
-from ..contract import DocumentType, License, MetricValueRecord, SourceRef
+from ..contract import SERVICE_SCOPES, DocumentType, License, MetricValueRecord, SourceRef
 from ..db.repository import Repository
 from ..periods import annual_period_from_end_year, monthly_period
 from ..validation import validate_cohort
@@ -96,7 +96,9 @@ def _to_record(agency_slug: str, ev: ExtractedValue, meta: SourceRefMeta) -> Met
         period_start=period.start,
         period_end=period.end,
         period_label=period.label,
-        service_scope="total",
+        # Extraction-only scopes (mode_subset/city_wide) are filtered upstream;
+        # anything else not contract-valid falls back to 'total'.
+        service_scope=ev.service_scope if ev.service_scope in SERVICE_SCOPES else "total",
         value=ev.value,
         unit=ev.unit,
         quality="preliminary",
@@ -115,6 +117,9 @@ def run_pdf(
     extractor: Optional[Extractor] = None,
     llm_client: Optional[LLMClient] = None,
     validator: Optional[Validator] = None,
+    doc_type: Optional[str] = None,
+    author_label: Optional[str] = None,
+    doc_year: Optional[int] = None,
 ) -> list[int]:
     """Run the Tier 2 pipeline; return the staged pending_value ids.
 
@@ -144,7 +149,12 @@ def run_pdf(
         pages = pdf_path_or_pages  # pre-extracted pages (offline / legacy)
 
     request = ExtractionRequest(
-        agency_slug=agency_slug, pdf_bytes=pdf_bytes, pages=pages
+        agency_slug=agency_slug,
+        pdf_bytes=pdf_bytes,
+        pages=pages,
+        doc_type=doc_type,
+        author_label=author_label,
+        doc_year=doc_year,
     )
     extracted = extractor.extract(request).values
 

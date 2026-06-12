@@ -34,6 +34,9 @@ class ExtractionRequest:
     pdf_bytes: Optional[bytes] = None
     pages: Optional[list[Page]] = None
     media_type: str = "application/pdf"
+    doc_type: Optional[str] = None  # catalog doc_type ('annual_report', 'budget', ...)
+    author_label: Optional[str] = None  # 'T' transit-own / 'C' city
+    doc_year: Optional[int] = None  # the catalog row's report year
 
 
 @dataclass(frozen=True)

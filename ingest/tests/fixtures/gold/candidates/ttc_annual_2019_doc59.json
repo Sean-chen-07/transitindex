@@ -1,0 +1,216 @@
+{
+  "agency_slug": "ttc",
+  "period_year": 2019,
+  "period_kind": "annual",
+  "description": "CANDIDATE — UNCONFIRMED, do not use in eval until moved to gold/. Auto-derived from the recorded smoke run: one record per metric (highest confidence reading), restricted to annual figures for the document's own year. Units are the canonical refdata unit. The reviewer checks each row against its `evidence` (page / quote / note), fixes or deletes wrong rows, sets `should_flag: true` on ambiguous figures, then renames to <slug>_annual_<year>.json and moves the file into gold/.",
+  "records": [
+    {
+      "metric_code": "accumulated_surplus",
+      "true_value": "12060661000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 17,
+        "conf": "0.5",
+        "quote": "Accumulated surplus | 12,060,661 | 11,568,749",
+        "note": "⚠ chunks disagree — 12060661000, 12059032000, 12060661000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "capital_expenditure",
+      "true_value": "1354966000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 21,
+        "conf": "0.5",
+        "quote": "Tangible capital asset acquisitions (1,354,966) (1,455,261)",
+        "note": "From cash flow statement, capital activities; ⚠ chunks disagree — 1354966000, 1338422000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "cash_and_investments",
+      "true_value": "141716000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 17,
+        "conf": "0.9",
+        "quote": "Cash and cash equivalents (note 4) | 141,716",
+        "note": null
+      }
+    },
+    {
+      "metric_code": "energy_fuel_cost",
+      "true_value": "84063000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 43,
+        "conf": "0.75",
+        "quote": "Vehicle fuel 84,063 79,502",
+        "note": "Vehicle fuel only; electric traction power reported separately at 58,761"
+      }
+    },
+    {
+      "metric_code": "fleet_size",
+      "true_value": "3436",
+      "unit": "count",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 52,
+        "conf": "0.85",
+        "quote": "Total Vehicle Fleet 3,436",
+        "note": "Conventional & Wheel-Trans owned and in service Dec 31"
+      }
+    },
+    {
+      "metric_code": "labour_cost",
+      "true_value": "1459106000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 43,
+        "conf": "0.9",
+        "quote": "Wages, salaries and benefits 1,459,106 1,397,379",
+        "note": null
+      }
+    },
+    {
+      "metric_code": "materials_services_cost",
+      "true_value": "329664000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 43,
+        "conf": "0.85",
+        "quote": "Materials, services and supplies 329,664 292,110",
+        "note": null
+      }
+    },
+    {
+      "metric_code": "operating_expenses",
+      "true_value": "2921698000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 18,
+        "conf": "0.5",
+        "quote": "Total expenses (note 15) 2,717,370 2,921,698 2,502,656",
+        "note": "⚠ chunks disagree — 2921698000, 2921698000, 1918200000.0, 2921698000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "operating_revenue",
+      "true_value": "1264087000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 18,
+        "conf": "0.5",
+        "quote": "Total operating revenue 1,270,862 1,264,087 1,234,789",
+        "note": "⚠ chunks disagree — 1264087000, 1264087000, 1253900000.0 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "ridership",
+      "true_value": "525500000.0",
+      "unit": "count",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 52,
+        "conf": "0.5",
+        "quote": "Revenue Passenger Trips (Millions) 525.5",
+        "note": "Conventional system, non-consolidated; ⚠ chunks disagree — 525500000.0, 530000000 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "tangible_capital_assets",
+      "true_value": "12130417000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 17,
+        "conf": "0.95",
+        "quote": "Tangible capital assets (note 11) | 12,130,417 | 11,647,678",
+        "note": null
+      }
+    },
+    {
+      "metric_code": "total_financial_assets",
+      "true_value": "1292103000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 17,
+        "conf": "0.95",
+        "quote": "Total financial assets | 1,292,103 | 1,323,084",
+        "note": null
+      }
+    },
+    {
+      "metric_code": "total_liabilities",
+      "true_value": "1543369000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 17,
+        "conf": "0.5",
+        "quote": "Total liabilities | 1,543,369 | 1,589,410",
+        "note": "⚠ chunks disagree — 1543369000, 1543369000, 597000000.0 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "total_non_financial_assets",
+      "true_value": "12311927000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 17,
+        "conf": "0.95",
+        "quote": "Total non-financial assets | 12,311,927 | 11,835,075",
+        "note": null
+      }
+    },
+    {
+      "metric_code": "total_operating_subsidy",
+      "true_value": "804880000",
+      "unit": "CAD",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 18,
+        "conf": "0.5",
+        "quote": "Operating subsidies (note 13) 825,329 804,880 710,767",
+        "note": "⚠ chunks disagree — 804880000, 804880000, 804880000, 661300000.0 (reviewer confirm)"
+      }
+    },
+    {
+      "metric_code": "vehicle_revenue_km",
+      "true_value": "254000000.0",
+      "unit": "km",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 52,
+        "conf": "0.7",
+        "quote": "Total Kilometres Operated 254.0",
+        "note": "Kilometres operated, conventional system"
+      }
+    }
+  ]
+}

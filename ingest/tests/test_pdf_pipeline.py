@@ -16,6 +16,7 @@ from decimal import Decimal
 import pytest
 
 from transitindex_ingest.pdf.extract import pages_from_text
+from transitindex_ingest.pdf.extractor import FakeExtractor
 from transitindex_ingest.pdf.llm import (
     EXTRACTION_SYSTEM_PROMPT,
     ExtractedValue,
@@ -192,6 +193,49 @@ def test_monthly_period_mapping(repo):
         "monthly", date(2026, 3, 1), date(2026, 3, 31), "Mar 2026"
     )
     assert p.reporting_period_id == period
+
+
+# --- service_scope from the extracted value ---------------------------------
+
+
+def test_contract_valid_scope_is_carried_to_pending(repo):
+    values = [
+        ExtractedValue(
+            metric_code="ridership",
+            value=Decimal("250000000"),
+            unit="count",
+            period_kind="annual",
+            period_year=2024,
+            page_number=2,
+            confidence=Decimal("0.9"),
+            service_scope="conventional",
+        )
+    ]
+    (pid,) = run_pdf(
+        repo, PAGES, "ttc", source_ref_meta=META, extractor=FakeExtractor(values)
+    )
+    assert repo.get_pending_value(pid).service_scope == "conventional"
+
+
+def test_extraction_only_scope_clamps_to_total(repo):
+    # city_wide is an extraction-only scope (filtered upstream by chunked_hybrid);
+    # if one ever reaches the shared pipeline it must clamp to 'total', not raise.
+    values = [
+        ExtractedValue(
+            metric_code="ridership",
+            value=Decimal("250000000"),
+            unit="count",
+            period_kind="annual",
+            period_year=2024,
+            page_number=2,
+            confidence=Decimal("0.9"),
+            service_scope="city_wide",
+        )
+    ]
+    (pid,) = run_pdf(
+        repo, PAGES, "ttc", source_ref_meta=META, extractor=FakeExtractor(values)
+    )
+    assert repo.get_pending_value(pid).service_scope == "total"
 
 
 # --- low-confidence flagging ------------------------------------------------

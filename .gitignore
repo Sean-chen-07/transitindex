@@ -38,6 +38,9 @@ statcan_*.csv
 statcan_*.zip
 hamilton_hsr_live.csv
 ingest/load_*_result.json
+# PDF-extractor run artifacts (the committed baseline is tests/fixtures/smoke/)
+ingest/_smoke*_result.json
+ingest/_replay_report.json
 pdfs/
 
 # OS / editor
