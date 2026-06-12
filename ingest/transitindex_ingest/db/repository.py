@@ -193,6 +193,15 @@ class Repository(Protocol):
         """All is_current values for an agency in a period (derived-metric inputs)."""
         ...
 
+    def current_value_sources(
+        self, agency_id: int, period_id: int
+    ) -> dict[int, list[str]]:
+        """For the agency's CURRENT values at a period, map metric_value_id -> the
+        document_type(s) of its source document(s). Lets the workbook import diff
+        tell whether an existing value came from a feed/PDF (any type other than
+        'manual_entry') before a hand-typed cell supersedes it."""
+        ...
+
     # --- promotion & direct writes (core.metric_values) ---------------------
 
     def promote_pending(self, pending_id: int) -> int:
@@ -327,6 +336,31 @@ class Repository(Protocol):
         """Set-based rank replacement: one DELETE for all (metric, period) pairs
         then one multi-row INSERT of all computed ranks. Replaces the per-cohort
         replace_metric_ranks loop used by the slow path."""
+        ...
+
+    def wipe_feed_data(
+        self,
+        *,
+        agency_ids: list[int],
+        source_document_id: int,
+        metric_ids: list[int],
+        dry_run: bool = False,
+    ) -> dict[int, tuple[int, int, int]]:
+        """Delete ONE feed's own rows for the given agencies, scoped by provenance.
+
+        metric_values and pending_values are scoped to source_document_id (the
+        feed's single source document), so a hand-entered or PDF-approved value
+        for the same agency — which links to a DIFFERENT source document — is
+        never touched. metric_ranks carry no provenance and are pure derived data,
+        so they are scoped by metric_ids × agency_ids (rebuilt by the rank refresh
+        that follows a reload).
+
+        Inbound restatement_of_id references to the deleted values are nulled
+        first so the FK never blocks the delete; metric_value_sources and
+        metric_value_audit cascade with their values.
+
+        Returns {agency_id: (ranks, values, pending)} for the agencies with any
+        match. When dry_run=True, counts only — nothing is deleted."""
         ...
 
     # --- test introspection --------------------------------------------------

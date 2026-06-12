@@ -170,14 +170,24 @@ since last time and leaves the rest alone, so you can run it again whenever a ne
 month is published — no mess, no duplicates.
 
 **Starting a source over.** If you need a clean slate for one source — say the
-file was wrong and you want to wipe it and reload from scratch — add **`--reset`**,
-which deletes that source's numbers first and then loads the file fresh. You only
-need this for a forced full reload; normal updates never do. Because double-
-clicking can't pass options, run it from a terminal for this:
+file was wrong and you want to wipe it and reload from scratch — add **`--reset`**.
+It deletes **only that source's own numbers** (the ones this loader itself
+published): anything you typed into the workbook by hand, or approved from a PDF,
+for the same agencies is left alone. You only need this for a forced full reload;
+normal updates never do. Because double-clicking can't pass options, run it from a
+terminal.
+
+As a safety step, `--reset` won't delete anything on its own: it first **prints
+exactly what it would remove, agency by agency**, and then stops. To actually go
+ahead, add **`--yes`**:
 
 ```
-load-statcan.bat --reset
+load-statcan.bat --reset            # shows what would be deleted, deletes nothing
+load-statcan.bat --reset --yes      # actually deletes this source's rows, then reloads
 ```
+
+Tip: run [`backup-data.bat`](../../backup-data.bat) before any `--reset --yes`, so
+you always have a copy to restore from.
 
 Need the rest of the pipeline (PDFs, rankings, the review queue)? Every command is
 listed in [reference-ingest-cli.md](reference-ingest-cli.md).

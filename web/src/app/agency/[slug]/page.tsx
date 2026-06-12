@@ -12,6 +12,7 @@ import { HeroGrid } from "@/components/detail/hero-grid";
 import { ValueTables } from "@/components/detail/value-tables";
 import { Financials } from "@/components/detail/financials";
 import { DownloadButton } from "@/components/detail/download-button";
+import { CheckoutBanner, checkoutStateFrom } from "@/components/detail/checkout-notice";
 import { RequestAgencyForm } from "@/components/detail/request-agency-form";
 import { SourceFootnote } from "@/components/common/source-footnote";
 
@@ -35,21 +36,29 @@ export async function generateMetadata({
 
 export default async function AgencyDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ checkout?: string }>;
 }) {
   const { slug } = await params;
   const summary = await getAgencySummary(slug);
   if (!summary) notFound();
 
-  const [attributions, metrics, session] = await Promise.all([
+  const [attributions, metrics, session, { checkout }] = await Promise.all([
     getAttribution(slug),
     getDetailMetrics(slug),
     getSession(),
+    searchParams,
   ]);
   const model = buildDetailModel(metrics);
   // Presentation only — the download route re-checks the live session + isPaid itself.
   const subscribed = await isPaid(session);
+  // Acknowledge a Stripe checkout return. On success the webhook may lag, so a just-paid
+  // user can be back here before subscription_status flips — show "activating" instead of
+  // a stale Subscribe button (both top banner and download slot).
+  const checkoutState = checkoutStateFrom(checkout, subscribed);
+  const pendingActivation = checkoutState === "success-pending";
 
   return (
     <main>
@@ -58,6 +67,8 @@ export default async function AgencyDetailPage({
           ← All agencies
         </Link>
       </nav>
+
+      {checkoutState && <CheckoutBanner state={checkoutState} />}
 
       <header className="mb-6">
         <h1 className="text-3xl font-extrabold text-ink">
@@ -94,7 +105,12 @@ export default async function AgencyDetailPage({
             <Financials
               financials={model.financials}
               downloadSlot={
-                <DownloadButton subscribed={subscribed} slug={slug} agencyId={summary.id} />
+                <DownloadButton
+                  subscribed={subscribed}
+                  slug={slug}
+                  agencyId={summary.id}
+                  pendingActivation={pendingActivation}
+                />
               }
             />
           }

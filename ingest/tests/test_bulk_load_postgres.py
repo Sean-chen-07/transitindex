@@ -65,7 +65,7 @@ def test_bulk_load_statcan_703_rows(repo, statcan_slugs):
     from transitindex_ingest.jobs.bulk_load import load_statcan
 
     t0 = time.monotonic()
-    result = load_statcan(repo, STATCAN_CSV, reset=True)
+    result = load_statcan(repo, STATCAN_CSV, reset=True, confirm=True)
     elapsed = time.monotonic() - t0
 
     assert result.ok, f"load failed: {result.steps[-3:]}"
@@ -78,7 +78,7 @@ def test_bulk_load_statcan_703_rows(repo, statcan_slugs):
 def test_bulk_load_statcan_idempotent_rerun(repo, statcan_slugs):
     from transitindex_ingest.jobs.bulk_load import load_statcan
 
-    load_statcan(repo, STATCAN_CSV, reset=True)
+    load_statcan(repo, STATCAN_CSV, reset=True, confirm=True)
 
     audit_count_before = repo._conn.execute(
         "SELECT COUNT(*) FROM core.metric_value_audit mv "

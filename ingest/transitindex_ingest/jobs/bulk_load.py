@@ -16,8 +16,11 @@ Both feeds follow the same fast path:
   6. Self-verify (current count == expected, zero one_current_value dupes) and
      write a JSON result file.
 
-The --reset path deletes all existing data for the affected agencies before
-staging, restoring from CSV. Use it for the initial orphan cleanup only.
+The --reset path deletes ONLY this feed's own rows before staging — scoped to
+the feed's source document (provenance), so a hand-entered or PDF-approved value
+for the same agency is never touched. It requires explicit confirmation
+(confirm=True / the CLI's --yes); without it, the per-agency blast radius is
+printed and ResetNotConfirmed is raised.
 
 Pure stdlib (no psycopg import here; all DB access via the Repository protocol).
 """
@@ -37,6 +40,21 @@ from .rank_refresh import bulk_refresh_ranks
 
 # Validator: record → list of flag strings.
 _Validator = Callable[[MetricValueRecord], list[str]]
+
+
+class ResetNotConfirmed(RuntimeError):
+    """--reset was requested without confirmation. The per-agency blast radius has
+    already been printed; re-run with --yes (confirm=True) to actually delete.
+    Carries the would-delete totals so the CLI can echo them."""
+
+    def __init__(self, feed_code: str, values: int, pending: int) -> None:
+        self.feed_code = feed_code
+        self.values = values
+        self.pending = pending
+        super().__init__(
+            f"--reset for {feed_code} would delete {values} value(s) and "
+            f"{pending} pending row(s). Re-run with --yes to proceed."
+        )
 
 
 @dataclass
@@ -78,6 +96,7 @@ def bulk_load(
     agency_slugs: list[str],
     validator: Optional[_Validator] = None,
     reset: bool = False,
+    confirm: bool = False,
 ) -> BulkLoadResult:
     """Load `records` through the fast bulk path; return a BulkLoadResult.
 
@@ -91,7 +110,12 @@ def bulk_load(
                   'operating_revenue'] for StatCan; ['ridership'] for Hamilton).
     agency_slugs: slugs whose data this feed owns (for verification + reset).
     validator   : optional flag computer; None uses the project default (or no-op).
-    reset       : if True, wipe ALL existing data for `agency_slugs` before staging.
+    reset       : if True, delete THIS feed's own rows before staging — scoped to
+                  the feed's source document, so hand-entered / PDF values for the
+                  same agency survive. Needs confirm=True.
+    confirm     : gate on reset. False (the default) makes reset print the
+                  per-agency blast radius and raise ResetNotConfirmed instead of
+                  deleting. The CLI sets this from --yes.
     """
     t0 = time.monotonic()
     steps: list[str] = []
@@ -102,11 +126,26 @@ def bulk_load(
 
     validate = _resolve_validator(validator)
 
-    # --- optional reset (delete-first for initial/forced reload) ---------------
+    # Resolve the one source document up front (all records in a feed share it):
+    # both the reset scope and the provenance links key off it.
+    source_doc_id: Optional[int] = None
+    if records and records[0].source is not None:
+        first_src = records[0].source
+        agency_id_for_doc = repo.agency_id(records[0].agency_slug)
+        source_doc_id = repo.get_or_create_source_document(first_src, agency_id_for_doc)
+
+    # --- optional reset (scoped delete-first for forced reload) --------------
     reset_performed = False
-    if reset:
-        _wipe_agency_data(repo, agency_slugs, step)
-        reset_performed = True
+    if reset and source_doc_id is not None:
+        reset_performed = _perform_reset(
+            repo,
+            agency_slugs,
+            rank_metric_codes,
+            source_doc_id,
+            feed_code=feed_code,
+            confirm=confirm,
+            step=step,
+        )
 
     # --- 1. Resolve all reference ids with Python-side caching ---------------
     # Agencies and metrics are already cached in _id_cache (postgres.py).
@@ -118,13 +157,6 @@ def bulk_load(
             period_cache[key] = repo.get_or_create_reporting_period(
                 r.period_type, r.period_start, r.period_end, r.period_label
             )
-
-    # Resolve the single source document (all records in a feed share one source).
-    source_doc_id: Optional[int] = None
-    if records and records[0].source is not None:
-        first_src = records[0].source
-        agency_id_for_doc = repo.agency_id(records[0].agency_slug)
-        source_doc_id = repo.get_or_create_source_document(first_src, agency_id_for_doc)
 
     step(
         f"ids resolved: {len(period_cache)} distinct periods, "
@@ -206,13 +238,13 @@ def bulk_load(
     repo.record_feed_run(feed_code, status="ok", rows_fetched=len(records))
 
     # --- 7. Self-verify ------------------------------------------------------
-    final_count, dupe_count = _verify(repo, agency_ids)
-    ok = (final_count == len(approved_rows) + _count_prior_non_statcan(repo, agency_ids, agency_slugs)) \
-        if False else (dupe_count == 0)
-    # Simpler correctness check: zero duplicate keys (one_current_value never violated).
-    # Count check: final >= promoted; exact only if reset was performed.
+    # final_count is scoped to THIS feed's source document; the dupe check stays
+    # broad (one_current_value must hold for every value, not just the feed's).
+    final_count, dupe_count = _verify(repo, agency_ids, source_doc_id)
     ok = dupe_count == 0
     if reset_performed:
+        # After a scoped reset the only feed-owned current values are this load's
+        # promotions, so the feed's current count must equal the approved rows.
         ok = ok and (final_count == len(approved_rows))
 
     step(
@@ -247,6 +279,7 @@ def load_statcan(
     csv_path: Path,
     *,
     reset: bool = False,
+    confirm: bool = False,
 ) -> BulkLoadResult:
     """Load StatCan 23-10-0307 (12 agencies, ridership + operating_revenue, monthly)."""
     from ..adapters.statcan_307 import StatCan23100307Adapter
@@ -266,6 +299,7 @@ def load_statcan(
         rank_metric_codes=["ridership", "operating_revenue"],
         agency_slugs=agency_slugs,
         reset=reset,
+        confirm=confirm,
     )
 
 
@@ -274,6 +308,7 @@ def load_hamilton(
     csv_path: Path,
     *,
     reset: bool = False,
+    confirm: bool = False,
 ) -> BulkLoadResult:
     """Load Hamilton HSR (1 agency, ridership only, monthly).
 
@@ -297,6 +332,7 @@ def load_hamilton(
         rank_metric_codes=["ridership"],
         agency_slugs=["hamilton-street-railway"],
         reset=reset,
+        confirm=confirm,
     )
 
 
@@ -313,37 +349,72 @@ def _resolve_validator(validator: Optional[_Validator]) -> _Validator:
         return lambda record: list(record.flags)
 
 
-def _wipe_agency_data(repo: Repository, agency_slugs: list[str], step) -> None:
-    """Delete all existing data for the given agencies (reset path only)."""
+def _perform_reset(
+    repo: Repository,
+    agency_slugs: list[str],
+    metric_codes: list[str],
+    source_doc_id: int,
+    *,
+    feed_code: str,
+    confirm: bool,
+    step,
+) -> bool:
+    """Scoped reset: delete only this feed's own rows (provenance = its source
+    document), never the agencies' hand-entered or PDF-approved values. Prints the
+    per-agency blast radius. Without confirm it prints what WOULD be deleted and
+    raises ResetNotConfirmed (the CLI maps that to 'pass --yes')."""
     agency_ids = [repo.agency_id(s) for s in agency_slugs]
-    if hasattr(repo, "_conn"):
-        conn = repo._conn
-        with conn.transaction():
-            r1 = conn.execute(
-                "DELETE FROM core.metric_ranks WHERE agency_id = ANY(%s)", (agency_ids,)
-            ).rowcount
-        with conn.transaction():
-            r2 = conn.execute(
-                "DELETE FROM core.metric_values WHERE agency_id = ANY(%s)", (agency_ids,)
-            ).rowcount
-        with conn.transaction():
-            r3 = conn.execute(
-                "DELETE FROM core.pending_values WHERE agency_id = ANY(%s)", (agency_ids,)
-            ).rowcount
-        step(f"reset: deleted ranks={r1}, values={r2}, pending={r3}")
-    else:
-        step("reset: in-memory repo — no persistent data to wipe")
+    metric_ids = [repo.metric_id(c) for c in metric_codes]
+    counts = repo.wipe_feed_data(
+        agency_ids=agency_ids,
+        source_document_id=source_doc_id,
+        metric_ids=metric_ids,
+        dry_run=not confirm,
+    )
+    id_to_slug = {repo.agency_id(s): s for s in agency_slugs}
+    verb = "deleted" if confirm else "WOULD delete"
+    tot_ranks = tot_values = tot_pending = 0
+    for aid in sorted(counts, key=lambda a: id_to_slug.get(a, str(a))):
+        ranks, values, pending = counts[aid]
+        tot_ranks += ranks
+        tot_values += values
+        tot_pending += pending
+        step(
+            f"reset[{feed_code}]: {verb} {id_to_slug.get(aid, aid)}: "
+            f"ranks={ranks}, values={values}, pending={pending}"
+        )
+    if not counts:
+        step(f"reset[{feed_code}]: nothing of this feed's to delete yet")
+    step(
+        f"reset[{feed_code}]: {verb} total ranks={tot_ranks}, values={tot_values}, "
+        f"pending={tot_pending} (only {feed_code}'s own rows; hand-entered & PDF "
+        f"values untouched)"
+    )
+    if not confirm:
+        raise ResetNotConfirmed(feed_code, tot_values, tot_pending)
+    return True
 
 
-def _verify(repo: Repository, agency_ids: list[int]) -> tuple[int, int]:
-    """Return (current_value_count, duplicate_key_count) for the given agencies."""
+def _verify(
+    repo: Repository, agency_ids: list[int], source_document_id: Optional[int]
+) -> tuple[int, int]:
+    """Return (feed_current_value_count, duplicate_key_count).
+
+    The count is scoped to the feed's own source document so the reset invariant
+    (final == approved) holds even when the agencies also carry non-feed values.
+    The duplicate check stays broad: one_current_value must hold for ALL values."""
     if hasattr(repo, "_conn"):
         conn = repo._conn
-        final = conn.execute(
-            "SELECT COUNT(*) FROM core.metric_values "
-            "WHERE agency_id = ANY(%s) AND is_current",
-            (agency_ids,),
-        ).fetchone()[0]
+        if source_document_id is None:
+            final = 0
+        else:
+            final = conn.execute(
+                "SELECT COUNT(DISTINCT mv.id) FROM core.metric_values mv "
+                "JOIN core.metric_value_sources mvs ON mvs.metric_value_id = mv.id "
+                "WHERE mv.agency_id = ANY(%s) AND mv.is_current "
+                "AND mvs.source_document_id = %s",
+                (agency_ids, source_document_id),
+            ).fetchone()[0]
         dupes = conn.execute(
             "SELECT COUNT(*) FROM ("
             "  SELECT 1 FROM core.metric_values "
@@ -355,13 +426,17 @@ def _verify(repo: Repository, agency_ids: list[int]) -> tuple[int, int]:
         ).fetchone()[0]
         return int(final), int(dupes)
     else:
-        # InMemory: count from _current_index and check invariant holds.
+        # InMemory: count current values whose provenance is the feed's source doc.
+        if source_document_id is None:
+            return 0, 0
         aid_set = set(agency_ids)
-        current = [vid for k, vid in repo._current_index.items() if k[0] in aid_set]
-        # Invariant: _current_index ensures uniqueness, so dupes=0 always.
-        return len(current), 0
-
-
-def _count_prior_non_statcan(repo, agency_ids, agency_slugs):
-    """Unused stub — kept so the ok= expression above compiles."""
-    return 0
+        feed_current = {
+            vid
+            for (vid, doc) in repo._value_sources
+            if doc == source_document_id
+            and vid in repo._values
+            and repo._values[vid].is_current
+            and repo._values[vid].agency_id in aid_set
+        }
+        # _current_index guarantees the one_current_value invariant, so dupes=0.
+        return len(feed_current), 0

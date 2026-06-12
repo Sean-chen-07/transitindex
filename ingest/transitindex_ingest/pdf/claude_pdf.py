@@ -28,6 +28,7 @@ from .llm import (
     EXTRACTION_TOOL,
     ExtractedValue,
     _row_to_value,
+    apply_scale_sign,
     parse_number,
 )
 
@@ -75,6 +76,10 @@ def _vision_system_prompt() -> str:
     return _vision_prompt_cache
 
 # Verify-pass tool: the model re-checks each candidate against the cached PDF.
+# Corrections follow the same labour split as extraction (see EXTRACTION_TOOL):
+# the model reports the number AS PRINTED plus the table's stated scale/sign,
+# and the code applies the multiplier in _merge_verify. Without this, a model
+# echoing the printed digits of a "$000s" table would rescale the value 1000x.
 VERIFY_TOOL = {
     "name": "verify_metrics",
     "description": "Re-check each proposed metric value against what the PDF actually shows.",
@@ -88,7 +93,26 @@ VERIFY_TOOL = {
                     "properties": {
                         "index": {"type": "integer"},
                         "supported": {"type": "boolean"},
-                        "corrected_value": {"type": ["string", "null"]},
+                        "corrected_value": {
+                            "type": ["string", "null"],
+                            "description": (
+                                "If the printed number differs, the number EXACTLY AS "
+                                "PRINTED (no scaling); set printed_scale for its table."
+                            ),
+                        },
+                        "printed_scale": {
+                            "type": "string",
+                            "enum": ["units", "thousands", "millions"],
+                            "description": (
+                                "Stated units of the table corrected_value was read "
+                                "from; code multiplies by 1/1e3/1e6."
+                            ),
+                        },
+                        "printed_sign": {
+                            "type": "string",
+                            "enum": ["positive", "negative"],
+                            "description": "'negative' for accounting parentheses, e.g. (1,234).",
+                        },
                         "confidence": {"type": "number", "minimum": 0, "maximum": 1},
                         "source_quote": {"type": ["string", "null"]},
                     },
@@ -321,6 +345,7 @@ class ClaudePdfExtractor:
             f"({v.period_kind} {v.period_year}"
             + (f"-{v.period_month:02d}" if v.period_month else "")
             + f"), page {v.page_number}"
+            + self._printed_note(v)
             for i, v in enumerate(values)
         )
         message = self._client.messages.create(
@@ -344,9 +369,17 @@ class ClaudePdfExtractor:
                             "type": "text",
                             "text": (
                                 "Re-check each proposed value below against the PDF. "
-                                "For each index, set supported=false if you cannot find "
-                                "it, give a corrected_value if the number is wrong, and "
-                                "report your confidence and the source_quote you saw.\n\n"
+                                "Each proposed value is the FINAL value after applying "
+                                "the table's stated units — e.g. printed 2,240 in a "
+                                "($000s) table appears below as 2240000, marked "
+                                "[printed in thousands]. For each index, set "
+                                "supported=false if you cannot find it. If the page "
+                                "shows a different number than the proposal implies, "
+                                "give corrected_value EXACTLY AS PRINTED (no scaling) "
+                                "and set printed_scale/printed_sign for the table you "
+                                "read it from — the code applies the multiplier, same "
+                                "as extraction. Report your confidence and the "
+                                "source_quote you saw.\n\n"
                                 + catalogue
                             ),
                         },
@@ -356,6 +389,16 @@ class ClaudePdfExtractor:
         )
         results = self._verify_results(message)
         return self._merge_verify(values, results)
+
+    def _printed_note(self, v: ExtractedValue) -> str:
+        """Catalogue marker for a value whose printed form was scaled/signed, so the
+        verify model knows the proposal is the FINAL value, not the printed digits."""
+        parts = []
+        if v.printed_scale != "units":
+            parts.append(f"printed in {v.printed_scale}")
+        if v.printed_sign == "negative":
+            parts.append("printed in accounting parentheses")
+        return f" [{'; '.join(parts)}]" if parts else ""
 
     def _verify_results(self, message) -> dict:
         """index -> result dict from the verify_metrics tool_use block."""
@@ -387,9 +430,20 @@ class ClaudePdfExtractor:
 
             value = v.value
             note = v.note
+            printed_scale = v.printed_scale
+            printed_sign = v.printed_sign
             corrected = r.get("corrected_value")
             if corrected is not None:
-                new_value = parse_number(corrected)
+                # Corrections arrive AS PRINTED (mirroring extraction); the scale/
+                # sign multiplier is applied here in code. A correction that omits
+                # them inherits the original reading's — same table, same units
+                # header — so a model echoing the printed digits of a scaled table
+                # can never rescale the value.
+                printed_scale = r.get("printed_scale") or v.printed_scale
+                printed_sign = r.get("printed_sign") or v.printed_sign
+                new_value = apply_scale_sign(
+                    parse_number(corrected), printed_scale, printed_sign
+                )
                 if new_value != v.value:
                     note = (
                         f"verify-corrected from {v.value}"
@@ -407,6 +461,8 @@ class ClaudePdfExtractor:
                     value=value,
                     note=note,
                     source_quote=source_quote,
+                    printed_scale=printed_scale,
+                    printed_sign=printed_sign,
                 )
             )
         return kept, dropped

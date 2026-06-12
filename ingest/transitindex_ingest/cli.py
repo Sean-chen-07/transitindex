@@ -610,12 +610,21 @@ def cmd_review(args) -> int:
 def cmd_statcan_load(args) -> int:
     """Fast bulk load of StatCan 23-10-0307 (replaces the slow cmd_statcan)."""
     import json as _json
-    from .jobs.bulk_load import load_statcan
+    from .jobs.bulk_load import load_statcan, ResetNotConfirmed
 
     repo, ephemeral = _build_repo()
     _note_ephemeral(ephemeral)
 
-    result = load_statcan(repo, Path(args.csv), reset=getattr(args, "reset", False))
+    try:
+        result = load_statcan(
+            repo,
+            Path(args.csv),
+            reset=getattr(args, "reset", False),
+            confirm=getattr(args, "yes", False),
+        )
+    except ResetNotConfirmed as exc:
+        print(f"\n{exc}", flush=True)
+        return 2
 
     result_path = Path(getattr(args, "result", "load_statcan_result.json"))
     result_path.write_text(_json.dumps(result.to_dict(), indent=2), encoding="utf-8")
@@ -626,12 +635,21 @@ def cmd_statcan_load(args) -> int:
 def cmd_hamilton_load(args) -> int:
     """Fast bulk load of Hamilton HSR (replaces the slow cmd_hamilton)."""
     import json as _json
-    from .jobs.bulk_load import load_hamilton
+    from .jobs.bulk_load import load_hamilton, ResetNotConfirmed
 
     repo, ephemeral = _build_repo()
     _note_ephemeral(ephemeral)
 
-    result = load_hamilton(repo, Path(args.csv), reset=getattr(args, "reset", False))
+    try:
+        result = load_hamilton(
+            repo,
+            Path(args.csv),
+            reset=getattr(args, "reset", False),
+            confirm=getattr(args, "yes", False),
+        )
+    except ResetNotConfirmed as exc:
+        print(f"\n{exc}", flush=True)
+        return 2
 
     result_path = Path(getattr(args, "result", "load_hamilton_result.json"))
     result_path.write_text(_json.dumps(result.to_dict(), indent=2), encoding="utf-8")
@@ -657,7 +675,16 @@ def build_parser() -> argparse.ArgumentParser:
             "--reset",
             action="store_true",
             default=False,
-            help="Wipe all existing StatCan data before loading (initial/forced reload).",
+            help="Delete THIS feed's own StatCan rows before loading (forced "
+            "reload). Hand-entered and PDF-approved values for the same agencies "
+            "are NOT touched. Prints the blast radius and needs --yes to proceed.",
+        )
+        sp.add_argument(
+            "--yes",
+            action="store_true",
+            default=False,
+            help="Confirm --reset (required; without it the loader only prints "
+            "what would be deleted and stops).",
         )
         sp.add_argument(
             "--result",
@@ -676,7 +703,16 @@ def build_parser() -> argparse.ArgumentParser:
             "--reset",
             action="store_true",
             default=False,
-            help="Wipe all existing Hamilton data before loading.",
+            help="Delete THIS feed's own Hamilton rows before loading (forced "
+            "reload). Hand-entered and PDF-approved values are NOT touched. "
+            "Prints the blast radius and needs --yes to proceed.",
+        )
+        hp.add_argument(
+            "--yes",
+            action="store_true",
+            default=False,
+            help="Confirm --reset (required; without it the loader only prints "
+            "what would be deleted and stops).",
         )
         hp.add_argument(
             "--result",

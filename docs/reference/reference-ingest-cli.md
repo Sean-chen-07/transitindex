@@ -36,13 +36,14 @@ Load the StatCan monthly table 23-10-0307 (monthly ridership + operating revenue
 about a dozen agencies).
 
 ```
-python -m transitindex_ingest statcan-load <csv> [--reset] [--result PATH]
+python -m transitindex_ingest statcan-load <csv> [--reset [--yes]] [--result PATH]
 ```
 
 | Argument | Type | Default | Meaning |
 |---|---|---|---|
 | `csv` | path (required) | — | The 23-10-0307 CSV export (UTF-8; a leading BOM is tolerated). |
-| `--reset` | flag | off | Delete all existing StatCan-agency data first, then reload (forced full reload). |
+| `--reset` | flag | off | Delete **only this feed's own** rows first, then reload (forced full reload). Scoped by provenance to the feed's source document — hand-entered and PDF-approved values for the same agencies are left untouched. Ranks (derived) are also cleared and rebuilt. |
+| `--yes` | flag | off | Confirm `--reset`. Without it, `--reset` prints the per-agency blast radius and exits (code 2) without deleting. |
 | `--result` | path | `load_statcan_result.json` | Where to write the JSON result summary. |
 
 ### `hamilton-load` (alias: `hamilton`)
@@ -50,13 +51,14 @@ python -m transitindex_ingest statcan-load <csv> [--reset] [--result PATH]
 Load Hamilton HSR monthly ridership (one agency).
 
 ```
-python -m transitindex_ingest hamilton-load <csv> [--reset] [--result PATH]
+python -m transitindex_ingest hamilton-load <csv> [--reset [--yes]] [--result PATH]
 ```
 
 | Argument | Type | Default | Meaning |
 |---|---|---|---|
 | `csv` | path (required) | — | The Hamilton HSR CSV export. |
-| `--reset` | flag | off | Delete all existing Hamilton data first, then reload. |
+| `--reset` | flag | off | Delete **only this feed's own** Hamilton rows first, then reload. Hand-entered and PDF-approved values for the agency are left untouched. |
+| `--yes` | flag | off | Confirm `--reset`. Without it, `--reset` prints what would be deleted and exits (code 2) without deleting. |
 | `--result` | path | `load_hamilton_result.json` | Where to write the JSON result summary. |
 
 > `statcan` and `hamilton` are kept as aliases of the `-load` commands and behave
