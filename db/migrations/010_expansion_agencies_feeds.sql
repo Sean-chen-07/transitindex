@@ -1,3 +1,5 @@
+-- migrate:up
+
 -- Migration 010: expansion agencies + hamilton open-data source feed.
 -- Adds 11 data-collection-target agencies (already in 06_agencies_full.sql for
 -- the directory, now promoted to the tracked set) and the hamilton_open_data feed.
@@ -40,3 +42,22 @@ ON CONFLICT (agency_id, mode_id) DO NOTHING;
 INSERT INTO core.source_feeds (code, display_name, tier, expected_cadence, enabled) VALUES
   ('hamilton_open_data', 'Hamilton HSR Open Data (ArcGIS)', 1, 'monthly', true)
 ON CONFLICT (code) DO NOTHING;
+
+-- migrate:down
+
+DELETE FROM core.source_feeds WHERE code = 'hamilton_open_data';
+
+DELETE FROM core.agency_modes am
+USING core.agencies a
+WHERE am.agency_id = a.id
+  AND a.slug IN (
+    'winnipeg-transit', 'hamilton-street-railway', 'brampton-transit',
+    'grand-river-transit', 'stl-laval', 'rtl-longueuil', 'york-region-transit',
+    'halifax-transit', 'durham-region-transit', 'saskatoon-transit', 'regina-transit'
+  );
+
+DELETE FROM core.agencies WHERE slug IN (
+  'winnipeg-transit', 'hamilton-street-railway', 'brampton-transit',
+  'grand-river-transit', 'stl-laval', 'rtl-longueuil', 'york-region-transit',
+  'halifax-transit', 'durham-region-transit', 'saskatoon-transit', 'regina-transit'
+);
