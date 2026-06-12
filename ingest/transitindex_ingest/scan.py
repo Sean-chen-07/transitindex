@@ -46,8 +46,8 @@ def scan_document(repo, storage, document_id: int, *, extractor=None, cfg=None) 
     cfg = cfg or load_config()
 
     try:
-        # Lazy imports: the heavy real-PDF path (anthropic/pypdf) loads only here.
-        from .pdf.claude_pdf import ClaudePdfExtractor
+        # Lazy imports: the heavy real-PDF path (anthropic/markitdown/pypdf) loads only here.
+        from .pdf.chunked_hybrid import ChunkedHybridExtractor
         from .pdf.pipeline import SourceRefMeta, run_pdf
 
         agency_slug = _slug_for_agency_id(repo, doc.agency_id)
@@ -59,7 +59,10 @@ def scan_document(repo, storage, document_id: int, *, extractor=None, cfg=None) 
                 raise RuntimeError(
                     "ANTHROPIC_API_KEY is not set -- the extractor calls the Anthropic API."
                 )
-            extractor = ClaudePdfExtractor(api_key=cfg.anthropic_api_key)
+            # Default scan: chunked hybrid -- markitdown text (split into <=500-line,
+            # table-safe chunks) + the scanned pages as batched images. Never sends
+            # the whole PDF at once (see pdf/chunked_hybrid.py).
+            extractor = ChunkedHybridExtractor(cfg.anthropic_api_key)
 
         data = storage.download(doc.storage_key)
 

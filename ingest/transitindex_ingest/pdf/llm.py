@@ -264,8 +264,11 @@ class AnthropicLLMClient:
     def __init__(
         self,
         api_key: str,
+        # 8192, not 4096: a multi-year stats table is 30-40 tool rows, which
+        # overruns 4096 and truncates the tool-call JSON to nothing (stop_reason
+        # 'max_tokens', zero values parsed). Matches the vision extractor.
         model: str = "claude-sonnet-4-6",
-        max_tokens: int = 4096,
+        max_tokens: int = 8192,
     ) -> None:
         import anthropic  # lazy: real API path only
 
