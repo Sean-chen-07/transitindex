@@ -2,6 +2,49 @@
 
 All notable changes to TransitIndex.
 
+## [0.0.6.0] - 2026-06-11
+
+A reliability-and-trust release from a full-workbase audit: fixes that prevent wrong
+numbers and data loss, plus accessibility, a clearer payment experience, and the first
+automated tests that run on every change.
+
+### Fixed
+
+#### Numbers you can trust
+- **A figure printed in a "$000s" table can no longer be quietly shrunk 1000×.** The PDF
+  reader's double-check pass was re-reading a corrected number without re-applying the
+  table's stated units; it now keeps the scale, so 2,240 in a thousands table stays
+  2,240,000 — not 2,240.
+- **"Start a source over" no longer deletes data it shouldn't.** The `--reset` option used
+  to wipe everything for a source's agencies — including numbers typed by hand or approved
+  from a PDF. It now removes only that source's own numbers, prints exactly what it will
+  delete agency by agency, and requires a confirmation (`--yes`) first.
+- **Re-importing the data workbook no longer overwrites better data.** Exporting and then
+  re-importing the spreadsheet used to republish every cell as a hand-entry, clobbering
+  fresher official figures. Import now skips unchanged cells and warns before a typed value
+  would replace an official one.
+
+#### Payments
+- **A clear confirmation after subscribing.** Returning from checkout now shows "You're a
+  member" (or, while the payment is still processing, "activating — refresh in a few
+  seconds") instead of silently re-showing the Subscribe button.
+- **The "members who paid" counter can't be faked.** The events that signal a payment are
+  now recorded only on the server, never accepted from the browser.
+
+#### Accessibility & resilience
+- **Keyboard focus is visible again on every button** (effectively required for civic/
+  government use).
+- **Friendly error, "page not found", and loading screens** instead of a raw crash page
+  when something hiccups.
+- Added standard browser security headers.
+
+### Behind the scenes
+- **Automated tests now run on every change** — the website, the data pipeline, and a
+  from-scratch database rebuild — so regressions are caught automatically.
+- Repaired two database migrations that broke a from-scratch rebuild, and added a
+  one-click backup of the data that can't be re-fetched.
+- A bulk data load no longer gets re-published a second time by a later workbook import.
+
 ## [0.0.5.0] - 2026-06-10
 
 ### Added
