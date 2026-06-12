@@ -365,13 +365,20 @@ class ChunkedHybridExtractor:
         self._image_overlap = image_overlap
         self._max_workers = max_workers
         self._client = _client
-        from ..dictionary import extraction_guidance  # lazy: keeps module import third-party-free
+        # Enrich the system prompt with the metric-definition canon. The dictionary
+        # is YAML-backed (a third-party dep); the offline/stdlib-only test env has no
+        # PyYAML, so degrade gracefully to the base prompt there -- the canon only
+        # matters on the real API path, where PyYAML is installed.
+        try:
+            from ..dictionary import extraction_guidance  # lazy: needs PyYAML
 
-        self._system_prompt = (
-            EXTRACTION_SYSTEM_PROMPT
-            + "\n\nMetric definitions (the canon — map printed figures onto these, nothing else):\n"
-            + extraction_guidance()
-        )
+            self._system_prompt = (
+                EXTRACTION_SYSTEM_PROMPT
+                + "\n\nMetric definitions (the canon — map printed figures onto these, nothing else):\n"
+                + extraction_guidance()
+            )
+        except ImportError:
+            self._system_prompt = EXTRACTION_SYSTEM_PROMPT
 
     def extract(self, request: ExtractionRequest) -> ExtractionResult:
         segments, image_pages = self._segments(request)

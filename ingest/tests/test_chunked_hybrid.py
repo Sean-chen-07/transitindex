@@ -449,6 +449,9 @@ def test_doc_aware_intro_absent_for_bare_request(monkeypatch):
 
 
 def test_system_prompt_carries_definition_canon(monkeypatch):
+    import pytest
+
+    pytest.importorskip("yaml")  # the canon is YAML-backed; skip in the stdlib-only env
     monkeypatch.setattr(ch, "_to_markdown", lambda b: "body text")
     monkeypatch.setattr(ch, "_image_page_batches", lambda b, t, **k: [])
     ext, client = _ext(lambda text: [])
