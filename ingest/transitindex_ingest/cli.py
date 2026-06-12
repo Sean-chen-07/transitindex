@@ -187,7 +187,16 @@ def cmd_pdf(args) -> int:
         extractor = ChunkedHybridExtractor(cfg.anthropic_api_key)
     meta = SourceRefMeta(document_type=args.doc_type, title=args.title, source_url=args.url)
     try:
-        pending_ids = run_pdf(repo, args.pdf, args.agency, source_ref_meta=meta, extractor=extractor)
+        pending_ids = run_pdf(
+            repo,
+            args.pdf,
+            args.agency,
+            source_ref_meta=meta,
+            extractor=extractor,
+            doc_type=args.doc_type,
+            author_label=args.author,
+            doc_year=args.year,
+        )
     except ModuleNotFoundError:
         print(
             "error: the real PDF path needs pypdf and the anthropic SDK "
@@ -292,7 +301,13 @@ def cmd_pdf_smoke(args) -> int:
         )
     try:
         result = extractor.extract(
-            ExtractionRequest(agency_slug=args.agency, pdf_bytes=pdf_bytes)
+            ExtractionRequest(
+                agency_slug=args.agency,
+                pdf_bytes=pdf_bytes,
+                doc_type=args.doc_type,
+                author_label=args.author,
+                doc_year=args.year,
+            )
         )
     except ModuleNotFoundError as exc:
         # Default + --markitdown need markitdown; --docstrange needs docstrange.
@@ -748,6 +763,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     pp.add_argument("--title", default=None)
     pp.add_argument("--url", default=None)
+    pp.add_argument("--author", default=None, choices=["T", "C"], help="Catalog author_label: T = transit-own, C = city (default: None).")
+    pp.add_argument("--year", type=int, default=None, help="Catalog report year, passed to the extractor as document context (default: None).")
     pp.add_argument(
         "--dual",
         action="store_true",
@@ -769,6 +786,9 @@ def build_parser() -> argparse.ArgumentParser:
     sm.add_argument("pdf", nargs="?", default=None, help="Path to the PDF (or use --url).")
     sm.add_argument("--url", default=None, help="Fetch the PDF from this URL instead of a path.")
     sm.add_argument("--agency", required=True, help="Agency slug (e.g. ttc).")
+    sm.add_argument("--doc-type", dest="doc_type", default=None, help="Catalog doc_type passed to the extractor as document context (default: None).")
+    sm.add_argument("--author", default=None, choices=["T", "C"], help="Catalog author_label: T = transit-own, C = city (default: None).")
+    sm.add_argument("--year", type=int, default=None, help="Catalog report year, passed to the extractor as document context (default: None).")
     sm.add_argument("--no-verify", action="store_true", help="Skip the verify second pass.")
     sm.add_argument("--model", default=None, help="Claude model id (default: claude-sonnet-4-6).")
     sm.add_argument(

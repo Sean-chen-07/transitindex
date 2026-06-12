@@ -92,6 +92,32 @@ def test_row_to_value_defaults_leave_value_as_printed():
     assert ev.printed_sign == "positive"
 
 
+# --- _row_to_value: service_scope / basis defaults + restated note ----------
+
+
+def test_row_to_value_scope_and_basis_default_to_total_actual():
+    # Missing service_scope / basis -> the agency-total actual defaults.
+    ev = _row_to_value(_row(value="419900000"))
+    assert ev.service_scope == "total"
+    assert ev.basis == "actual"
+
+
+def test_row_to_value_parses_scope_and_basis_when_present():
+    ev = _row_to_value(
+        _row(value="181000000", service_scope="mode_subset", basis="forecast")
+    )
+    assert ev.service_scope == "mode_subset"
+    assert ev.basis == "forecast"
+
+
+def test_row_to_value_restated_basis_appends_note():
+    ev = _row_to_value(
+        _row(value="2370", basis="restated", source_quote="Operating expenses 2,370")
+    )
+    assert ev.basis == "restated"
+    assert "restated figure" in ev.note
+
+
 # --- value_to_dict / value_from_dict round-trip -----------------------------
 
 
@@ -114,6 +140,24 @@ def test_value_dict_round_trip_lossless_all_fields():
     # Decimal fields serialize as strings.
     assert d["value"] == "1234.56"
     assert d["confidence"] == "0.83"
+    assert value_from_dict(d) == v
+
+
+def test_value_dict_round_trip_carries_scope_and_basis():
+    v = ExtractedValue(
+        metric_code="ridership",
+        value=Decimal("181000000"),
+        unit="count",
+        period_kind="annual",
+        period_year=2024,
+        page_number=5,
+        confidence=Decimal("0.9"),
+        service_scope="mode_subset",
+        basis="forecast",
+    )
+    d = value_to_dict(v)
+    assert d["service_scope"] == "mode_subset"
+    assert d["basis"] == "forecast"
     assert value_from_dict(d) == v
 
 

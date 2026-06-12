@@ -15,10 +15,11 @@ from transitindex_ingest.pdf.llm import ExtractedValue, value_from_dict
 from transitindex_ingest.pdf import chunked_hybrid as ch
 
 
-def _ev(metric, value, conf=0.9, year=2024):
+def _ev(metric, value, conf=0.9, year=2024, scope="total", basis="actual"):
     return ExtractedValue(
         metric_code=metric, value=Decimal(str(value)), unit="count",
         period_kind="annual", period_year=year, page_number=1, confidence=Decimal(str(conf)),
+        service_scope=scope, basis=basis,
     )
 
 
@@ -187,6 +188,27 @@ def test_merge_within_tolerance_keeps_most_precise_reading():
     assert out[0].confidence == Decimal("0.95")
 
 
+def test_merge_does_not_collide_scope_variants():
+    # TTC: bus-only (mode_subset) 181M vs whole-agency total 420M -- same metric/period
+    # but different scope, so the new _key keeps them apart instead of flagging a conflict.
+    out = ch.merge_values([
+        _ev("ridership", 420000000, scope="total"),
+        _ev("ridership", 181000000, scope="mode_subset"),
+    ])
+    assert len(out) == 2
+    assert all("disagree" not in (v.note or "") for v in out)
+
+
+def test_merge_does_not_collide_basis_variants():
+    # Same metric/period, actual result vs a forecast -- different basis -> two values.
+    out = ch.merge_values([
+        _ev("ridership", 100000000, basis="actual"),
+        _ev("ridership", 130000000, basis="forecast"),
+    ])
+    assert len(out) == 2
+    assert all("disagree" not in (v.note or "") for v in out)
+
+
 # --- _image_page_batches ----------------------------------------------------
 
 
@@ -283,6 +305,36 @@ def test_extractor_batches_scanned_pages(monkeypatch):
     assert len(doc_calls) == 2
 
 
+def _is_image_call(call):
+    return any(b.get("type") == "document" for b in call["messages"][0]["content"])
+
+
+def test_text_and_image_segments_route_to_different_models(monkeypatch):
+    monkeypatch.setattr(ch, "_to_markdown", lambda b: "A\n\nB")                       # 2 text chunks
+    monkeypatch.setattr(ch, "_image_page_batches", lambda b, t, **k: [("B64", [5, 6])])  # 1 image batch
+    ext, client = _ext(lambda text: [], target_lines=1)
+    res = ext.extract(ExtractionRequest(agency_slug="ttc", pdf_bytes=b"%PDF"))
+
+    text_models = {c["model"] for c in client.calls if not _is_image_call(c)}
+    image_models = {c["model"] for c in client.calls if _is_image_call(c)}
+    assert ch.DEFAULT_TEXT_MODEL != ch.DEFAULT_IMAGE_MODEL          # the whole point: they differ
+    assert text_models == {ch.DEFAULT_TEXT_MODEL}                    # cheap model reads the text
+    assert image_models == {ch.DEFAULT_IMAGE_MODEL}                  # strong model reads the scans
+
+    d = res.diagnostics
+    assert d["text_model"] == ch.DEFAULT_TEXT_MODEL and d["model"] == ch.DEFAULT_IMAGE_MODEL
+    # cost is split by model: 2 text calls + 1 image call, 1000 tok each (the fake's usage).
+    assert d["input_tokens_by_model"] == {ch.DEFAULT_TEXT_MODEL: 2000, ch.DEFAULT_IMAGE_MODEL: 1000}
+
+
+def test_text_model_override_is_used(monkeypatch):
+    monkeypatch.setattr(ch, "_to_markdown", lambda b: "A")
+    monkeypatch.setattr(ch, "_image_page_batches", lambda b, t, **k: [])
+    ext, client = _ext(lambda text: [], text_model="claude-haiku-4-5")
+    ext.extract(ExtractionRequest(agency_slug="ttc", pdf_bytes=b"%PDF"))
+    assert {c["model"] for c in client.calls} == {"claude-haiku-4-5"}
+
+
 def test_extractor_survives_a_segment_error(monkeypatch):
     monkeypatch.setattr(ch, "_to_markdown", lambda b: "A\n\nB")
     monkeypatch.setattr(ch, "_image_page_batches", lambda b, t, **k: [])
@@ -345,6 +397,65 @@ def test_segments_raw_round_trips_per_label(monkeypatch):
     assert [value_from_dict(d).metric_code for d in raw[1]["values"]] == ["fleet_size"]
     assert all(s["error"] is None for s in raw)
     assert all(s["input_tokens"] == 1000 for s in raw)
+
+
+def test_extractor_filters_out_of_scope_after_merge(monkeypatch):
+    # One chunk returns a total/actual, a restated actual, a forecast, and a city_wide
+    # row. After merge, the forecast + city_wide are dropped (and counted); the total
+    # and the restated actual survive (restated stays -- it is an actual, just restated).
+    monkeypatch.setattr(ch, "_to_markdown", lambda b: "only one chunk")
+    monkeypatch.setattr(ch, "_image_page_batches", lambda b, t, **k: [])
+
+    rows = [
+        {**_ROW, "metric_code": "ridership", "value": "100"},  # total / actual (default)
+        {**_ROW, "metric_code": "operating_revenue", "value": "200", "basis": "restated"},
+        {**_ROW, "metric_code": "ridership", "value": "130", "basis": "forecast", "period_year": 2027},
+        {**_ROW, "metric_code": "accumulated_surplus", "value": "9999", "service_scope": "city_wide"},
+    ]
+    ext, _ = _ext(lambda text: rows)
+    res = ext.extract(ExtractionRequest(agency_slug="ttc", pdf_bytes=b"%PDF"))
+
+    assert res.diagnostics["dropped_scope"] == 1   # the city_wide row
+    assert res.diagnostics["dropped_basis"] == 1   # the forecast row
+    kept = {(v.metric_code, v.basis) for v in res.values}
+    assert kept == {("ridership", "actual"), ("operating_revenue", "restated")}
+
+
+def test_doc_aware_intro_lines_for_city_budget_request(monkeypatch):
+    monkeypatch.setattr(ch, "_to_markdown", lambda b: "body text")
+    monkeypatch.setattr(ch, "_image_page_batches", lambda b, t, **k: [])
+    ext, client = _ext(lambda text: [])
+    ext.extract(ExtractionRequest(
+        agency_slug="ttc", pdf_bytes=b"%PDF",
+        doc_type="budget", author_label="C", doc_year=2025,
+    ))
+    intro = client.calls[0]["messages"][0]["content"][0]["text"]
+    assert "Document: budget for 2025, published by the CITY government" in intro
+    assert "service_scope='city_wide'" in intro                # [C] city-wide guidance
+    assert "This is a plan/budget document" in intro           # budget basis guidance
+    assert "figures for 2025 and later" in intro
+
+
+def test_doc_aware_intro_absent_for_bare_request(monkeypatch):
+    monkeypatch.setattr(ch, "_to_markdown", lambda b: "body text")
+    monkeypatch.setattr(ch, "_image_page_batches", lambda b, t, **k: [])
+    ext, client = _ext(lambda text: [])
+    ext.extract(ExtractionRequest(agency_slug="ttc", pdf_bytes=b"%PDF"))
+    intro = client.calls[0]["messages"][0]["content"][0]["text"]
+    assert intro.startswith("Agency: ttc")
+    assert "Document:" not in intro
+    assert "city_wide" not in intro
+    assert "plan/budget document" not in intro
+
+
+def test_system_prompt_carries_definition_canon(monkeypatch):
+    monkeypatch.setattr(ch, "_to_markdown", lambda b: "body text")
+    monkeypatch.setattr(ch, "_image_page_batches", lambda b, t, **k: [])
+    ext, client = _ext(lambda text: [])
+    ext.extract(ExtractionRequest(agency_slug="ttc", pdf_bytes=b"%PDF"))
+    system_text = client.calls[0]["system"][0]["text"]
+    assert "Metric definitions (the canon" in system_text
+    assert "unlinked" in system_text.lower()   # a known phrase from the dictionary guidance
 
 
 def test_is_extractor_protocol():

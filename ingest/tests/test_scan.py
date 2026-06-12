@@ -12,7 +12,11 @@ from __future__ import annotations
 from decimal import Decimal
 
 from transitindex_ingest.db.memory import InMemoryRepository
-from transitindex_ingest.pdf.extractor import FakeExtractor
+from transitindex_ingest.pdf.extractor import (
+    ExtractionRequest,
+    ExtractionResult,
+    FakeExtractor,
+)
 from transitindex_ingest.pdf.llm import ExtractedValue
 from transitindex_ingest.scan import scan_document
 
@@ -101,3 +105,30 @@ def test_unknown_document_id_is_reported():
     result = scan_document(repo, FakeStorage(), 999, extractor=FakeExtractor(_values()))
     assert result["ok"] is False
     assert "unknown document" in result["error"]
+
+
+class _RecordingExtractor:
+    """Captures the ExtractionRequest it receives, then returns canned values."""
+
+    def __init__(self, values):
+        self._values = list(values)
+        self.request = None
+
+    def extract(self, request: ExtractionRequest) -> ExtractionResult:
+        self.request = request
+        return ExtractionResult(values=list(self._values))
+
+
+def test_scan_passes_catalog_doc_context_to_extractor():
+    repo = InMemoryRepository()
+    doc_id = _catalog_one(repo)  # doc_type='annual_report', author 'T', year 2024
+    storage = FakeStorage({"ttc/ttc-2024.pdf": b"%PDF-1.4 fake"})
+    extractor = _RecordingExtractor(_values())
+
+    result = scan_document(repo, storage, doc_id, extractor=extractor)
+
+    assert result["ok"] is True
+    assert extractor.request is not None
+    assert extractor.request.doc_type == "annual_report"
+    assert extractor.request.author_label == "T"
+    assert extractor.request.doc_year == 2024

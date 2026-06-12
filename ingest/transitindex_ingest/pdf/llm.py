@@ -59,6 +59,8 @@ class ExtractedValue:
     source_quote: Optional[str] = None  # verbatim snippet the number was read from (verify/review aid)
     printed_scale: str = "units"  # 'units' | 'thousands' | 'millions' (the table's stated units)
     printed_sign: str = "positive"  # 'negative' for accounting parentheses, e.g. (1,234)
+    service_scope: str = "total"  # 'total'|'conventional'|'specialized'|'system_wide'|'mode_subset'|'city_wide'
+    basis: str = "actual"  # 'actual'|'budget'|'forecast'|'restated'
 
 
 def value_to_dict(v: ExtractedValue) -> dict:
@@ -77,6 +79,8 @@ def value_to_dict(v: ExtractedValue) -> dict:
         "source_quote": v.source_quote,
         "printed_scale": v.printed_scale,
         "printed_sign": v.printed_sign,
+        "service_scope": v.service_scope,
+        "basis": v.basis,
     }
 
 
@@ -95,6 +99,8 @@ def value_from_dict(d: dict) -> ExtractedValue:
         source_quote=d["source_quote"],
         printed_scale=d["printed_scale"],
         printed_sign=d["printed_sign"],
+        service_scope=d.get("service_scope", "total"),
+        basis=d.get("basis", "actual"),
     )
 
 
@@ -140,6 +146,14 @@ Rules:
 - source_quote is REQUIRED: the verbatim on-page text you read the number from,
   containing the digits as printed.
 - Put any caveat (footnote, restated, partial year) in `note`.
+- service_scope: 'total' = whole agency. 'conventional'/'specialized'
+  (paratransit)/'system_wide' as labeled by the source. 'mode_subset' = one mode
+  only (bus-only, subway-only). 'city_wide' = a whole-city figure (city
+  consolidated statements), not the transit service.
+- basis: 'actual' = reported result; 'budget'/'forecast' = planned or projected
+  figures (multi-year plans, budget columns); 'restated' = a prior-year figure
+  restated.
+- A 'planned', 'projected', 'budget' or future-year figure is NEVER basis='actual'.
 
 Return your answer ONLY by calling the `record_metrics` tool.
 """
@@ -195,6 +209,23 @@ EXTRACTION_TOOL = {
                             "type": "string",
                             "enum": ["positive", "negative"],
                             "description": "'negative' for accounting parentheses, e.g. (1,234).",
+                        },
+                        "service_scope": {
+                            "type": "string",
+                            "enum": [
+                                "total",
+                                "conventional",
+                                "specialized",
+                                "system_wide",
+                                "mode_subset",
+                                "city_wide",
+                            ],
+                            "description": "'total' = whole agency. 'conventional'/'specialized' (paratransit)/'system_wide' as labeled by the source. 'mode_subset' = one mode only (bus-only, subway-only). 'city_wide' = a whole-city figure (city consolidated statements), not the transit service.",
+                        },
+                        "basis": {
+                            "type": "string",
+                            "enum": ["actual", "budget", "forecast", "restated"],
+                            "description": "'actual' = reported result; 'budget'/'forecast' = planned or projected figures (multi-year plans, budget columns); 'restated' = a prior-year figure restated.",
                         },
                     },
                     "required": [
@@ -322,9 +353,13 @@ def _row_to_value(row: dict) -> ExtractedValue:
     non-corroborating `source_quote` caps confidence (see quote_supports_value)."""
     printed_scale = row.get("printed_scale") or "units"
     printed_sign = row.get("printed_sign") or "positive"
+    service_scope = row.get("service_scope") or "total"
+    basis = row.get("basis") or "actual"
     value = apply_scale_sign(parse_number(row["value"]), printed_scale, printed_sign)
     confidence = Decimal(str(row["confidence"]))
     note = row.get("note")
+    if basis == "restated":
+        note = _append_note(note, "restated figure")
     source_quote = row.get("source_quote")
     # Check the as-printed digits against the model's quote, never the scaled Decimal.
     support = quote_supports_value(str(row["value"]), source_quote)
@@ -349,6 +384,8 @@ def _row_to_value(row: dict) -> ExtractedValue:
         source_quote=source_quote,
         printed_scale=printed_scale,
         printed_sign=printed_sign,
+        service_scope=service_scope,
+        basis=basis,
     )
 
 

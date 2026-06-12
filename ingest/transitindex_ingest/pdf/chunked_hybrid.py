@@ -18,6 +18,10 @@ to the highest-confidence reading, conflicting chunks are flagged for review. Th
 system prompt is identical across calls, so prompt caching keeps the per-call
 overhead cheap.
 
+Per-segment model routing keeps the cost down: clean markdown text chunks (the bulk
+of the tokens) go to a cheaper model (DEFAULT_TEXT_MODEL), and only the scanned-image
+batches -- the genuinely hard read -- use the strong model (DEFAULT_IMAGE_MODEL).
+
 It implements the `Extractor` seam (drop-in for run_pdf / scan / pdf-smoke).
 `markitdown`, `anthropic`, and `pypdf` import lazily; `_to_markdown` /
 `_image_page_batches` are module seams the offline tests monkeypatch, and `_client`
@@ -42,9 +46,20 @@ DEFAULT_TARGET_LINES = 350   # soft target lines per chunk; a single paragraph/t
 DEFAULT_IMAGE_BATCH = 5      # scanned pages per image call -- not the whole 30-page scan at once
 DEFAULT_IMAGE_OVERLAP = 0    # no overlap: each scanned page is sent in exactly one batch (no duplicate send)
 DEFAULT_MAX_WORKERS = 4      # parallel segment calls (SDK retries 429s)
+# Per-segment model routing: scanned-page images are the hard read (keep the strong
+# model); clean markdown text is easy, so a cheaper model reads it at a fraction of the
+# cost. Text is the bulk of the tokens, so this split is where most of the spend is saved.
+DEFAULT_IMAGE_MODEL = "claude-opus-4-8"
+DEFAULT_TEXT_MODEL = "claude-sonnet-4-6"
 REVIEW_CONFIDENCE = Decimal("0.5")  # stamped on a cross-chunk disagreement so it surfaces for review
 MERGE_REL_TOLERANCE = Decimal("0.005")  # readings within 0.5% are the same figure (rounded summary vs exact)
 CONFIDENCE_FLOOR = Decimal("0.3")  # below this a reading is noise, not data -- dropped before merge
+
+# Out-of-scope figures the metric set does not want at agency level: a single mode
+# (bus-only) and whole-city consolidated figures are dropped after merge (step 2.3).
+DROPPED_SCOPES = frozenset({"mode_subset", "city_wide"})
+# Planned/projected figures are not actuals; 'restated' is an actual (just restated) and stays.
+DROPPED_BASES = frozenset({"budget", "forecast"})
 
 
 # --- markdown chunking (paragraph boundaries only) --------------------------
@@ -285,11 +300,11 @@ def merge_values(values: list) -> list:
 # --- one segment's Claude call ----------------------------------------------
 
 
-def _segment_values(client, model: str, max_tokens: int, content: list) -> tuple[list, int]:
+def _segment_values(client, model: str, max_tokens: int, content: list, system: str) -> tuple[list, int]:
     message = client.messages.create(
         model=model,
         max_tokens=max_tokens,
-        system=[{"type": "text", "text": EXTRACTION_SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
+        system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
         tools=[EXTRACTION_TOOL],
         tool_choice={"type": "tool", "name": EXTRACTION_TOOL["name"]},
         messages=[{"role": "user", "content": content}],
@@ -328,7 +343,8 @@ class ChunkedHybridExtractor:
         self,
         api_key=None,
         *,
-        model: str = "claude-opus-4-8",
+        model: str = DEFAULT_IMAGE_MODEL,
+        text_model: Optional[str] = None,
         max_tokens: int = 8192,
         target_lines: int = DEFAULT_TARGET_LINES,
         include_image_pages: bool = True,
@@ -339,7 +355,8 @@ class ChunkedHybridExtractor:
         _client=None,
     ) -> None:
         self._api_key = api_key
-        self._model = model
+        self._model = model  # strong model for the scanned-image batches
+        self._text_model = text_model or DEFAULT_TEXT_MODEL  # cheaper model for text chunks
         self._max_tokens = max_tokens
         self._target_lines = target_lines
         self._include_image_pages = include_image_pages
@@ -348,6 +365,13 @@ class ChunkedHybridExtractor:
         self._image_overlap = image_overlap
         self._max_workers = max_workers
         self._client = _client
+        from ..dictionary import extraction_guidance  # lazy: keeps module import third-party-free
+
+        self._system_prompt = (
+            EXTRACTION_SYSTEM_PROMPT
+            + "\n\nMetric definitions (the canon — map printed figures onto these, nothing else):\n"
+            + extraction_guidance()
+        )
 
     def extract(self, request: ExtractionRequest) -> ExtractionResult:
         segments, image_pages = self._segments(request)
@@ -357,9 +381,10 @@ class ChunkedHybridExtractor:
         errors: dict[str, str] = {}
 
         def run(idx):
-            _, content = segments[idx]
+            label, content = segments[idx]
+            seg_model = self._model if label.startswith("img") else self._text_model
             try:
-                return idx, _segment_values(client, self._model, self._max_tokens, content), None
+                return idx, _segment_values(client, seg_model, self._max_tokens, content, self._system_prompt), None
             except Exception as exc:  # one segment failing must not sink the run
                 return idx, ([], 0), f"{type(exc).__name__}: {exc}"
 
@@ -372,15 +397,18 @@ class ChunkedHybridExtractor:
 
         all_values: list = []
         total_in = 0
+        tokens_by_model: dict[str, int] = {}  # split text vs image tokens for an honest cost
         segments_raw: list[dict] = []
         for idx, r in enumerate(results):
             label = segments[idx][0]
+            seg_model = self._model if label.startswith("img") else self._text_model
             if r is None:
                 segments_raw.append({"label": label, "values": [], "input_tokens": 0, "error": errors.get(label)})
                 continue
             vals, in_tok = r
             all_values.extend(vals)
             total_in += in_tok
+            tokens_by_model[seg_model] = tokens_by_model.get(seg_model, 0) + in_tok
             segments_raw.append({
                 "label": label,
                 "values": [value_to_dict(v) for v in vals],
@@ -394,22 +422,42 @@ class ChunkedHybridExtractor:
         dropped_below_floor = len(all_values) - len(kept)
 
         merged = merge_values(kept)
+
+        # Drop out-of-scope figures the metric set does not want at agency level (step 2.3):
+        # single-mode/whole-city scopes and budget/forecast bases. 'restated' is an actual, kept.
+        dropped_scope = sum(1 for v in merged if v.service_scope in DROPPED_SCOPES)
+        dropped_basis = sum(
+            1 for v in merged if v.service_scope not in DROPPED_SCOPES and v.basis in DROPPED_BASES
+        )
+        merged = [
+            v for v in merged
+            if v.service_scope not in DROPPED_SCOPES and v.basis not in DROPPED_BASES
+        ]
+
         md_chunks = sum(1 for label, _ in segments if label.startswith("md"))
         img_batches = sum(1 for label, _ in segments if label.startswith("img"))
+        est_cost = sum(
+            tok * _INPUT_USD_PER_MTOK.get(m, 5.0) / 1_000_000
+            for m, tok in tokens_by_model.items()
+        )
         return ExtractionResult(
             values=merged,
             diagnostics={
                 "extractor": "chunked_hybrid",
-                "model": self._model,
+                "model": self._model,             # image/strong model
+                "text_model": self._text_model,   # text/cheap model
                 "md_chunks": md_chunks,
                 "image_batches": img_batches,
                 "segments": len(segments),
                 "image_pages": sorted(set(image_pages)),
                 "values_raw": len(all_values),
                 "dropped_below_floor": dropped_below_floor,
+                "dropped_scope": dropped_scope,
+                "dropped_basis": dropped_basis,
                 "values_merged": len(merged),
                 "input_tokens": total_in,
-                "est_cost_usd": total_in * _INPUT_USD_PER_MTOK.get(self._model, 5.0) / 1_000_000,
+                "input_tokens_by_model": tokens_by_model,
+                "est_cost_usd": est_cost,
                 "errors": errors,
                 "segments_raw": segments_raw,
             },
@@ -417,7 +465,7 @@ class ChunkedHybridExtractor:
 
     def _segments(self, request: ExtractionRequest) -> tuple[list, list[int]]:
         """Build (label, content_blocks) for every markdown chunk and image batch."""
-        agency = request.agency_slug
+        agency_intro = self._agency_intro(request)
         segments: list[tuple[str, list]] = []
         image_pages: list[int] = []
 
@@ -428,7 +476,7 @@ class ChunkedHybridExtractor:
 
         chunks = chunk_markdown_with_context(md, target_lines=self._target_lines)
         for n, (chunk, context) in enumerate(chunks):
-            intro = f"Agency: {agency}\n\nReport text, section {n + 1} of {len(chunks)} -- extract every metric you can read here:"
+            intro = f"{agency_intro}\n\nReport text, section {n + 1} of {len(chunks)} -- extract every metric you can read here:"
             if context:
                 intro += f"\n\n{context}"  # carries a lost units header / section title (never inside the chunk)
             segments.append((
@@ -448,12 +496,41 @@ class ChunkedHybridExtractor:
                 segments.append((
                     f"img{_page_label(pages)}",
                     [
-                        {"type": "text", "text": f"Agency: {agency}\n\nScanned report pages {_page_label(pages)} (no text layer) -- read the figures visually and extract every metric:"},
+                        {"type": "text", "text": f"{agency_intro}\n\nScanned report pages {_page_label(pages)} (no text layer) -- read the figures visually and extract every metric:"},
                         {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": b64}},
                     ],
                 ))
 
         return segments, image_pages
+
+    def _agency_intro(self, request: ExtractionRequest) -> str:
+        """`Agency: {slug}` plus the catalog row's document context (step 2.5b).
+
+        Each line is appended only when its source field is present; a request built
+        the old way (all three fields None) yields just the bare agency line.
+        """
+        lines = [f"Agency: {request.agency_slug}"]
+        if request.doc_type is not None and request.doc_year is not None and request.author_label is not None:
+            published_by = (
+                "the transit agency itself."
+                if request.author_label == "T"
+                else "the CITY government (consolidated city-wide financial statements)."
+            )
+            lines.append(f"Document: {request.doc_type} for {request.doc_year}, published by {published_by}")
+        if request.author_label == "C":
+            lines.append(
+                "City-published document: balance-sheet and financial figures that cover "
+                "the WHOLE CITY are service_scope='city_wide' — only figures explicitly "
+                "broken out for the transit service/segment may use other scopes. If the "
+                "statements have no transit segment breakout, emit NO city-wide financials."
+            )
+        if request.doc_type in {"budget", "business_plan", "service_plan"} and request.doc_year is not None:
+            lines.append(
+                f"This is a plan/budget document: figures for {request.doc_year} and later "
+                "are basis='budget' or 'forecast' unless explicitly reported as actual "
+                "results; prior-year actuals are basis='actual'."
+            )
+        return "\n".join(lines)
 
     def _ensure_client(self):
         if self._client is None:
