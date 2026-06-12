@@ -15,8 +15,8 @@ INSERT INTO core.agencies (slug, legal_name, short_name, country, subdivision, f
   ('rtl-longueuil',          'Réseau de transport de Longueuil',         'RTL',               'CA', 'QC', 12, 'CAD', ARRAY['bus']),
   ('york-region-transit',    'York Region Transit',                      'YRT',               'CA', 'ON', 12, 'CAD', ARRAY['bus','brt']),
   ('halifax-transit',        'Halifax Transit',                          'Halifax Transit',   'CA', 'NS', 12, 'CAD', ARRAY['bus','ferry']),
-  ('durham-region-transit',  'Durham Region Transit',                    'DRT',               'CA', 'ON', 12, 'CAD', ARRAY['bus']),
-  ('saskatoon-transit',      'Saskatoon Transit',                        'Saskatoon Transit', 'CA', 'SK', 12, 'CAD', ARRAY['bus']),
+  ('durham-region-transit',  'Durham Region Transit',                    'DRT',               'CA', 'ON', 12, 'CAD', ARRAY['bus','on_demand']),
+  ('saskatoon-transit',      'Saskatoon Transit',                        'Saskatoon Transit', 'CA', 'SK', 12, 'CAD', ARRAY['bus','on_demand']),
   ('regina-transit',         'Regina Transit',                           'Regina Transit',    'CA', 'SK', 12, 'CAD', ARRAY['bus'])
 ON CONFLICT (slug) DO NOTHING;
 
@@ -33,8 +33,8 @@ WHERE (a.slug, m.code) IN (VALUES
   ('rtl-longueuil','bus'),
   ('york-region-transit','bus'), ('york-region-transit','brt'),
   ('halifax-transit','bus'), ('halifax-transit','ferry'),
-  ('durham-region-transit','bus'),
-  ('saskatoon-transit','bus'),
+  ('durham-region-transit','bus'), ('durham-region-transit','on_demand'),
+  ('saskatoon-transit','bus'), ('saskatoon-transit','on_demand'),
   ('regina-transit','bus')
 )
 ON CONFLICT (agency_id, mode_id) DO NOTHING;

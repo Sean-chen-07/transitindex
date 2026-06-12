@@ -24,8 +24,8 @@ WHERE (a.slug, m.code) IN (VALUES
   ('rtl-longueuil','bus'),
   ('york-region-transit','bus'), ('york-region-transit','brt'),
   ('halifax-transit','bus'), ('halifax-transit','ferry'),
-  ('durham-region-transit','bus'),
-  ('saskatoon-transit','bus'),
+  ('durham-region-transit','bus'), ('durham-region-transit','on_demand'),
+  ('saskatoon-transit','bus'), ('saskatoon-transit','on_demand'),
   ('regina-transit','bus')
 )
 ON CONFLICT (agency_id, mode_id) DO NOTHING;
