@@ -383,6 +383,20 @@ class InMemoryRepository:
             if v.is_current and v.agency_id == agency_id and v.reporting_period_id == period_id
         ]
 
+    def current_value_sources(
+        self, agency_id: int, period_id: int
+    ) -> dict[int, list[str]]:
+        current_ids = {
+            v.id
+            for v in self._values.values()
+            if v.is_current and v.agency_id == agency_id and v.reporting_period_id == period_id
+        }
+        out: dict[int, list[str]] = {vid: [] for vid in current_ids}
+        for (mv_id, doc_id) in self._value_sources:
+            if mv_id in current_ids and doc_id in self._documents:
+                out[mv_id].append(self._documents[doc_id].document_type)
+        return out
+
     # --- promotion & direct writes ------------------------------------------
 
     def promote_pending(self, pending_id: int) -> int:
@@ -641,7 +655,11 @@ class InMemoryRepository:
                 cv = self._values[current_vid]
                 if pending.value == cv.value and pending.quality == cv.quality:
                     skipped += 1
-                    self.update_pending(pid, review_status="approved")
+                    # Stamp the 'promoted' sentinel (= promotion._PROMOTED_NOTE) so a
+                    # later slow promote_approved() skips this bulk row.
+                    self.update_pending(
+                        pid, review_status="approved", reviewer_notes="promoted"
+                    )
                     continue
                 else:
                     superseded += 1
@@ -671,7 +689,9 @@ class InMemoryRepository:
                     "extraction_method": pending.extraction_method,
                     "confidence": pending.confidence,
                 }
-            self.update_pending(pid, review_status="approved")
+            # Stamp 'promoted' (= promotion._PROMOTED_NOTE) so a later slow
+            # promote_approved() does not re-promote this bulk row.
+            self.update_pending(pid, review_status="approved", reviewer_notes="promoted")
             new_ids.append(vid)
             # Keep local snapshot current so subsequent rows see the new state.
             current_snap[key] = vid
@@ -714,6 +734,90 @@ class InMemoryRepository:
                     direction=r.direction,
                 )
             )
+
+    def wipe_feed_data(
+        self,
+        *,
+        agency_ids: list[int],
+        source_document_id: int,
+        metric_ids: list[int],
+        dry_run: bool = False,
+    ) -> dict[int, tuple[int, int, int]]:
+        from dataclasses import replace
+
+        aid_set = set(agency_ids)
+        mid_set = set(metric_ids)
+
+        # metric_values whose provenance is this feed's source document.
+        value_ids = {
+            vid
+            for (vid, doc) in self._value_sources
+            if doc == source_document_id
+            and vid in self._values
+            and self._values[vid].agency_id in aid_set
+        }
+        # pending_values carry source_document_id directly.
+        pending_ids = {
+            pid
+            for pid, p in self._pending.items()
+            if p.source_document_id == source_document_id and p.agency_id in aid_set
+        }
+
+        # Per-agency counts (the blast radius the caller prints).
+        counts: dict[int, list[int]] = {}
+
+        def bump(agency_id: int, slot: int) -> None:
+            counts.setdefault(agency_id, [0, 0, 0])[slot] += 1
+
+        # ranks: this feed's metrics, for the feed's agencies (pure derived).
+        rank_survivors: dict[tuple, list] = {}
+        for key, rows in self._ranks.items():
+            if key[0] not in mid_set:
+                continue
+            survivors = []
+            for r in rows:
+                if r.agency_id in aid_set:
+                    bump(r.agency_id, 0)
+                else:
+                    survivors.append(r)
+            if len(survivors) != len(rows):
+                rank_survivors[key] = survivors
+        for vid in value_ids:
+            bump(self._values[vid].agency_id, 1)
+        for pid in pending_ids:
+            bump(self._pending[pid].agency_id, 2)
+
+        result = {a: tuple(c) for a, c in counts.items()}
+        if dry_run:
+            return result
+
+        # Apply ranks.
+        for key, survivors in rank_survivors.items():
+            if survivors:
+                self._ranks[key] = survivors
+            else:
+                del self._ranks[key]
+        # Null inbound restatement_of_id refs so nothing dangles after delete.
+        for vid, mv in list(self._values.items()):
+            if mv.restatement_of_id in value_ids:
+                self._values[vid] = replace(mv, restatement_of_id=None)
+        # Delete the values + their provenance links + audit (cascade) + current index.
+        for vid in value_ids:
+            mv = self._values.pop(vid)
+            key = (
+                mv.agency_id, mv.metric_id, mv.reporting_period_id,
+                mv.mode_id, mv.service_scope,
+            )
+            if self._current_index.get(key) == vid:
+                del self._current_index[key]
+            self._derivations.pop(vid, None)
+        for link_key in [k for k in self._value_sources if k[0] in value_ids]:
+            del self._value_sources[link_key]
+        self._audit = [a for a in self._audit if a["metric_value_id"] not in value_ids]
+        # Delete the pending rows.
+        for pid in pending_ids:
+            del self._pending[pid]
+        return result
 
     # --- test introspection --------------------------------------------------
 

@@ -336,3 +336,95 @@ def test_non_numeric_cell_warns_and_skips(repo, tmp_path):
     summary = workbook.import_workbook(repo, out)
     assert any("non-numeric" in w for w in summary["warnings"])
     assert _current(repo, "ttc", annual_period("ttc", 2023), "operating_expenses") is None
+
+
+# --- diff-aware import (idempotent round-trip) -------------------------------
+
+
+def test_unchanged_reimport_stages_nothing(repo, tmp_path):
+    """A plain export -> import with no edits re-stages NOTHING (no churn)."""
+    out = str(tmp_path / "wb.xlsx")
+    workbook.export_workbook(repo, out, [2023])
+    wb = _load(out)
+    # Agency-scale dollars: below the currency floor (validation.flags._CURRENCY_FLOOR)
+    # a value is flagged and never auto-promoted.
+    _set_year_cell(wb["TTC"], label=NAMES["operating_expenses"], year=2023, value=8000000)
+    wb.save(out)
+    first = workbook.import_workbook(repo, out)
+    assert first["staged"] == 1 and first["promoted"] == 1
+
+    # Re-export (pre-fills the value from the DB), then import the UNMODIFIED file.
+    workbook.export_workbook(repo, out, [2023])
+    second = workbook.import_workbook(repo, out)
+    assert second["staged"] == 0
+    assert second["promoted"] == 0
+    assert second["skipped_unchanged"] >= 1
+    ap = annual_period("ttc", 2023)
+    assert _current(repo, "ttc", ap, "operating_expenses").value == Decimal("8000000")
+
+
+def test_edited_cell_stages_exactly_one(repo, tmp_path):
+    """Re-importing after editing one pre-filled cell stages only that cell."""
+    out = str(tmp_path / "wb.xlsx")
+    workbook.export_workbook(repo, out, [2023])
+    wb = _load(out)
+    # Agency-scale dollars: operating_expenses below the currency floor is flagged
+    # and never auto-promoted. revenue_service_hours is hours (not currency), so the
+    # floor does not apply.
+    _set_year_cell(wb["TTC"], label=NAMES["operating_expenses"], year=2023, value=8000000)
+    _set_year_cell(wb["TTC"], label=NAMES["revenue_service_hours"], year=2023, value=5000)
+    wb.save(out)
+    workbook.import_workbook(repo, out)
+
+    # Re-export pre-fills both; edit only operating_expenses.
+    workbook.export_workbook(repo, out, [2023])
+    wb = _load(out)
+    _set_year_cell(wb["TTC"], label=NAMES["operating_expenses"], year=2023, value=9000000)
+    wb.save(out)
+    summary = workbook.import_workbook(repo, out)
+
+    assert summary["staged"] == 1            # only the edited cell
+    assert summary["skipped_unchanged"] >= 1  # the unchanged service-hours cell
+    ap = annual_period("ttc", 2023)
+    assert _current(repo, "ttc", ap, "operating_expenses").value == Decimal("9000000")
+    assert _current(repo, "ttc", ap, "revenue_service_hours").value == Decimal("5000")
+
+
+def test_overwriting_feed_value_warns(repo, tmp_path):
+    """A hand-typed cell that supersedes a feed-sourced value is honoured but warns."""
+    from transitindex_ingest.contract import MetricValueRecord, SourceRef
+    from transitindex_ingest.promotion import promote_approved
+    from transitindex_ingest.staging import stage_records
+
+    # Seed a StatCan-sourced ridership value for Jan 2023 (a feed, not manual entry).
+    jan = monthly_period(2023, 1)
+    feed = SourceRef(
+        document_type="statcan_table",
+        extraction_method="statcan_passthrough",
+        license="statcan_open",
+        source_url="https://www150.statcan.gc.ca/test",
+    )
+    stage_records(
+        repo,
+        [MetricValueRecord(
+            agency_slug="ttc", metric_code="ridership",
+            period_type=jan.period_type, period_start=jan.start, period_end=jan.end,
+            period_label=jan.label, service_scope="total",
+            value="1000", unit="count", quality="verified", source=feed,
+        )],
+        tier=0, feed_code="statcan_307",
+    )
+    promote_approved(repo)
+    assert _current(repo, "ttc", jan, "ridership").value == Decimal("1000")
+
+    # Export pre-fills Jan with 1000; the editor types a different number.
+    out = str(tmp_path / "wb.xlsx")
+    workbook.export_workbook(repo, out, [2023])
+    wb = _load(out)
+    _set_month(wb["TTC"], metric_code="ridership", year=2023, month=1, value=1234)
+    wb.save(out)
+    summary = workbook.import_workbook(repo, out)
+
+    assert any("statcan_table" in w for w in summary["warnings"]), summary["warnings"]
+    # The editor's number is still honoured (we warn, we don't block).
+    assert _current(repo, "ttc", jan, "ridership").value == Decimal("1234")

@@ -20,9 +20,9 @@ from typing import Optional, Protocol, runtime_checkable
 
 from ..refdata import METRICS
 
-# The 14 sourced metrics are the only ones the model may emit. Derived metrics
-# (average_fare, farebox_recovery_ratio, ...) are computed downstream, never
-# read off a page.
+# The sourced metrics (every non-derived code in METRICS) are the only ones the
+# model may emit. Derived metrics (average_fare, farebox_recovery_ratio, ...)
+# are computed downstream, never read off a page.
 SOURCED_METRIC_CODES: tuple[str, ...] = tuple(
     code for code, m in METRICS.items() if not m["is_derived"]
 )
@@ -61,6 +61,8 @@ class ExtractedValue:
     printed_sign: str = "positive"  # 'negative' for accounting parentheses, e.g. (1,234)
     service_scope: str = "total"  # 'total'|'conventional'|'specialized'|'system_wide'|'mode_subset'|'city_wide'
     basis: str = "actual"  # 'actual'|'budget'|'forecast'|'restated'
+    printed_label: Optional[str] = None  # verbatim printed row/line label the number was read from
+    table_reference: Optional[str] = None  # statement/note/schedule id, e.g. "Note 7", "Schedule 2"
 
 
 def value_to_dict(v: ExtractedValue) -> dict:
@@ -81,6 +83,8 @@ def value_to_dict(v: ExtractedValue) -> dict:
         "printed_sign": v.printed_sign,
         "service_scope": v.service_scope,
         "basis": v.basis,
+        "printed_label": v.printed_label,
+        "table_reference": v.table_reference,
     }
 
 
@@ -101,6 +105,8 @@ def value_from_dict(d: dict) -> ExtractedValue:
         printed_sign=d["printed_sign"],
         service_scope=d.get("service_scope", "total"),
         basis=d.get("basis", "actual"),
+        printed_label=d.get("printed_label"),
+        table_reference=d.get("table_reference"),
     )
 
 
@@ -154,6 +160,14 @@ Rules:
   figures (multi-year plans, budget columns); 'restated' = a prior-year figure
   restated.
 - A 'planned', 'projected', 'budget' or future-year figure is NEVER basis='actual'.
+- For financial-statement lines, set `printed_label` to the exact printed line
+  label (e.g. "Tangible capital assets") and `table_reference` to the statement,
+  note, or schedule it came from (e.g. "Statement of Financial Position",
+  "Note 7", "Schedule 2").
+- Consolidated municipalities: if a city-wide financial statement does NOT break
+  out the transit agency as its own segment/schedule, do NOT map the city-wide
+  figures to the agency -- skip them and record the gap in `note`. Never
+  attribute a whole municipality's balance sheet to its transit system.
 
 Return your answer ONLY by calling the `record_metrics` tool.
 """
@@ -226,6 +240,14 @@ EXTRACTION_TOOL = {
                             "type": "string",
                             "enum": ["actual", "budget", "forecast", "restated"],
                             "description": "'actual' = reported result; 'budget'/'forecast' = planned or projected figures (multi-year plans, budget columns); 'restated' = a prior-year figure restated.",
+                        },
+                        "printed_label": {
+                            "type": ["string", "null"],
+                            "description": "Verbatim printed row/line label the number was read from.",
+                        },
+                        "table_reference": {
+                            "type": ["string", "null"],
+                            "description": "Statement/note/schedule id, e.g. 'Note 7', 'Schedule 2'.",
                         },
                     },
                     "required": [
@@ -386,6 +408,8 @@ def _row_to_value(row: dict) -> ExtractedValue:
         printed_sign=printed_sign,
         service_scope=service_scope,
         basis=basis,
+        printed_label=row.get("printed_label"),
+        table_reference=row.get("table_reference"),
     )
 
 

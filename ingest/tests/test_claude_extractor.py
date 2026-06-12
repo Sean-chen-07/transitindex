@@ -221,6 +221,84 @@ def test_verify_corrects_value_and_records_note():
     assert v.source_quote == "Total ridership 250,000,001"
 
 
+def _thousands_row():
+    """One extract row as the model reports it: digits as printed ('2,240') in a
+    '($000s)' table -> _row_to_value stores the final scaled value 2240000."""
+    return {
+        "metric_code": "operating_expenses",
+        "value": "2,240",
+        "unit": "CAD",
+        "period_kind": "annual",
+        "period_year": 2024,
+        "page_number": 12,
+        "confidence": 0.9,
+        "printed_scale": "thousands",
+    }
+
+
+def test_verify_correction_reapplies_printed_scale():
+    # A genuine correction (printed 2,245 not 2,240) arrives AS PRINTED with its
+    # scale; the merged value must be the scaled 2,245,000 — never the raw 2245.
+    verify = [
+        {
+            "index": 0,
+            "supported": True,
+            "corrected_value": "2,245",
+            "printed_scale": "thousands",
+            "confidence": 0.9,
+        }
+    ]
+    ext = _make_extractor(
+        [_FakeMessage([_extract_block([_thousands_row()])]), _FakeMessage([_verify_block(verify)])]
+    )
+    _stub_split(ext)
+
+    (v,) = ext.extract(_request()).values
+
+    assert v.value == Decimal("2245000")
+    assert "verify-corrected from 2240000" in v.note
+
+
+def test_verify_echoed_printed_digits_do_not_rescale():
+    # THE 1000x regression: the model "corrects" with the printed digits ('2,240')
+    # and omits the scale fields. The correction inherits the original reading's
+    # printed_scale, so the value stays 2,240,000 — before the fix this overwrote
+    # it with 2,240.
+    verify = [
+        {
+            "index": 0,
+            "supported": True,
+            "corrected_value": "2,240",
+            "confidence": 0.9,
+        }
+    ]
+    ext = _make_extractor(
+        [_FakeMessage([_extract_block([_thousands_row()])]), _FakeMessage([_verify_block(verify)])]
+    )
+    _stub_split(ext)
+
+    (v,) = ext.extract(_request()).values
+
+    assert v.value == Decimal("2240000")
+    assert "verify-corrected" not in (v.note or "")  # same number -> no correction
+
+
+def test_verify_catalogue_marks_scaled_values():
+    # The verify prompt must tell the model the proposal is the FINAL value, not
+    # the printed digits, so it doesn't "correct" every scaled number on sight.
+    verify = [{"index": 0, "supported": True, "confidence": 0.9}]
+    ext = _make_extractor(
+        [_FakeMessage([_extract_block([_thousands_row()])]), _FakeMessage([_verify_block(verify)])]
+    )
+    _stub_split(ext)
+
+    ext.extract(_request())
+
+    prompt = ext._client.calls[1]["messages"][0]["content"][1]["text"]
+    assert "2240000" in prompt
+    assert "[printed in thousands]" in prompt
+
+
 def test_french_numbers_parse():
     rows = [
         {

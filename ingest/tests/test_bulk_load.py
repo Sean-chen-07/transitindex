@@ -21,7 +21,11 @@ import pytest
 from transitindex_ingest.contract import MetricValueRecord, SourceRef
 from transitindex_ingest.db.memory import InMemoryRepository
 from transitindex_ingest.db.models import BulkPendingRow
-from transitindex_ingest.jobs.bulk_load import bulk_load, BulkLoadResult
+from transitindex_ingest.jobs.bulk_load import (
+    bulk_load,
+    BulkLoadResult,
+    ResetNotConfirmed,
+)
 from transitindex_ingest.jobs.rank_refresh import bulk_refresh_ranks
 
 # ---------------------------------------------------------------------------
@@ -66,7 +70,17 @@ def _record(
     )
 
 
-def _do_bulk(repo, records, reset=False, validator=None):
+# A hand-entered value's provenance: a manual_entry document with no URL, so it
+# is a DIFFERENT source document than the StatCan feed (the scoping boundary).
+MANUAL_SOURCE = SourceRef(
+    document_type="manual_entry",
+    extraction_method="manual",
+    license="public_document",
+    source_url=None,
+)
+
+
+def _do_bulk(repo, records, reset=False, confirm=False, validator=None):
     return bulk_load(
         repo,
         records,
@@ -75,8 +89,20 @@ def _do_bulk(repo, records, reset=False, validator=None):
         rank_metric_codes=[METRIC],
         agency_slugs=[SLUG],
         reset=reset,
+        confirm=confirm,
         validator=validator,
     )
+
+
+def _add_manual_value(repo, *, value, month, agency=SLUG, metric=METRIC):
+    """Promote a hand-entered value linked to its own manual_entry document.
+    Returns (metric_value_id, manual_source_document_id)."""
+    rec = _record(value, month=month, agency=agency, metric=metric)
+    manual_doc = repo.get_or_create_source_document(MANUAL_SOURCE, repo.agency_id(agency))
+    pid = repo.insert_pending_value(
+        rec, source_document_id=manual_doc, review_status="approved"
+    )
+    return repo.promote_pending(pid), manual_doc
 
 
 # ---------------------------------------------------------------------------
@@ -116,6 +142,23 @@ def test_fresh_load_writes_audit_row_per_insert():
     audit = repo.iter_audit()
     inserts = [a for a in audit if a["change_type"] == "insert"]
     assert len(inserts) == 2
+
+
+def test_bulk_promote_stamps_so_slow_promote_does_not_rechurn():
+    """A bulk load stamps reviewer_notes='promoted', so the SLOW promote_approved
+    (which workbook import runs) skips those rows instead of re-promoting them."""
+    from transitindex_ingest.promotion import promote_approved
+
+    repo = InMemoryRepository()
+    _do_bulk(repo, [_record("100000", month=1), _record("200000", month=2)])
+    current_before = len([v for v in repo._values.values() if v.is_current])
+    audit_before = len(repo.iter_audit())
+
+    re_promoted = promote_approved(repo)  # what import-xlsx calls after statcan-load
+
+    assert re_promoted == []  # bulk rows already stamped -> nothing re-promoted
+    assert len([v for v in repo._values.values() if v.is_current]) == current_before
+    assert len(repo.iter_audit()) == audit_before  # no churn
 
 
 def test_fresh_load_links_source_provenance():
@@ -343,3 +386,80 @@ def test_load_statcan_with_real_csv(tmp_path):
     # At least zero duplicates; count may vary depending on adapter parsing.
     assert result.duplicate_keys == 0
     assert isinstance(result, BulkLoadResult)
+
+
+# ---------------------------------------------------------------------------
+# 9. Scoped --reset (provenance-bounded; needs confirmation)
+# ---------------------------------------------------------------------------
+
+
+def test_reset_without_confirm_refuses_and_deletes_nothing():
+    """--reset alone is a preview: it raises ResetNotConfirmed and touches no data."""
+    repo = InMemoryRepository()
+    _do_bulk(repo, [_record("100000", month=1), _record("200000", month=2)])
+    values_before = dict(repo._values)
+
+    with pytest.raises(ResetNotConfirmed) as exc:
+        _do_bulk(repo, [_record("999", month=1)], reset=True, confirm=False)
+
+    # Nothing was deleted, and nothing from the (refused) new load was staged.
+    assert repo._values == values_before
+    assert exc.value.values == 2  # the would-delete value count is surfaced
+
+
+def test_reset_deletes_only_this_feeds_rows():
+    """reset + confirm removes the feed's own values; reload replaces them."""
+    repo = InMemoryRepository()
+    _do_bulk(repo, [_record("100000", month=1), _record("200000", month=2)])
+    old_feed_value_ids = set(repo._values)
+
+    result = _do_bulk(repo, [_record("123456", month=1)], reset=True, confirm=True)
+    assert result.ok
+
+    # Every pre-reset feed row is gone (deleted, not merely superseded).
+    assert old_feed_value_ids.isdisjoint(repo._values)
+    # Exactly the one reloaded value remains, linked to the StatCan source doc.
+    statcan_doc = repo.get_or_create_source_document(SOURCE, repo.agency_id(SLUG))
+    feed_now = {vid for (vid, doc) in repo._value_sources if doc == statcan_doc}
+    assert len(feed_now) == 1
+    (only,) = feed_now
+    assert repo._values[only].value == Decimal("123456")
+    assert repo._values[only].is_current
+
+
+def test_reset_leaves_hand_entered_value_untouched():
+    """A manual_entry value for the SAME agency survives a feed reset."""
+    repo = InMemoryRepository()
+    _do_bulk(repo, [_record("100000", month=1)])
+    # Hand-entered value for the same agency, different period + its own source doc.
+    manual_vid, _ = _add_manual_value(repo, value="777", month=6)
+
+    result = _do_bulk(repo, [_record("123456", month=1)], reset=True, confirm=True)
+    assert result.ok
+
+    # The manual value is still present, current, and unchanged.
+    assert manual_vid in repo._values
+    assert repo._values[manual_vid].value == Decimal("777")
+    assert repo._values[manual_vid].is_current
+
+
+def test_wipe_feed_data_dry_run_counts_without_deleting():
+    """dry_run=True returns the per-agency blast radius and deletes nothing."""
+    repo = InMemoryRepository()
+    _do_bulk(repo, [_record("100000", month=1), _record("200000", month=2)])
+    _add_manual_value(repo, value="777", month=6)  # must NOT be counted
+    before = dict(repo._values)
+
+    aid = repo.agency_id(SLUG)
+    statcan_doc = repo.get_or_create_source_document(SOURCE, repo.agency_id(SLUG))
+    counts = repo.wipe_feed_data(
+        agency_ids=[aid],
+        source_document_id=statcan_doc,
+        metric_ids=[repo.metric_id(METRIC)],
+        dry_run=True,
+    )
+
+    assert repo._values == before          # nothing deleted
+    assert counts[aid][1] == 2             # 2 feed values would be deleted
+    # The manual value (different source doc) is excluded from the count.
+    assert sum(c[1] for c in counts.values()) == 2

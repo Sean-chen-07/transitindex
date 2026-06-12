@@ -47,7 +47,7 @@ export async function POST(req: Request): Promise<Response> {
   switch (event.type) {
     case "checkout.session.completed": {
       const checkout = event.data.object;
-      // Only our $20/yr membership flow — ignore any other future checkout on this account.
+      // Only our membership flow — ignore any other future checkout on this account.
       if (checkout.mode !== "subscription") break;
       const userId = Number(checkout.client_reference_id);
       const customer =

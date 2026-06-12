@@ -49,6 +49,7 @@ def scan_document(repo, storage, document_id: int, *, extractor=None, cfg=None) 
         # Lazy imports: the heavy real-PDF path (anthropic/markitdown/pypdf) loads only here.
         from .pdf.chunked_hybrid import ChunkedHybridExtractor
         from .pdf.pipeline import SourceRefMeta, run_pdf
+        from .validation.flags import validate
 
         agency_slug = _slug_for_agency_id(repo, doc.agency_id)
         if agency_slug is None:
@@ -79,12 +80,16 @@ def scan_document(repo, storage, document_id: int, *, extractor=None, cfg=None) 
         try:
             tmp.write(data)
             tmp.close()
+            # Row-level validation flags (unit_mismatch, ...) on every staged
+            # value. prior_value stays None: the prior-year lookup needs a repo
+            # query that does not exist yet, so yoy_spike cannot fire here.
             pending_ids = run_pdf(
                 repo,
                 tmp.name,
                 agency_slug,
                 source_ref_meta=meta,
                 extractor=extractor,
+                validator=lambda repo, record: validate(record),
                 doc_type=doc.doc_type,
                 author_label=doc.author_label,
                 doc_year=doc.year,

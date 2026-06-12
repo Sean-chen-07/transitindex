@@ -120,42 +120,62 @@ def unit_mismatch(record: MetricValueRecord) -> Optional[str]:
 def sum_mismatch(
     records_for_agency_period: Iterable[MetricValueRecord], tolerance: float = 0.02
 ) -> list[str]:
-    """Flag a cohort whose expense/subsidy figures fail internal reconciliation.
+    """Flag a cohort whose expense/subsidy/balance-sheet figures fail reconciliation.
 
-    Given the records for ONE agency in ONE period, two accounting identities
+    Given the records for ONE agency in ONE period, four accounting identities
     are checked (each only when all of its parts are present in the cohort):
 
       * labour_cost + energy_fuel_cost + materials_services_cost == operating_expenses
       * total_operating_subsidy == operating_expenses - operating_revenue
+      * total_financial_assets + total_non_financial_assets == total_assets
+      * accumulated_surplus == total_assets - total_liabilities
 
-    The tolerance is relative to operating_expenses (the anchor of both). Returns
-    ``[sum_mismatch]`` if either identity fails, else ``[]`` -- the flag lands on
+    The tolerance is relative to the identity's anchor (operating_expenses for
+    the first two, total_assets for the PSAB balance-sheet pair). Returns
+    ``[sum_mismatch]`` if any identity fails, else ``[]`` -- the flag lands on
     the cohort, so it is reported once regardless of which identity broke.
     """
     by_code: dict[str, MetricValueRecord] = {
         r.metric_code: r for r in records_for_agency_period
     }
     expenses = by_code.get("operating_expenses")
-    if expenses is None:
-        # Both identities are anchored on operating_expenses; nothing to do.
-        return []
+    if expenses is not None:
+        abs_tol = expenses.value.copy_abs() * Decimal(str(tolerance))
 
-    abs_tol = expenses.value.copy_abs() * Decimal(str(tolerance))
+        # Identity 1: cost components sum to operating_expenses.
+        components = ("labour_cost", "energy_fuel_cost", "materials_services_cost")
+        if all(c in by_code for c in components):
+            total = sum((by_code[c].value for c in components), Decimal(0))
+            if (total - expenses.value).copy_abs() > abs_tol:
+                return [SUM_MISMATCH]
 
-    # Identity 1: cost components sum to operating_expenses.
-    components = ("labour_cost", "energy_fuel_cost", "materials_services_cost")
-    if all(c in by_code for c in components):
-        total = sum((by_code[c].value for c in components), Decimal(0))
-        if (total - expenses.value).copy_abs() > abs_tol:
-            return [SUM_MISMATCH]
+        # Identity 2: subsidy == expenses - revenue.
+        subsidy = by_code.get("total_operating_subsidy")
+        revenue = by_code.get("operating_revenue")
+        if subsidy is not None and revenue is not None:
+            expected = expenses.value - revenue.value
+            if (subsidy.value - expected).copy_abs() > abs_tol:
+                return [SUM_MISMATCH]
 
-    # Identity 2: subsidy == expenses - revenue.
-    subsidy = by_code.get("total_operating_subsidy")
-    revenue = by_code.get("operating_revenue")
-    if subsidy is not None and revenue is not None:
-        expected = expenses.value - revenue.value
-        if (subsidy.value - expected).copy_abs() > abs_tol:
-            return [SUM_MISMATCH]
+    assets = by_code.get("total_assets")
+    if assets is not None:
+        abs_tol = assets.value.copy_abs() * Decimal(str(tolerance))
+
+        # Identity 3 (PSAB): financial + non-financial assets == total assets.
+        financial = by_code.get("total_financial_assets")
+        non_financial = by_code.get("total_non_financial_assets")
+        if financial is not None and non_financial is not None:
+            total = financial.value + non_financial.value
+            if (total - assets.value).copy_abs() > abs_tol:
+                return [SUM_MISMATCH]
+
+        # Identity 4 (PSAB): accumulated surplus == assets - liabilities.
+        surplus = by_code.get("accumulated_surplus")
+        liabilities = by_code.get("total_liabilities")
+        if surplus is not None and liabilities is not None:
+            expected = assets.value - liabilities.value
+            if (surplus.value - expected).copy_abs() > abs_tol:
+                return [SUM_MISMATCH]
 
     return []
 

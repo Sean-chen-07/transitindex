@@ -11,6 +11,18 @@ const nextConfig: NextConfig = {
   // `postgres` (postgres-js) is server-only; keep it out of the bundler so it runs as
   // a normal Node dependency in server components / route handlers.
   serverExternalPackages: ["postgres"],
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -397,6 +397,22 @@ class PostgresRepository:
         ).fetchall()
         return [MetricValue(*r) for r in rows]
 
+    def current_value_sources(
+        self, agency_id: int, period_id: int
+    ) -> dict[int, list[str]]:
+        rows = self._conn.execute(
+            "SELECT mv.id, sd.document_type "
+            "FROM core.metric_values mv "
+            "JOIN core.metric_value_sources mvs ON mvs.metric_value_id = mv.id "
+            "JOIN core.source_documents sd ON sd.id = mvs.source_document_id "
+            "WHERE mv.is_current AND mv.agency_id = %s AND mv.reporting_period_id = %s",
+            (agency_id, period_id),
+        ).fetchall()
+        out: dict[int, list[str]] = {}
+        for mv_id, doc_type in rows:
+            out.setdefault(mv_id, []).append(doc_type)
+        return out
+
     # --- promotion & direct writes ------------------------------------------
 
     def promote_pending(self, pending_id: int) -> int:
@@ -809,12 +825,16 @@ class PostgresRepository:
                     tuple(params),
                 )
 
-            # (8) Mark all resolved pending rows as approved.
+            # (8) Mark all resolved pending rows as approved AND stamp the
+            # 'promoted' sentinel (= promotion._PROMOTED_NOTE) so a later slow
+            # promote_approved() — e.g. a workbook import after statcan-load —
+            # skips them instead of re-promoting every bulk row.
             all_resolved = to_promote_pids + to_skip_pids
             if all_resolved:
                 self._conn.execute(
                     "UPDATE core.pending_values SET review_status = 'approved', "
-                    "updated_at = now() WHERE id = ANY(%s)",
+                    "reviewer_notes = 'promoted', updated_at = now() "
+                    "WHERE id = ANY(%s)",
                     (all_resolved,),
                 )
 
@@ -865,6 +885,83 @@ class PostgresRepository:
                     f"rank, denominator, direction) VALUES {ph}",
                     tuple(params),
                 )
+
+    def wipe_feed_data(
+        self,
+        *,
+        agency_ids: list[int],
+        source_document_id: int,
+        metric_ids: list[int],
+        dry_run: bool = False,
+    ) -> dict[int, tuple[int, int, int]]:
+        # Subquery: the value ids whose provenance is THIS feed's source document,
+        # within the feed's agencies. A hand-entered / PDF value links to a
+        # different source document and is excluded.
+        feed_value_ids = (
+            "SELECT mvs.metric_value_id FROM core.metric_value_sources mvs "
+            "JOIN core.metric_values mv ON mv.id = mvs.metric_value_id "
+            "WHERE mv.agency_id = ANY(%s) AND mvs.source_document_id = %s"
+        )
+
+        # Per-agency blast radius (returned for both dry-run and real deletes).
+        counts: dict[int, list[int]] = {a: [0, 0, 0] for a in agency_ids}
+
+        def collect(sql: str, params: tuple, slot: int) -> None:
+            for agency_id, n in self._conn.execute(sql, params).fetchall():
+                counts.setdefault(agency_id, [0, 0, 0])[slot] = int(n)
+
+        collect(
+            "SELECT agency_id, COUNT(*) FROM core.metric_ranks "
+            "WHERE agency_id = ANY(%s) AND metric_id = ANY(%s) GROUP BY agency_id",
+            (agency_ids, metric_ids),
+            0,
+        )
+        collect(
+            "SELECT mv.agency_id, COUNT(DISTINCT mv.id) FROM core.metric_values mv "
+            "JOIN core.metric_value_sources mvs ON mvs.metric_value_id = mv.id "
+            "WHERE mv.agency_id = ANY(%s) AND mvs.source_document_id = %s "
+            "GROUP BY mv.agency_id",
+            (agency_ids, source_document_id),
+            1,
+        )
+        collect(
+            "SELECT agency_id, COUNT(*) FROM core.pending_values "
+            "WHERE agency_id = ANY(%s) AND source_document_id = %s GROUP BY agency_id",
+            (agency_ids, source_document_id),
+            2,
+        )
+
+        result = {a: tuple(c) for a, c in counts.items() if any(c)}
+        if dry_run:
+            return result
+
+        with self._conn.transaction():
+            # ranks: pure derived, scoped by metric × agency; rebuilt on reload.
+            self._conn.execute(
+                "DELETE FROM core.metric_ranks "
+                "WHERE agency_id = ANY(%s) AND metric_id = ANY(%s)",
+                (agency_ids, metric_ids),
+            )
+            # Null any restatement_of_id pointing INTO the set we delete (the FK is
+            # NO ACTION; a surviving non-feed row could otherwise block the delete).
+            self._conn.execute(
+                "UPDATE core.metric_values SET restatement_of_id = NULL "
+                f"WHERE restatement_of_id IN ({feed_value_ids})",
+                (agency_ids, source_document_id),
+            )
+            # Delete the feed's values; metric_value_sources + metric_value_audit
+            # cascade (ON DELETE CASCADE), so the feed's own provenance/audit go too.
+            self._conn.execute(
+                f"DELETE FROM core.metric_values WHERE id IN ({feed_value_ids})",
+                (agency_ids, source_document_id),
+            )
+            # Delete the feed's pending rows (source_document_id is on the row).
+            self._conn.execute(
+                "DELETE FROM core.pending_values "
+                "WHERE agency_id = ANY(%s) AND source_document_id = %s",
+                (agency_ids, source_document_id),
+            )
+        return result
 
     # --- helpers -------------------------------------------------------------
 

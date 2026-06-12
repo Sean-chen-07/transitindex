@@ -96,7 +96,7 @@ Outstanding (need a product/data or design decision):
   while the table lists the same metrics "not yet ranked" with no period/year label, so rows
   read as duplicates. Show the period per row + reconcile the rank wording. Touches the
   metrics read layer, not just CSS. (Overlaps the period-comparability work above.)
-  **→ Addressed by the 2-tab detail redesign (2026-06-09):** rank badges show only on the 6
+  **→ ✓ Resolved by the 2-tab detail redesign (shipped 2026-06-10):** rank badges show only on the 6
   directory-card metrics; every row shows its value with its own period; no rank/blank duplication.
   See "Build the redesigned detail view" above + [detail-view-metrics.md](docs/design/detail-view-metrics.md).
 - **F4 — mode-color left bar has no visible legend; 126/136 bars are one yellow (P3).**
@@ -189,9 +189,11 @@ Full plan: [balance-sheet-and-frequency-plan.md](docs/planning/balance-sheet-and
 > SUM identities (asset split, net-debt, accumulated-surplus) cross-checked by the solver;
 > `parse_number` accounting-negatives fixed; the `printed_scale`/`printed_sign` extraction tool fields
 > (model declares, code applies). The equation/derivation tables needed migrations after all
-> (013 — the plan's "no migration" held for the metrics, not the graph). STILL DEFERRED: the 6-sheet
-> workbook redesign; the locate-then-read EN+FR statement anchors + page-image feeding; explicit PSAB
-> component-bounds checks in `flags.py`; carry-forward web display; gold fixtures (need real verified data).
+> (013 — the plan's "no migration" held for the metrics, not the graph). 2026-06-10: the EN+FR
+> statement anchors landed in the `claude_pdf.py` prefilter; the PSAB asset-split + accumulated-surplus
+> identities landed in `flags.py` `sum_mismatch` (and run at staging via `validate_cohort` in `run_pdf`);
+> `printed_label`/`table_reference` tool fields now flow into notes + provenance. STILL DEFERRED: the
+> 6-sheet workbook redesign; carry-forward web display; gold fixtures (need real verified data).
 
 Build tasks, roughly in order:
 
@@ -242,21 +244,24 @@ Build tasks, roughly in order:
   mechanics deferred ("deal with it later"); bulk / multi-agency export stays the pre-existing "build when
   a researcher asks" deferral. **Inverts** the shipped free=ranks / paid=numbers model (the $20/yr demand
   test). Doc reconciliation done — superseding pointers in detail-view-metrics §6, DESIGN.md,
-  transitindex-mvp, M1-WEB-PLAN, phase-plan. **Code change pending** (see build task below).
+  transitindex-mvp, M1-WEB-PLAN, phase-plan. **Code change shipped 2026-06-10** (see build task below).
+  Decisions locked 2026-06-09: **CSV only** (no .xlsx); download = **the financials statement grid**;
+  no quota (per-agency = visit each agency's page); demo agency removed; after subscribing the user
+  returns to the agency page they came from. **Pricing still TBD** — TODO(pricing) markers in
+  subscribe-dialog.tsx, checkout.ts, account/page.tsx; the live charge is whatever STRIPE_PRICE_ID points at.
 - DB host: Neon vs Supabase. Restatement display. Provenance granularity (page-level at launch).
 
-### Build the redesigned detail view (2-tab) — P2
-- **What:** Rebuild the agency detail page (`web/src/app/agency/[slug]/page.tsx`) from the
-  Snapshot/Trends switch to **two tabs — Highlights + Financials** — per
+### ~~Build the redesigned detail view (2-tab)~~ ✓ — P2
+- **Completed 2026-06-10 (branch detail-view-redesign):** two tabs (Highlights + Financials) per
   [detail-view-metrics.md](docs/design/detail-view-metrics.md). Highlights = 6 hero boxes (rank badge +
-  neutral YoY arrow + click-to-expand Recharts history chart) over two value tables (ratios |
-  service&fleet, current value only). Financials = Statement of Operations + Statement of Financial
-  Position with all years as columns. Add Recharts.
-- **Why:** Current detail UI is the "mess" the redesign fixes; also resolves design-review **F3** below.
-- **Access change (decided — related code work):** un-gate the detail numbers so **all viewing is free**
-  (the server choke point in `web/src/server/metrics/` currently strips raw values for unauthenticated
-  users), and add a **per-agency dataset download** (CSV/Excel of the all-years grid) behind the
-  subscription. Can land after the presentation; until it does, the live site still gates numbers.
+  neutral YoY arrow + click-to-expand Recharts chart, Yearly/Monthly toggle on the two monthly heroes)
+  over the ratios | service&fleet value tables. Financials = both statements, all years as columns,
+  blank-never-zero, with the gated CSV download button. Recharts 3.8.1 added. Resolves **F3** below.
+- **Access change shipped with it:** the viewing gate is removed (raw numbers reach everyone — the
+  choke-point *structure* in `web/src/server/metrics/` is kept, it just no longer strips), the demo
+  agency is removed, and the subscription now gates `/api/agency/[slug]/download` (CSV of the
+  financials grid; session + `isPaid` checked live per request). New contract tests:
+  `detail-model.test.ts`, `csv.test.ts`; `web/CLAUDE.md` invariants rewritten to match.
 
 ## DX / API (deferred — flagged by plan-devex-review 2026-05-30)
 
@@ -314,10 +319,11 @@ audit trail in `phase-plan.md` (RE-REVIEW section); evidence in
   guard, but the plan invariant + Failure Modes T2 still claim it. Either re-introduce a
   UI-rendered scope flag (BC Transit = Victoria, Metrolinx = GO+UP) in `metric_values.notes`,
   or delete the invariant/T2 claim. As-is, BC Transit (Victoria-only) ranks vs TTC whole-system.
-- **Wire live validation into the real path.** `staging._default_validator` passes
-  `prior_value=None` (YoY flag can never fire); the PDF path passes `validator=None`. Wire
-  `prior_value` + `validate_cohort` into `stage_records`; pass the real validator into
-  `run_pdf`; auto-flag PDF↔StatCan disagreement. Otherwise "20 reviews/agency not 200" is unbacked.
+- **Wire live validation into the real path.** *Mostly done 2026-06-10:* the PDF path
+  (`scan.py` + `cli.py` `pdf` command) now passes the real `validate` into `run_pdf`, and
+  `run_pdf` always runs `validate_cohort` per reporting period (the sum/PSAB identities fire at
+  staging). STILL OPEN: `prior_value` stays `None` everywhere (the prior-year repo lookup doesn't
+  exist, so `yoy_spike` can't fire on live runs) + auto-flag PDF↔StatCan disagreement.
 - **Postgres-backed CI test.** All 135 tests run on `InMemoryRepository` (which reimplements
   the invariants in Python). Add a CI job that applies `db/migrations`, runs `db/tests/*.sql`,
   and round-trips `PostgresRepository` so the real `one_current_value` index / audit trigger /
@@ -326,3 +332,93 @@ audit trail in `phase-plan.md` (RE-REVIEW section); evidence in
   made-up round numbers; the eval grades against it. Seed it from real TTC 2024 figures
   (and an Edmonton cross-check) — see `foi-sourcing-plan.md` "Start here". Add the design
   states (error, gated-anon, N<5) flagged in the design re-review.
+
+## Full-workbase audit (2026-06-11, multi-agent, adversarially verified)
+
+21-agent audit across UI / security / ingest / db-infra / data-collection / dependencies;
+every serious finding below survived an adversarial refute pass. **Fixed same day:**
+keyboard focus rings (button.tsx/dialog.tsx), branded error/404/loading pages, dbmate
+markers on migrations 010+011 (from-scratch rebuild was broken), GitHub Actions CI
+(.github/workflows/ci.yml: ingest pytest · db rebuild+seeds+SQL tests · web gate incl.
+build — this also delivers the "Postgres-backed CI test" item above), security headers,
+exact-pin next-auth, `backup-data.bat` + `scripts/backup-data.ps1`.
+
+### P1 — wrong-numbers / data-loss class (ingest)
+- ~~**Verify pass can silently rescale a value 1000×.**~~ ✓ **Fixed 2026-06-11:** VERIFY_TOOL
+  now mirrors the extract tool (corrected_value AS PRINTED + printed_scale/printed_sign,
+  `apply_scale_sign` applied in `_merge_verify`); a correction that omits the scale inherits
+  the original reading's, so echoed printed digits can never rescale; the verify catalogue
+  marks scaled values `[printed in thousands]`. 3 regression tests in test_claude_extractor.py.
+- ~~**`--reset` wipes ALL data for the feed's agencies**~~ ✓ **Fixed 2026-06-11:** new
+  `Repository.wipe_feed_data` scopes the delete to the feed's **source document** (via
+  `metric_value_sources`), so hand-entered/PDF-approved values for the same agency survive;
+  ranks (pure derived) scoped by metric×agency; inbound `restatement_of_id` nulled so the FK
+  never blocks. `--reset` now prints the per-agency blast radius and **requires `--yes`**
+  (`ResetNotConfirmed` + exit 2 otherwise). `_verify` scoped to the feed so the reset invariant
+  holds. Help text + managing-data.md + reference-ingest-cli.md + .bat comments corrected. 4 new
+  tests in test_bulk_load.py (deletes feed rows, keeps manual_entry, refuses without --yes, dry-run).
+- ~~**Workbook re-import republishes every pre-filled cell as `manual_entry`**~~ ✓ **Fixed
+  2026-06-11:** `import_workbook` is now diff-aware — `add_record` skips any cell equal to the
+  current DB value (new `skipped_unchanged` count) and warns when a typed value would supersede a
+  non-`manual_entry` (feed/PDF) source, via the new `Repository.current_value_sources`. Paired
+  fix: `promote_approved_bulk` now stamps `reviewer_notes='promoted'` (postgres + in-memory), so
+  an `import-xlsx` after `statcan-load` no longer re-promotes/churns the bulk rows. 4 new tests
+  (test_workbook.py: unchanged→stages nothing, edited→stages one, feed-overwrite warns;
+  test_bulk_load.py: slow promote skips stamped bulk rows).
+- **yoy_spike priority is understated** (see "Wire live validation" above): the workbook path
+  auto-approves at tier 0 with NO magnitude guard anywhere. Treat the prior_value lookup as a
+  pre-launch blocker, not P2.
+
+### P2 — pipeline correctness
+- **Extraction notes/source quotes are dropped at staging** — `core.pending_values` has no
+  `notes` column, so the auditability data commit 5a7610a built never reaches the reviewer.
+  Lane-0 migration + persist in insert_pending_value + carry into metric_values.notes on promote.
+- **fleet_capacity goes permanently stale after a fleet_size correction** —
+  `fleet_capacity_aggregate.py` skips a scope when ANY current row exists, including its own
+  prior output. Recompute+supersede when the recomputed total differs.
+- **Bulk vs slow promote idempotency mismatch** — ✓ stamp half **fixed 2026-06-11**
+  (`promote_approved_bulk` now stamps `reviewer_notes='promoted'` in both repos, regression test
+  in test_bulk_load.py). Remaining (minor): `promote_pending` still doesn't diff, so a manual
+  re-approval of an identical pending row would supersede with the same value — low priority now
+  that the cross-path re-promotion is closed.
+- **Review console has no human approve UI** — approving the 64-PDF financials backlog requires
+  curl against the JSON API. Extend `review/console.py` with per-row approve/reject +
+  "approve all unflagged from this document".
+
+### P2 — web money-path + pre-launch checklist
+- ~~**Checkout return is unhandled**~~ ✓ **Fixed 2026-06-11:** `agency/[slug]/page.tsx` now reads
+  `?checkout=` and renders a top `CheckoutBanner` (new `checkout-notice.tsx`): success+active →
+  teal "You're a member…"; success+pending (webhook lag) → "Payment received — activating…";
+  cancel → quiet "no charge" notice. In the lag window the Financials download slot shows the
+  activating notice instead of the stale Subscribe button (`DownloadButton.pendingActivation`).
+  State derives only from `getSession()`+`isPaid()`; page stays force-dynamic; viewing un-gated.
+  5 unit tests for `checkoutStateFrom`. Full web gate green.
+- **Rate-limit the magic-link email endpoint** (Resend spam = cost + sender reputation) before
+  public launch — simplest: small in-memory token bucket per email+IP.
+- ~~**Anyone can forge `paid`/`checkout_start` funnel events**~~ ✓ **Fixed 2026-06-11:**
+  `log-conversion.ts` client enum narrowed to `["gate_view", "wall_hit"]`. The revenue events
+  were already emitted server-side (`checkout_start` in billing/checkout.ts; `paid` in the Stripe
+  webhook via `recordPaidConversionOnce`), so narrowing drops no real signal — it just rejects
+  forgery. New test asserts the client can't post `paid`/`checkout_start`. Full web gate green.
+- **Stripe webhook ordering**: on `customer.subscription.*` re-fetch the subscription from
+  Stripe instead of trusting the (possibly stale, out-of-order) event payload.
+- **Env validation + crash alerting**: a 30-line zod env module (silent fallbacks currently sit
+  on the checkout URL path) + Sentry free tier so a failing webhook is visible.
+
+### P3 — UI polish batch (each small)
+- Header sign-in/account link (no path to /account exists in the chrome).
+- Lapsed-member download → styled renew page, not a raw text 403.
+- Branded verify-request/error pages for the magic-link flow (`pages` config in auth.ts).
+- /about methodology page backing the footer's trust claims.
+- Directory: sort agencies with data first (hasAnyRank already in the payload).
+- Dynamic-import Recharts (≈129 kB now in every detail-page load).
+- Mobile: hero chart opens up to two cards below the tapped box; phone peek labels still use
+  the pre-2026-06-06 metric set (bare number + empty label); sticky first column in financials.
+
+### Timeline
+- **Next.js 15 LTS ends 2026-10-21** — schedule the Next 16 upgrade; bundle the drizzle-orm
+  0.4x bump into the same session.
+- **Auth verdict: KEEP NextAuth v5 beta.31** (Auth.js merged into the Better Auth org 2025-09
+  and still gets security maintenance; our usage is its most boring core, wired into money +
+  migration 008). Revisit triggers: an unpatched advisory, needing orgs/2FA/passkeys, or a
+  forced major rewrite.

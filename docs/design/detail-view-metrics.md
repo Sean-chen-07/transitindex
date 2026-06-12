@@ -247,3 +247,20 @@ live site still gates numbers — the docs lead the code here. Tracked in [TODOS
 `detail-tabs.tsx`). Build task tracked in [TODOS.md](../../TODOS.md). The 2026-06-06 design-review item
 **F3** (detail "FULL DATA" table contradicts the rank cards) is resolved by this redesign — the
 two-tab layout shows values with per-row periods instead of the conflicting rank/blank table.
+
+---
+
+## 10. Changing the published metric set — sync checklist
+
+When a metric is added, renamed, or retired, four places must move together:
+
+1. **`ingest/transitindex_ingest/refdata.py` `METRICS` + `db/seeds/04_metrics.sql`** — the
+   canonical set, kept in parity (covered by tests).
+2. **A `metric_dictionary.yaml` entry** — definition, EN/FR labels, common confusions; this
+   feeds `extraction_guidance()` into the vision extraction prompt.
+3. **A gold-fixture row** in `ingest/tests/fixtures/gold/` — so the eval scores the metric.
+4. **The web placement constants** in `web/src/server/metrics/detail-model.ts` — which tab ·
+   section the metric appears in (the map in §2).
+
+The extraction tool's `metric_code` enum and the system prompt update **automatically** from
+`METRICS` (locked by test) — no manual prompt edit needed.

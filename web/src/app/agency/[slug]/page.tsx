@@ -2,22 +2,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAgencySummary } from "@/server/data/agencies";
-import { getAgencyRanks } from "@/server/data/ranks";
 import { getAttribution } from "@/server/data/attribution";
 import { getDetailMetrics } from "@/server/metrics/access";
-import { getSession } from "@/server/entitlement";
-import { RankGrid } from "@/components/directory/rank-grid";
-import { GatedTable } from "@/components/detail/gated-metric";
-import { Spreadsheet } from "@/components/detail/spreadsheet";
-import { TrendsGrid } from "@/components/detail/trends-grid";
-import { DetailTabs } from "@/components/detail/detail-tabs";
+import { buildDetailModel } from "@/server/metrics/detail-model";
+import { getSession, isPaid } from "@/server/entitlement";
 import { PendingNotice } from "@/components/common/states";
+import { DetailTabs } from "@/components/detail/detail-tabs";
+import { HeroGrid } from "@/components/detail/hero-grid";
+import { ValueTables } from "@/components/detail/value-tables";
+import { Financials } from "@/components/detail/financials";
+import { DownloadButton } from "@/components/detail/download-button";
+import { CheckoutBanner, checkoutStateFrom } from "@/components/detail/checkout-notice";
 import { RequestAgencyForm } from "@/components/detail/request-agency-form";
 import { SourceFootnote } from "@/components/common/source-footnote";
-import type { FreeMetricView, PaidMetricView } from "@/server/metrics/types";
 
-// force-dynamic: the cacheable render contains ONLY free shape; the reveal decision
-// never influences a shared/cached output served to an anonymous hit.
+// force-dynamic: detail data is read live per request, and the paid download
+// entitlement (the only gate left) must never be inferred from a shared cache.
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
@@ -28,28 +28,37 @@ export async function generateMetadata({
   const { slug } = await params;
   const summary = await getAgencySummary(slug);
   if (!summary) return { title: "Agency not found" };
-  // Rank/identity only — generateMetadata never emits a quantitative value.
   return {
     title: `${summary.shortName ?? summary.legalName} — transit fundamentals`,
-    description: `${summary.legalName} (${summary.provinceName}): where it ranks among Canadian transit agencies. Ranks free; raw numbers membership-only.`,
+    description: `${summary.legalName} (${summary.provinceName}): ridership, costs, and financial fundamentals for Canadian transit agencies — every number free to view.`,
   };
 }
 
 export default async function AgencyDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ checkout?: string }>;
 }) {
   const { slug } = await params;
   const summary = await getAgencySummary(slug);
   if (!summary) notFound();
 
-  const session = await getSession();
-  const [ranks, attributions, detail] = await Promise.all([
-    getAgencyRanks(slug),
+  const [attributions, metrics, session, { checkout }] = await Promise.all([
     getAttribution(slug),
-    getDetailMetrics(slug, session),
+    getDetailMetrics(slug),
+    getSession(),
+    searchParams,
   ]);
+  const model = buildDetailModel(metrics);
+  // Presentation only — the download route re-checks the live session + isPaid itself.
+  const subscribed = await isPaid(session);
+  // Acknowledge a Stripe checkout return. On success the webhook may lag, so a just-paid
+  // user can be back here before subscription_status flips — show "activating" instead of
+  // a stale Subscribe button (both top banner and download slot).
+  const checkoutState = checkoutStateFrom(checkout, subscribed);
+  const pendingActivation = checkoutState === "success-pending";
 
   return (
     <main>
@@ -58,6 +67,8 @@ export default async function AgencyDetailPage({
           ← All agencies
         </Link>
       </nav>
+
+      {checkoutState && <CheckoutBanner state={checkoutState} />}
 
       <header className="mb-6">
         <h1 className="text-3xl font-extrabold text-ink">
@@ -80,20 +91,31 @@ export default async function AgencyDetailPage({
         </div>
       </header>
 
-      {ranks.length > 0 ? <RankGrid ranks={ranks} /> : <PendingNotice slug={slug} />}
-
-      {detail.metrics.length > 0 &&
-        (detail.reveal ? (
-          <DetailTabs
-            snapshot={<Spreadsheet metrics={detail.metrics as PaidMetricView[]} />}
-            trends={<TrendsGrid metrics={detail.metrics as PaidMetricView[]} />}
-          />
-        ) : (
-          <GatedTable
-            metrics={detail.metrics as FreeMetricView[]}
-            agencyId={summary.id}
-          />
-        ))}
+      {metrics.length === 0 ? (
+        <PendingNotice slug={slug} />
+      ) : (
+        <DetailTabs
+          highlights={
+            <>
+              <HeroGrid heroes={model.heroes} />
+              <ValueTables ratios={model.ratios} serviceFleet={model.serviceFleet} />
+            </>
+          }
+          financials={
+            <Financials
+              financials={model.financials}
+              downloadSlot={
+                <DownloadButton
+                  subscribed={subscribed}
+                  slug={slug}
+                  agencyId={summary.id}
+                  pendingActivation={pendingActivation}
+                />
+              }
+            />
+          }
+        />
+      )}
 
       <section className="mt-10 rounded-card border border-line bg-card-2 p-5">
         <h2 className="text-sm font-semibold text-ink">Missing something?</h2>

@@ -2,6 +2,88 @@
 
 All notable changes to TransitIndex.
 
+## [0.0.6.0] - 2026-06-11
+
+A reliability-and-trust release from a full-workbase audit: fixes that prevent wrong
+numbers and data loss, plus accessibility, a clearer payment experience, and the first
+automated tests that run on every change.
+
+### Fixed
+
+#### Numbers you can trust
+- **A figure printed in a "$000s" table can no longer be quietly shrunk 1000×.** The PDF
+  reader's double-check pass was re-reading a corrected number without re-applying the
+  table's stated units; it now keeps the scale, so 2,240 in a thousands table stays
+  2,240,000 — not 2,240.
+- **"Start a source over" no longer deletes data it shouldn't.** The `--reset` option used
+  to wipe everything for a source's agencies — including numbers typed by hand or approved
+  from a PDF. It now removes only that source's own numbers, prints exactly what it will
+  delete agency by agency, and requires a confirmation (`--yes`) first.
+- **Re-importing the data workbook no longer overwrites better data.** Exporting and then
+  re-importing the spreadsheet used to republish every cell as a hand-entry, clobbering
+  fresher official figures. Import now skips unchanged cells and warns before a typed value
+  would replace an official one.
+
+#### Payments
+- **A clear confirmation after subscribing.** Returning from checkout now shows "You're a
+  member" (or, while the payment is still processing, "activating — refresh in a few
+  seconds") instead of silently re-showing the Subscribe button.
+- **The "members who paid" counter can't be faked.** The events that signal a payment are
+  now recorded only on the server, never accepted from the browser.
+
+#### Accessibility & resilience
+- **Keyboard focus is visible again on every button** (effectively required for civic/
+  government use).
+- **Friendly error, "page not found", and loading screens** instead of a raw crash page
+  when something hiccups.
+- Added standard browser security headers.
+
+### Behind the scenes
+- **Automated tests now run on every change** — the website, the data pipeline, and a
+  from-scratch database rebuild — so regressions are caught automatically.
+- Repaired two database migrations that broke a from-scratch rebuild, and added a
+  one-click backup of the data that can't be re-fetched.
+- A bulk data load no longer gets re-published a second time by a later workbook import.
+
+## [0.0.5.0] - 2026-06-10
+
+### Added
+
+#### A redesigned agency page: two tabs, charts, full statements
+- **Every agency now opens to a two-tab page.** *Highlights* shows six headline numbers
+  (ridership, operating revenue, on-time performance, cost per rider, subsidy per rider,
+  fleet scale), each with its rank, a neutral up/down arrow versus the prior year, and a
+  click-to-open history chart — over compact tables of the efficiency ratios and the
+  service/fleet figures. *Financials* lays the numbers out like the agency's audited
+  statements (Statement of Operations, then Statement of Financial Position) with every
+  year as its own column.
+- **Charts for the numbers people track over time** (Recharts): a smooth monthly line for
+  ridership and revenue (with a Yearly/Monthly toggle), bars for sparse yearly figures.
+  A missing year shows as a gap, never an invented zero.
+
+#### Download an agency's data
+- **Members can download a single agency's full financial grid as a CSV** from the
+  Financials tab — every line, every year, opens straight in Excel. One agency at a time,
+  from its own page.
+
+### Changed
+
+#### Viewing every number is now free
+- **The paywall is gone from viewing.** Every number, chart, and statement is visible to
+  everyone with no login — previously raw numbers were members-only. A membership now buys
+  one thing: downloading an agency's dataset. (Pricing is still being decided.)
+
+### Fixed
+- **Fiscal-year figures land in the right year.** Corrected an off-by-one in PDF
+  extraction and the data-entry workbook so a fiscal year ending in March 2024 is recorded
+  as 2024, not 2023.
+
+#### Behind the scenes — more trustworthy extraction
+- The PDF reader now finds financial statements in French as well as English reports,
+  records the printed label and table each figure came from, and runs accounting cross-checks
+  (assets, liabilities, expense components) as figures are staged — so a wrong number is
+  flagged for review before it could ever be published.
+
 ## [0.0.4.0] - 2026-06-08
 
 ### Added

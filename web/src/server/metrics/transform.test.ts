@@ -1,79 +1,68 @@
 import { describe, it, expect } from "vitest";
-import { toFreeView, toPaidView, type RawMetricRow } from "@/server/metrics/transform";
+import { toMetricView, type RawMetricSeries } from "@/server/metrics/transform";
 
-const RAW: RawMetricRow = {
+const RAW: RawMetricSeries = {
   metricCode: "ridership",
   displayName: "Ridership",
   unit: "count",
   higherIsBetter: true,
   serviceScope: "total",
+  currency: null,
   rank: 3,
   denominator: 7,
-  value: 1234567, // distinctive — must never appear in a free payload
-  currency: null,
-  periodLabel: "Mar 2026",
-  trend: [
-    { periodLabel: "Jan 2026", value: 1000000 },
-    { periodLabel: "Feb 2026", value: 1100000 },
-    { periodLabel: "Mar 2026", value: 1234567 },
-  ],
-  provenance: [
-    {
-      sourceTitle: "StatCan 23-10-0307",
-      sourceUrl: "https://example.org",
-      pageNumber: null,
-      tableReference: "23-10-0307",
-      license: "statcan_open",
-    },
-  ],
   hasComparablePeriod: true,
+  points: [
+    { periodId: 1, periodType: "monthly", periodLabel: "Jan 2026", endDate: "2026-01-31", value: 1000000 },
+    { periodId: 2, periodType: "monthly", periodLabel: "Feb 2026", endDate: "2026-02-28", value: 1100000 },
+    { periodId: 3, periodType: "monthly", periodLabel: "Mar 2026", endDate: "2026-03-31", value: 1234567 },
+  ],
 };
 
-describe("paywall: toFreeView never leaks a raw number (runnable A1)", () => {
-  const free = toFreeView(RAW);
-  const json = JSON.stringify(free);
-
-  it("omits the value / trend / provenance keys entirely", () => {
-    expect("value" in free).toBe(false);
-    expect("trend" in free).toBe(false);
-    expect("provenance" in free).toBe(false);
+describe("toMetricView", () => {
+  it("keeps the rank when clean", () => {
+    const view = toMetricView(RAW);
+    expect(view.rank).toBe(3);
+    expect(view.denominator).toBe(7);
+    expect(view.suppressedReason).toBeUndefined();
   });
 
-  it("contains no raw number signature anywhere in the serialized payload", () => {
-    expect(json).not.toContain("1234567");
-    expect(json).not.toContain("1000000");
-    expect(json).not.toContain("1100000");
+  it("takes value and asOfLabel from the LAST point (chronological order)", () => {
+    const view = toMetricView(RAW);
+    expect(view.value).toBe(1234567);
+    expect(view.asOfLabel).toBe("Mar 2026");
   });
 
-  it("still carries the free-safe facts", () => {
-    expect(free.rank).toBe(3);
-    expect(free.denominator).toBe(7);
-    expect(free.direction).toBe("higher_is_better");
-    expect(free.asOfLabel).toBe("Mar 2026");
-    expect(free.attribution).toContain("Statistics Canada");
-    expect(free.shape.length).toBe(3); // a shape, but quantized + non-invertible
-    free.shape.forEach((p) => expect(p).toBe(Math.round(p * 10) / 10));
-  });
-});
-
-describe("paywall: toPaidView includes the raw value", () => {
-  it("carries value + trend + provenance", () => {
-    const paid = toPaidView(RAW);
-    expect(paid.value).toBe(1234567);
-    expect(paid.trend).toHaveLength(3);
-    expect(paid.provenance[0]?.license).toBe("statcan_open");
+  it("maps points to SeriesPoint and drops periodId", () => {
+    const view = toMetricView(RAW);
+    expect(view.points).toHaveLength(3);
+    expect(view.points[0]).toEqual({
+      periodType: "monthly",
+      periodLabel: "Jan 2026",
+      endDate: "2026-01-31",
+      value: 1000000,
+    });
   });
 });
 
 describe("rank safety: suppression", () => {
-  it("suppresses below the minimum denominator", () => {
-    const free = toFreeView({ ...RAW, rank: 1, denominator: 2 });
-    expect(free.rank).toBeNull();
-    expect(free.suppressedReason).toBe("below_min_denominator");
+  it("nulls the rank and flags a period miss", () => {
+    const view = toMetricView({ ...RAW, hasComparablePeriod: false });
+    expect(view.suppressedReason).toBe("no_comparable_period");
+    expect(view.rank).toBeNull();
+    expect(view.denominator).toBeNull();
   });
-  it("flags a period miss", () => {
-    const free = toFreeView({ ...RAW, hasComparablePeriod: false });
-    expect(free.suppressedReason).toBe("no_comparable_period");
-    expect(free.rank).toBeNull();
+
+  it("flags pending when the rank or denominator is missing", () => {
+    const view = toMetricView({ ...RAW, rank: null });
+    expect(view.suppressedReason).toBe("pending");
+    expect(view.rank).toBeNull();
+    expect(view.denominator).toBeNull();
+  });
+
+  it("suppresses below the minimum denominator", () => {
+    const view = toMetricView({ ...RAW, rank: 1, denominator: 2 });
+    expect(view.suppressedReason).toBe("below_min_denominator");
+    expect(view.rank).toBeNull();
+    expect(view.denominator).toBeNull();
   });
 });

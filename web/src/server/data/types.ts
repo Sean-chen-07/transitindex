@@ -1,7 +1,7 @@
 /**
- * Free-path return types for the read-data layer. By construction NONE of these
- * carries a raw metric `value` — the only place a raw number exists is PaidMetricView
- * in @/server/metrics/types, produced exclusively by the server-only choke point.
+ * Return types for the read-data layer (ranks, directory, attribution). NONE of these
+ * carries a raw metric `value` — raw values surface only as MetricView in
+ * @/server/metrics/types, produced exclusively by the server-only choke point.
  */
 
 export type RankStatus =

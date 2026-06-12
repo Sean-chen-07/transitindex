@@ -24,8 +24,8 @@ export default async function HomePage() {
           Every Canadian transit agency, ranked on the fundamentals.
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-ink-2">
-          Search an agency to see where it ranks. Ranks are free; the raw numbers are
-          membership-only.
+          Search an agency to see where it ranks — every rank and every number is free to
+          view.
         </p>
         <div className="mt-3">
           <FreshnessBanner feeds={feeds} />
