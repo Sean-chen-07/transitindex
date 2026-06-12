@@ -12,7 +12,7 @@
 > tracks reality and is maintained, not a build plan · `stale-header` = built, but the
 > doc's own header/status line is out of date and should be refreshed.
 >
-> **Last updated:** 2026-06-09
+> **Last updated:** 2026-06-12
 
 ## Design (`docs/design/`)
 
@@ -34,6 +34,8 @@
 | [lane-0-foundation-spec.md](planning/lane-0-foundation-spec.md) | done | Build spec for the DB foundation (migrations, roles, seeds, tests, acceptance criteria). All 7 migrations + seeds + tests present; extended past spec (migrations 008-015). *Header "nothing committed" — stale.* |
 | [backend-restructure-brief.md](planning/backend-restructure-brief.md) | done | Brief for equation graph + period rollup + per-metric dictionary + DB/workbook restructure. All four goals shipped (equations.py, migrations 012-015, dictionary). *Header "Not started" — stale.* |
 | [balance-sheet-and-frequency-plan.md](planning/balance-sheet-and-frequency-plan.md) | in-progress | PSAB balance-sheet family + native monthly/quarterly frequency + carry-forward + workbook + web balance-sheet display. Ingest/DB shipped (11 metrics, migration 014, ratios). **Gaps:** web balance-sheet not built (0 files in web/) — §5's standalone "Financial Position" tab **superseded 2026-06-09**, now Section B of the single Financials tab (see detail-view-metrics.md); 6-sheet workbook superseded by per-agency tabs; PSAB identity checks live in solver not flags.py. |
+| [pdf-extractor-plan-a-offline.md](planning/pdf-extractor-plan-a-offline.md) | done | **New 2026-06-12; offline Phases 0–1 BUILT + tested 2026-06-12.** Chunked-hybrid extractor improvement (from the 10-PDF smoke test, 38% review rate): smoke fixture baseline, per-segment recording + value serializers, gold candidates (3 docs in `tests/fixtures/gold/candidates/` awaiting the user's manual confirmation gate), 0.5% merge tolerance, canonical units from refdata, source-quote digit check, 0.3 confidence floor, sourced-currency sanity floor, dead per-chunk cache_control removal + page-label fix, chunk section/scale context, offline replay report (`eval/replay.py`). Suite green offline (344 tests). Replay on the smoke fixture: conflicts 150→103, conf≤0.5 169→122. |
+| [pdf-extractor-plan-b-api.md](planning/pdf-extractor-plan-b-api.md) | in-progress | **New 2026-06-12. Plan only — no code yet.** Phases 2–4: service_scope/basis enums + doc-context prompting + definition canon (one user-approved paid eval run), then chunk prefilter / Batch API / Sonnet text routing, then auto-corroboration (Phase 4 is a sketch). Depends on Plan A landing first. |
 
 ## Reference (`docs/reference/`)
 

@@ -176,8 +176,10 @@ def test_monthly_round_trip_rolls_up_and_derives_average_fare(repo, tmp_path):
 
     wb = _load(out)
     ws = wb["TTC"]
-    _fill_year_of_months(ws, metric_code="ridership", year=2023, value=100)
-    _fill_year_of_months(ws, metric_code="operating_revenue", year=2023, value=250)
+    # Use agency-scale numbers: monthly revenue must clear the currency floor
+    # (validation.flags._CURRENCY_FLOOR) or it is flagged and never auto-promoted.
+    _fill_year_of_months(ws, metric_code="ridership", year=2023, value=10000)
+    _fill_year_of_months(ws, metric_code="operating_revenue", year=2023, value=25000)
     wb.save(out)
 
     summary = workbook.import_workbook(repo, out)
@@ -187,8 +189,8 @@ def test_monthly_round_trip_rolls_up_and_derives_average_fare(repo, tmp_path):
     assert summary["rolled"] == 10
 
     ap = annual_period("ttc", 2023)
-    assert _current(repo, "ttc", ap, "ridership").value == Decimal("1200")
-    assert _current(repo, "ttc", ap, "operating_revenue").value == Decimal("3000")
+    assert _current(repo, "ttc", ap, "ridership").value == Decimal("120000")
+    assert _current(repo, "ttc", ap, "operating_revenue").value == Decimal("300000")
     assert _current(repo, "ttc", ap, "average_fare").value == Decimal("2.5")
 
 
@@ -211,12 +213,13 @@ def test_annual_white_cell_round_trip(repo, tmp_path):
     workbook.export_workbook(repo, out, [2023])
 
     wb = _load(out)
-    _set_year_cell(wb["TTC"], label=NAMES["operating_expenses"], year=2023, value=8000)
+    # Agency-scale dollars: below the currency floor a value is flagged and not promoted.
+    _set_year_cell(wb["TTC"], label=NAMES["operating_expenses"], year=2023, value=8000000)
     wb.save(out)
 
     workbook.import_workbook(repo, out)
     ap = annual_period("ttc", 2023)
-    assert _current(repo, "ttc", ap, "operating_expenses").value == Decimal("8000")
+    assert _current(repo, "ttc", ap, "operating_expenses").value == Decimal("8000000")
 
 
 def test_balance_sheet_dollars_not_comparable_and_net_debt_derived(repo, tmp_path):
@@ -225,19 +228,20 @@ def test_balance_sheet_dollars_not_comparable_and_net_debt_derived(repo, tmp_pat
 
     wb = _load(out)
     ws = wb["TTC"]
-    _set_year_cell(ws, label=NAMES["total_liabilities"], year=2023, value=500)
-    _set_year_cell(ws, label=NAMES["total_financial_assets"], year=2023, value=200)
+    # Agency-scale dollars: below the currency floor a value is flagged and not promoted.
+    _set_year_cell(ws, label=NAMES["total_liabilities"], year=2023, value=500000000)
+    _set_year_cell(ws, label=NAMES["total_financial_assets"], year=2023, value=200000000)
     wb.save(out)
 
     workbook.import_workbook(repo, out)
     ap = annual_period("ttc", 2023)
 
     liab = _current(repo, "ttc", ap, "total_liabilities")
-    assert liab.value == Decimal("500")
+    assert liab.value == Decimal("500000000")
     assert liab.comparable_flag is False  # raw balance-sheet dollars are never ranked
 
     nd = _current(repo, "ttc", ap, "net_debt")
-    assert nd.value == Decimal("300")  # server-derived 500-200
+    assert nd.value == Decimal("300000000")  # server-derived 500M-200M
     assert nd.comparable_flag is False
 
 
@@ -247,13 +251,14 @@ def test_fiscal_agency_imports_under_fiscal_period(repo, tmp_path):
 
     wb = _load(out)
     # Metrolinx (March year-end): the 2023 column maps to its FY2023-24 period.
-    _set_year_cell(wb["Metrolinx"], label=NAMES["operating_expenses"], year=2023, value=7000)
+    # Agency-scale dollars: below the currency floor a value is flagged and not promoted.
+    _set_year_cell(wb["Metrolinx"], label=NAMES["operating_expenses"], year=2023, value=7000000)
     wb.save(out)
 
     workbook.import_workbook(repo, out)
     ap = annual_period("metrolinx", 2023)
     assert ap.period_type == "annual_fiscal" and ap.label == "FY2023-24"
-    assert _current(repo, "metrolinx", ap, "operating_expenses").value == Decimal("7000")
+    assert _current(repo, "metrolinx", ap, "operating_expenses").value == Decimal("7000000")
 
 
 def test_year_header_label_is_fiscal_for_fiscal_agency_and_plain_for_calendar(repo, tmp_path):
@@ -305,8 +310,9 @@ def test_grey_computed_cells_are_not_imported(repo, tmp_path):
 
     wb = _load(out)
     ws = wb["TTC"]
-    _fill_year_of_months(ws, metric_code="ridership", year=2023, value=100)
-    _fill_year_of_months(ws, metric_code="operating_revenue", year=2023, value=250)
+    # Agency-scale numbers so monthly revenue clears the currency floor.
+    _fill_year_of_months(ws, metric_code="ridership", year=2023, value=10000)
+    _fill_year_of_months(ws, metric_code="operating_revenue", year=2023, value=25000)
     # Bogus number typed over the grey ridership Year roll-up cell + derived ratio.
     _set_year_cell(ws, label=NAMES["ridership"], year=2023, value=5)
     _set_year_cell(ws, label=NAMES["average_fare"], year=2023, value=999)
@@ -314,8 +320,8 @@ def test_grey_computed_cells_are_not_imported(repo, tmp_path):
 
     workbook.import_workbook(repo, out)
     ap = annual_period("ttc", 2023)
-    # Roll-up (1200), not the typed 5; derived (2.5), not the typed 999.
-    assert _current(repo, "ttc", ap, "ridership").value == Decimal("1200")
+    # Roll-up (120000), not the typed 5; derived (2.5), not the typed 999.
+    assert _current(repo, "ttc", ap, "ridership").value == Decimal("120000")
     assert _current(repo, "ttc", ap, "average_fare").value == Decimal("2.5")
 
 

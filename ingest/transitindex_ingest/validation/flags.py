@@ -32,6 +32,7 @@ SUM_MISMATCH = "sum_mismatch"
 # Thresholds.
 _YOY_THRESHOLD = Decimal("0.50")  # |Δ| vs prior-year same period must EXCEED this
 _PCT_SANITY_CEILING = Decimal("1000")  # a "%" ratio metric above this is implausible
+_CURRENCY_FLOOR = Decimal("10000")  # a nonzero currency metric below this is implausible
 
 
 def _rel_gap(a: Decimal, b: Decimal) -> Decimal:
@@ -81,12 +82,17 @@ def cross_source_disagreement(
 def unit_mismatch(record: MetricValueRecord) -> Optional[str]:
     """Flag when the unit looks wrong for the metric.
 
-    Two simple, documented heuristics:
+    Three simple, documented heuristics:
       1. The recorded unit differs from the metric's expected unit
          (refdata.METRICS[code]['unit']).
       2. The magnitude is out of band for the unit_type:
            - a "%" ratio metric with value > 1000 (a true percentage can't),
            - a count metric with a negative value.
+      3. A nonzero SOURCED "currency" metric whose magnitude is below
+         _CURRENCY_FLOOR (e.g. total_assets=39) is implausible for agency-level
+         finances. Derived per-unit currency metrics (average_fare, cost_per_hour,
+         subsidy_per_rider, net_debt_per_capita) are legitimately small, so the
+         floor is restricted to is_derived=False metrics.
     Unknown metric codes can't be checked here, so they pass.
     """
     meta = METRICS.get(record.metric_code)
@@ -100,6 +106,13 @@ def unit_mismatch(record: MetricValueRecord) -> Optional[str]:
     if meta["unit"] == "%" and unit_type == "ratio" and record.value > _PCT_SANITY_CEILING:
         return UNIT_MISMATCH
     if unit_type == "count" and record.value < 0:
+        return UNIT_MISMATCH
+    if (
+        unit_type == "currency"
+        and not meta["is_derived"]
+        and record.value != 0
+        and record.value.copy_abs() < _CURRENCY_FLOOR
+    ):
         return UNIT_MISMATCH
     return None
 

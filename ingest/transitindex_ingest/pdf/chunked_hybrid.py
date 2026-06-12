@@ -27,6 +27,7 @@ is injectable. No verify pass (cross-chunk merge + the pending-review queue cove
 from __future__ import annotations
 
 import base64
+import re
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from decimal import Decimal
@@ -34,7 +35,7 @@ from typing import Optional
 
 from .ensemble import _key, _with_note
 from .extractor import ExtractionRequest, ExtractionResult
-from .llm import EXTRACTION_SYSTEM_PROMPT, EXTRACTION_TOOL, _row_to_value
+from .llm import EXTRACTION_SYSTEM_PROMPT, EXTRACTION_TOOL, _row_to_value, value_to_dict
 from .markitdown_path import IMAGE_TEXT_THRESHOLD, _INPUT_USD_PER_MTOK, _to_markdown
 
 DEFAULT_TARGET_LINES = 350   # soft target lines per chunk; a single paragraph/table bigger than this is kept whole
@@ -42,6 +43,8 @@ DEFAULT_IMAGE_BATCH = 5      # scanned pages per image call -- not the whole 30-
 DEFAULT_IMAGE_OVERLAP = 0    # no overlap: each scanned page is sent in exactly one batch (no duplicate send)
 DEFAULT_MAX_WORKERS = 4      # parallel segment calls (SDK retries 429s)
 REVIEW_CONFIDENCE = Decimal("0.5")  # stamped on a cross-chunk disagreement so it surfaces for review
+MERGE_REL_TOLERANCE = Decimal("0.005")  # readings within 0.5% are the same figure (rounded summary vs exact)
+CONFIDENCE_FLOOR = Decimal("0.3")  # below this a reading is noise, not data -- dropped before merge
 
 
 # --- markdown chunking (paragraph boundaries only) --------------------------
@@ -49,6 +52,99 @@ REVIEW_CONFIDENCE = Decimal("0.5")  # stamped on a cross-chunk disagreement so i
 
 def _is_blank(line: str) -> bool:
     return not line.strip()
+
+
+def _page_label(pages: list[int]) -> str:
+    """Compact human label for a 1-based page list: [1,2,4,13,14] -> '1-2, 4, 13-14'.
+
+    Consecutive runs collapse to 'start-end'; singletons stay bare. Keeps image-batch
+    provenance honest when a batch spans non-contiguous scanned pages.
+    """
+    runs: list[str] = []
+    start = prev = pages[0]
+    for p in pages[1:]:
+        if p == prev + 1:
+            prev = p
+            continue
+        runs.append(str(start) if start == prev else f"{start}-{prev}")
+        start = prev = p
+    runs.append(str(start) if start == prev else f"{start}-{prev}")
+    return ", ".join(runs)
+
+
+# A "(in thousands of dollars)" / "($000s)" / "(en milliers)" scale declaration, and a
+# markdown heading line. Tracked so a chunk that lost its table's units header (or its
+# section title) still carries that context into its segment prompt.
+_SCALE_RE = re.compile(r"\((?:in\s+|en\s+)?(?:\$?\s*000s?|thousands|milliers|millions)[^)]*\)", re.IGNORECASE)
+_HEADING_RE = re.compile(r"^#{1,6}\s+\S")
+
+
+def chunk_markdown_with_context(md: str, *, target_lines: int = DEFAULT_TARGET_LINES) -> list[tuple[str, str]]:
+    """Like chunk_markdown, but each chunk comes with a context header: the most
+    recent markdown heading and the most recent scale declaration ('(in thousands
+    of dollars)') seen in the document BEFORE the chunk's first line. Empty string
+    when neither has occurred yet.
+
+    Returns [(chunk_text, context_string), ...]. The context string format is
+    `Context from earlier in the document — section: "<heading>"; scale declaration:
+    "<match>"` with a missing part omitted.
+    """
+    # Build blocks, recording the heading/scale state in force at each block's start.
+    blocks: list[list[str]] = []
+    block_context: list[tuple[Optional[str], Optional[str]]] = []
+    cur: list[str] = []
+    last_heading: Optional[str] = None
+    last_scale: Optional[str] = None
+    for ln in md.splitlines():
+        if _is_blank(ln):
+            if cur:
+                blocks.append(cur)
+                cur = []
+        else:
+            if not cur:  # first line of a new block: snapshot the state before it
+                block_context.append((last_heading, last_scale))
+            if _HEADING_RE.match(ln):
+                last_heading = ln.strip()
+            m = _SCALE_RE.search(ln)
+            if m:
+                last_scale = m.group(0)
+            cur.append(ln)
+    if cur:
+        blocks.append(cur)
+
+    # Pack blocks into chunks (identical logic to chunk_markdown), carrying the
+    # context of each chunk's FIRST block.
+    chunks: list[list[str]] = []
+    chunk_context: list[tuple[Optional[str], Optional[str]]] = []
+    cur = []
+    cur_context: tuple[Optional[str], Optional[str]] = (None, None)
+    for blk, ctx in zip(blocks, block_context):
+        if cur and len(cur) + len(blk) > target_lines:
+            chunks.append(cur)
+            chunk_context.append(cur_context)
+            cur = []
+        if cur:
+            cur.append("")  # preserve the paragraph break between packed blocks
+        else:
+            cur_context = ctx
+        cur.extend(blk)
+    if cur:
+        chunks.append(cur)
+        chunk_context.append(cur_context)
+
+    out: list[tuple[str, str]] = []
+    for c, (heading, scale) in zip(chunks, chunk_context):
+        text = "\n".join(c).strip()
+        if not text:
+            continue
+        parts = []
+        if heading:
+            parts.append(f'section: "{heading}"')
+        if scale:
+            parts.append(f'scale declaration: "{scale}"')
+        context = f"Context from earlier in the document — {'; '.join(parts)}" if parts else ""
+        out.append((text, context))
+    return out
 
 
 def chunk_markdown(md: str, *, target_lines: int = DEFAULT_TARGET_LINES) -> list[str]:
@@ -61,31 +157,7 @@ def chunk_markdown(md: str, *, target_lines: int = DEFAULT_TARGET_LINES) -> list
     single block larger than target_lines is kept whole as its own chunk rather than
     cut mid-paragraph.
     """
-    blocks: list[list[str]] = []
-    cur: list[str] = []
-    for ln in md.splitlines():
-        if _is_blank(ln):
-            if cur:
-                blocks.append(cur)
-                cur = []
-        else:
-            cur.append(ln)
-    if cur:
-        blocks.append(cur)
-
-    chunks: list[list[str]] = []
-    cur = []
-    for blk in blocks:
-        if cur and len(cur) + len(blk) > target_lines:
-            chunks.append(cur)
-            cur = []
-        if cur:
-            cur.append("")  # preserve the paragraph break between packed blocks
-        cur.extend(blk)
-    if cur:
-        chunks.append(cur)
-
-    return [t for t in ("\n".join(c).strip() for c in chunks) if t]
+    return [text for text, _ in chunk_markdown_with_context(md, target_lines=target_lines)]
 
 
 # --- scanned-page batching --------------------------------------------------
@@ -137,12 +209,36 @@ def _image_page_batches(
 # --- cross-chunk merge ------------------------------------------------------
 
 
+def _within_merge_tolerance(values: list) -> bool:
+    """Do these Decimals all describe the same figure (relative spread <= 0.5%)?
+
+    spread = (max - min) / max(|max|, |min|). A rounded summary (12,060,000,000) and an
+    exact statement (12,059,032,000) of the same total agree; a real restatement 1.2%
+    apart does not. Guards the all-zero / zero-denominator case as agreement. Shared
+    with eval/replay.py so the offline replay applies the identical rule.
+    """
+    max_v = max(values)
+    min_v = min(values)
+    denom = max(abs(max_v), abs(min_v))
+    if denom == 0:  # every value is zero -> already equal
+        return True
+    return (max_v - min_v) / denom <= MERGE_REL_TOLERANCE
+
+
+def _trailing_zeros(value: Decimal) -> int:
+    """Count trailing zeros of the value's integer part (precision proxy: a rounded
+    12,060,000,000 has more than the exact 12,059,032,000)."""
+    digits = str(abs(int(value)))
+    return len(digits) - len(digits.rstrip("0"))
+
+
 def merge_values(values: list) -> list:
     """De-dupe values across chunks on (metric, period).
 
-    One reading -> kept. Several agreeing -> the highest-confidence one. Several that
-    DISAGREE on the value -> highest-confidence one, dropped to REVIEW_CONFIDENCE with
-    every candidate in the note (a chunk boundary or OCR slip surfaces for a human).
+    One reading -> kept. Several agreeing (exactly equal OR within MERGE_REL_TOLERANCE)
+    -> the most precise reading, lifted to the group's max confidence. Several that
+    DISAGREE beyond tolerance -> highest-confidence one, dropped to REVIEW_CONFIDENCE
+    with every candidate in the note (a chunk boundary or OCR slip surfaces for a human).
     """
     groups: dict = {}
     order: list = []
@@ -160,8 +256,20 @@ def merge_values(values: list) -> list:
             out.append(vs[0])
             continue
         best = max(vs, key=lambda v: v.confidence)
+        max_conf = max(v.confidence for v in vs)
         if len({v.value for v in vs}) == 1:
             out.append(best)
+        elif _within_merge_tolerance([v.value for v in vs]):
+            # Agreement within 0.5%: keep the most precise reading (fewest trailing
+            # zeros in the integer part; tie -> highest confidence), corroborated to max.
+            precise = max(vs, key=lambda v: (-_trailing_zeros(v.value), v.confidence))
+            out.append(
+                replace(
+                    precise,
+                    confidence=max_conf,
+                    note=_with_note(precise.note, f"✓ {len(vs)} readings agree within 0.5%"),
+                )
+            )
         else:
             detail = ", ".join(str(v.value) for v in sorted(vs, key=lambda v: -v.confidence))
             out.append(
@@ -264,14 +372,28 @@ class ChunkedHybridExtractor:
 
         all_values: list = []
         total_in = 0
-        for r in results:
+        segments_raw: list[dict] = []
+        for idx, r in enumerate(results):
+            label = segments[idx][0]
             if r is None:
+                segments_raw.append({"label": label, "values": [], "input_tokens": 0, "error": errors.get(label)})
                 continue
             vals, in_tok = r
             all_values.extend(vals)
             total_in += in_tok
+            segments_raw.append({
+                "label": label,
+                "values": [value_to_dict(v) for v in vals],
+                "input_tokens": in_tok,
+                "error": errors.get(label),
+            })
 
-        merged = merge_values(all_values)
+        # Drop sub-floor noise BEFORE merging so garbage can't poison a good reading into
+        # a false conflict (exactly CONFIDENCE_FLOOR survives, keeping 1.4's mismatch-caps visible).
+        kept = [v for v in all_values if v.confidence >= CONFIDENCE_FLOOR]
+        dropped_below_floor = len(all_values) - len(kept)
+
+        merged = merge_values(kept)
         md_chunks = sum(1 for label, _ in segments if label.startswith("md"))
         img_batches = sum(1 for label, _ in segments if label.startswith("img"))
         return ExtractionResult(
@@ -284,10 +406,12 @@ class ChunkedHybridExtractor:
                 "segments": len(segments),
                 "image_pages": sorted(set(image_pages)),
                 "values_raw": len(all_values),
+                "dropped_below_floor": dropped_below_floor,
                 "values_merged": len(merged),
                 "input_tokens": total_in,
                 "est_cost_usd": total_in * _INPUT_USD_PER_MTOK.get(self._model, 5.0) / 1_000_000,
                 "errors": errors,
+                "segments_raw": segments_raw,
             },
         )
 
@@ -302,13 +426,16 @@ class ChunkedHybridExtractor:
         else:
             md = "\n\n".join(text for _, text in (request.pages or []))
 
-        chunks = chunk_markdown(md, target_lines=self._target_lines)
-        for n, chunk in enumerate(chunks):
+        chunks = chunk_markdown_with_context(md, target_lines=self._target_lines)
+        for n, (chunk, context) in enumerate(chunks):
+            intro = f"Agency: {agency}\n\nReport text, section {n + 1} of {len(chunks)} -- extract every metric you can read here:"
+            if context:
+                intro += f"\n\n{context}"  # carries a lost units header / section title (never inside the chunk)
             segments.append((
                 f"md{n}",
                 [
-                    {"type": "text", "text": f"Agency: {agency}\n\nReport text, section {n + 1} of {len(chunks)} -- extract every metric you can read here:"},
-                    {"type": "text", "text": chunk, "cache_control": {"type": "ephemeral"}},
+                    {"type": "text", "text": intro},
+                    {"type": "text", "text": chunk},
                 ],
             ))
 
@@ -319,10 +446,10 @@ class ChunkedHybridExtractor:
             ):
                 image_pages.extend(pages)
                 segments.append((
-                    f"img{pages[0]}-{pages[-1]}",
+                    f"img{_page_label(pages)}",
                     [
-                        {"type": "text", "text": f"Agency: {agency}\n\nScanned report pages {pages[0]}–{pages[-1]} (no text layer) -- read the figures visually and extract every metric:"},
-                        {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": b64}, "cache_control": {"type": "ephemeral"}},
+                        {"type": "text", "text": f"Agency: {agency}\n\nScanned report pages {_page_label(pages)} (no text layer) -- read the figures visually and extract every metric:"},
+                        {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": b64}},
                     ],
                 ))
 
