@@ -592,6 +592,29 @@ def import_workbook(repo, path: str) -> dict:
     warnings: list[str] = []
     records: list[MetricValueRecord] = []
     monthly_agency_years: set[tuple[str, int]] = set()
+    skipped_unchanged = 0
+
+    # Diff support: the existing reporting periods + a lazy per-(agency, period)
+    # cache of current 'total'-scope values and their source document types, so a
+    # cell equal to the DB is not re-staged, and a cell that would supersede a
+    # feed/PDF value is flagged.
+    index = _period_index(repo)
+    agency_ids: dict[str, int] = {}
+    current_cache: dict[tuple[int, int], dict] = {}
+
+    def current_slot(agency_id, period_id, metric_id, mode_id):
+        """(value, [source_document_type, ...]) for the current total-scope value at
+        this slot, or None if there isn't one. Cached per (agency, period)."""
+        key = (agency_id, period_id)
+        slot_map = current_cache.get(key)
+        if slot_map is None:
+            sources = repo.current_value_sources(agency_id, period_id)
+            slot_map = {
+                (v.metric_id, v.mode_id, v.service_scope): (v.value, sources.get(v.id, []))
+                for v in repo.list_current_values_for_agency_period(agency_id, period_id)
+            }
+            current_cache[key] = slot_map
+        return slot_map.get((metric_id, mode_id, "total"))
 
     def as_decimal(cell, label, agency_name, period_label):
         try:
@@ -603,6 +626,32 @@ def import_workbook(repo, path: str) -> dict:
             return None
 
     def add_record(slug, code, period, value, mode_code=None):
+        nonlocal skipped_unchanged
+        agency_id = agency_ids.get(slug)
+        if agency_id is None:
+            agency_id = agency_ids[slug] = repo.agency_id(slug)
+        metric_id = repo.metric_id(code)
+        mode_id = repo.mode_id(mode_code)
+
+        # Diff against the current DB value. The period only matters if it already
+        # exists (a brand-new period can't have a current value to clash with).
+        period_obj = index.get((period.period_type, period.start, period.end))
+        if period_obj is not None:
+            existing = current_slot(agency_id, period_obj.id, metric_id, mode_id)
+            if existing is not None:
+                cur_value, src_types = existing
+                if value == cur_value:
+                    skipped_unchanged += 1
+                    return  # unchanged → do not re-stage / re-promote / churn audit
+                feed_types = sorted({t for t in src_types if t != "manual_entry"})
+                if feed_types:
+                    warnings.append(
+                        f"{AGENCY_NAMES.get(slug, slug)} · {names[code]} "
+                        f"{period.label}: your value {value} replaces a "
+                        f"{'/'.join(feed_types)} value ({cur_value}). Keeping your "
+                        f"number — re-run the feed loader if that was unintended."
+                    )
+
         meta = METRICS[code]
         records.append(
             MetricValueRecord(
@@ -749,5 +798,6 @@ def import_workbook(repo, path: str) -> dict:
         "rolled": rolled,
         "derived": derived,
         "periods": len(periods),
+        "skipped_unchanged": skipped_unchanged,
         "warnings": warnings,
     }
