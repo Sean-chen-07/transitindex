@@ -155,7 +155,6 @@ def cmd_hamilton(args) -> int:
 
 def cmd_pdf(args) -> int:
     """Tier 2: extract metrics from a PDF into the review queue (never promotes)."""
-    from .pdf.claude_pdf import ClaudePdfExtractor
     from .pdf.pipeline import SourceRefMeta, run_pdf
     from .validation.flags import validate
 
@@ -177,8 +176,16 @@ def cmd_pdf(args) -> int:
         from .pdf.ensemble import claude_dual
 
         extractor = claude_dual(cfg.anthropic_api_key, **common)
+    elif args.route:
+        from .pdf.router import claude_routed
+
+        extractor = claude_routed(cfg.anthropic_api_key, **common)
     else:
-        extractor = ClaudePdfExtractor(api_key=cfg.anthropic_api_key, **common)
+        # Default: chunked hybrid (markitdown text in <=500-line table-safe chunks +
+        # scanned pages as batched images), never the whole PDF in one call.
+        from .pdf.chunked_hybrid import ChunkedHybridExtractor
+
+        extractor = ChunkedHybridExtractor(cfg.anthropic_api_key)
     meta = SourceRefMeta(document_type=args.doc_type, title=args.title, source_url=args.url)
     try:
         # Row-level validation flags on every staged value. prior_value stays
@@ -258,21 +265,51 @@ def cmd_pdf_smoke(args) -> int:
         from .pdf.ensemble import claude_dual
 
         extractor = claude_dual(cfg.anthropic_api_key, **common)
-    else:
+    elif args.route:
+        from .pdf.router import claude_routed
+
+        extractor = claude_routed(
+            cfg.anthropic_api_key, verify=not args.no_verify, **common
+        )
+    elif args.docstrange:
+        import os
+
+        from .pdf.docstrange_path import DocStrangeExtractor
+
+        extractor = DocStrangeExtractor(
+            cfg.anthropic_api_key,
+            model=args.model or "claude-opus-4-8",
+            mode=args.docstrange_mode,
+            docstrange_api_key=os.environ.get("DOCSTRANGE_API_KEY"),
+        )
+    elif args.markitdown:
+        from .pdf.markitdown_path import MarkitdownExtractor
+
+        extractor = MarkitdownExtractor(
+            cfg.anthropic_api_key, model=args.model or "claude-opus-4-8"
+        )
+    elif args.vision:
         model_kw = {"model": args.model} if args.model else {}
         extractor = ClaudePdfExtractor(
             api_key=cfg.anthropic_api_key, verify=not args.no_verify, **model_kw, **common
+        )
+    else:
+        # Default: chunked hybrid (markitdown text chunks + batched scanned images).
+        from .pdf.chunked_hybrid import ChunkedHybridExtractor
+
+        extractor = ChunkedHybridExtractor(
+            cfg.anthropic_api_key, model=args.model or "claude-opus-4-8"
         )
     try:
         result = extractor.extract(
             ExtractionRequest(agency_slug=args.agency, pdf_bytes=pdf_bytes)
         )
-    except ModuleNotFoundError:
-        print(
-            "error: the real PDF path needs pypdf and the anthropic SDK "
-            "(pip install anthropic pypdf httpx).",
-            file=sys.stderr,
-        )
+    except ModuleNotFoundError as exc:
+        # Default + --markitdown need markitdown; --docstrange needs docstrange.
+        hint = 'pip install "markitdown[pdf]" anthropic pypdf httpx'
+        if args.docstrange:
+            hint = "pip install docstrange  (plus: anthropic pypdf httpx)"
+        print(f"error: missing dependency ({exc}). Install: {hint}", file=sys.stderr)
         return 2
 
     print(f"{len(result.values)} value(s) extracted:\n")
@@ -299,7 +336,30 @@ def cmd_pdf_smoke(args) -> int:
         print(f"  needs_review  : {d.get('needs_review')} (flagged for a human)")
         if d.get("errors"):
             print(f"  model errors  : {d.get('errors')}")
+    elif d.get("extractor") == "docstrange_markdown":
+        print(f"  source        : {d.get('source')} (DocStrange markdown -> Claude text)")
+        print(f"  model         : {d.get('model')}")
+        print(f"  markdown_chars: {d.get('markdown_chars')}")
+    elif d.get("extractor") == "markitdown_hybrid":
+        print(f"  source        : markitdown markdown ({d.get('markdown_chars')} chars) + {d.get('image_page_count')} image page(s)")
+        print(f"  model         : {d.get('model')}")
+        print(f"  image_pages   : {d.get('image_pages')}")
+        print(f"  stop_reason   : {d.get('stop_reason')} (want 'tool_use'; 'max_tokens' = truncated)")
+    elif d.get("extractor") == "chunked_hybrid":
+        print(f"  segments      : {d.get('segments')} ({d.get('md_chunks')} md chunks + {d.get('image_batches')} image batches)")
+        print(f"  image_pages   : {d.get('image_pages')}")
+        print(f"  values        : {d.get('values_merged')} merged (from {d.get('values_raw')} raw across segments)")
+        print(f"  model         : {d.get('model')}")
+        if d.get("errors"):
+            print(f"  segment errors: {d.get('errors')}")
     else:
+        if d.get("routing"):
+            r = d["routing"]
+            print(
+                f"  routed_to     : {r.get('routed_to')} "
+                f"({r.get('reason')}; {r.get('pages_scanned')}/{r.get('pages_considered')} "
+                f"pages look scanned, cutoff {r.get('image_cutoff')})"
+            )
         print(f"  model         : {d.get('model')}")
         print(f"  page_count    : {d.get('page_count')}")
         print(f"  pages_sent    : {d.get('pages_sent')} {d.get('pages_selected') or ''}")
@@ -739,6 +799,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Run Opus + Sonnet in parallel and reconcile (disagreements flagged for review).",
     )
+    pp.add_argument(
+        "--route",
+        action="store_true",
+        help="Route per report: cheap model (Haiku) for clean-text PDFs, premium (Opus) for scanned/image-heavy ones.",
+    )
     pp.add_argument("--no-prefilter", action="store_true", help="Send the whole PDF, not just metric-dense pages.")
     pp.add_argument("--max-pages", dest="max_pages", type=int, default=15, help="Max pages sent to vision (default 15).")
     pp.set_defaults(func=cmd_pdf)
@@ -756,6 +821,33 @@ def build_parser() -> argparse.ArgumentParser:
         "--dual",
         action="store_true",
         help="Run Opus + Sonnet in parallel and reconcile (disagreements flagged for review).",
+    )
+    sm.add_argument(
+        "--route",
+        action="store_true",
+        help="Route per report: cheap model (Haiku) for clean-text PDFs, premium (Opus) for scanned/image-heavy ones.",
+    )
+    sm.add_argument(
+        "--docstrange",
+        action="store_true",
+        help="Path (b): convert the PDF to markdown with DocStrange, then read metrics off the markdown with Claude (not the page image). Default model: Opus.",
+    )
+    sm.add_argument(
+        "--docstrange-mode",
+        dest="docstrange_mode",
+        default="cloud",
+        choices=["cloud", "cpu", "gpu"],
+        help="DocStrange mode: cloud (default, free/rate-limited; set DOCSTRANGE_API_KEY for 10k/mo) or cpu/gpu (fully local).",
+    )
+    sm.add_argument(
+        "--markitdown",
+        action="store_true",
+        help="markitdown markdown + image pages in ONE call (no chunking). Default model: Opus.",
+    )
+    sm.add_argument(
+        "--vision",
+        action="store_true",
+        help="Force the old whole-PDF vision path (ClaudePdfExtractor) instead of the default chunked hybrid.",
     )
     sm.add_argument("--no-prefilter", action="store_true", help="Send the whole PDF, not just metric-dense pages.")
     sm.add_argument("--max-pages", dest="max_pages", type=int, default=15, help="Max pages sent to vision (default 15).")

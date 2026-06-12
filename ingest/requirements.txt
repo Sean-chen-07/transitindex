@@ -5,6 +5,7 @@ psycopg[binary]>=3.2     # PostgresRepository -> writes core.* in Postgres
 anthropic>=0.40          # LLM-assisted extraction
 pdfplumber>=0.11         # PDF table extraction
 pypdf>=4.0               # REQUIRED for the real PDF path (counts pages on every run; also chunks oversized PDFs)
+markitdown[pdf]>=0.1     # REQUIRED for the default extractor (chunked_hybrid): PDF text -> markdown
 fastapi>=0.115           # review API
 httpx>=0.27              # source fetching
 python-dotenv>=1.0       # config.py .env loading (stdlib fallback exists)
