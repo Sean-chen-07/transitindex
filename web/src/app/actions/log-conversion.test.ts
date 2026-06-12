@@ -24,6 +24,15 @@ describe("logConversion", () => {
     expect(insertValues).not.toHaveBeenCalled();
   });
 
+  it("rejects the server-only revenue events ('checkout_start', 'paid') from the client", async () => {
+    // These are emitted server-side (checkout.ts / the Stripe webhook) where they can't be
+    // forged; accepting them here would let anyone inflate the demand-validation funnel.
+    for (const eventType of ["checkout_start", "paid"]) {
+      expect(await logConversion({ eventType })).toEqual({ ok: false });
+    }
+    expect(insertValues).not.toHaveBeenCalled();
+  });
+
   it("derives userId from the session and ignores any client-supplied userId", async () => {
     const out = await logConversion({ eventType: "gate_view", agencyId: 3, userId: 999 });
     expect(out).toEqual({ ok: true });
