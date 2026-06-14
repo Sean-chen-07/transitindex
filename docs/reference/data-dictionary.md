@@ -27,6 +27,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 | Fleet Size | Number of active revenue vehicles in the fleet. | count | Sourced | — | annual_report |
 | Fleet Average Age | Average age of the active vehicles. | years | Sourced | — | annual_report |
 | Accessible Fleet % | Share of the active fleet that is wheelchair-accessible. | % | Sourced | — | annual_report |
+| Fleet scale | A rail-weighted count of the fleet, so a metro car is not equated with a bus. | count | Sourced | — | annual_report |
 | Capital Expenditure | Spending on long-term assets (vehicles, facilities, infrastructure). | CAD | Sourced | — | annual_report |
 | Total Financial Assets | Cash, investments, and money owed to the agency — what could become cash. | CAD | Sourced | — | annual_report |
 | Total Liabilities | Everything the agency owes — debt, payables, employee future benefits. | CAD | Sourced | — | annual_report |
@@ -355,6 +356,23 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 - **Common confusions:**
   - Accessible vehicles vs accessible stops/stations
   - Low-floor only vs fully accessible (ramp/lift) definitions
+- **Source tier:** annual_report
+
+### Fleet scale (`fleet_capacity`)
+
+- **Is:** A single fleet-scale figure that weights each mode's fleet_size by a fixed capacity weight (bus=1, streetcar=2, light_rail=3, subway=4, commuter_rail=5; BRT and trolleybus=1) and sums across modes. It corrects raw fleet_size, which would treat a high-capacity metro car and a bus as one unit each. Ferry, paratransit, and on-demand carry no weight and are excluded.
+- **Is NOT:** NOT seated passenger capacity and NOT a passenger-count: it is a weighted COUNT of revenue vehicles, not seats or design capacity. NOT raw fleet_size (which is unweighted), and NOT a ridership figure.
+- **Unit:** count (count)
+- **Period:** Annual (point-in-time); derived from the same period's per-mode fleet_size.
+- **Includes:** Per-mode fleet_size weighted by the mode's capacity weight (bus=1 … commuter_rail=5); BRT and trolleybus at weight 1
+- **Excludes:** Ferry, paratransit, and on-demand (no capacity weight assigned); Non-revenue vehicles and stored/retired units (inherited from fleet_size)
+- **Labels (EN):** Fleet scale; Weighted fleet; Capacity-weighted fleet
+- **Labels (FR):** Parc pondéré; Échelle du parc
+- **Where in a report:** Computed by TransitIndex from per-mode fleet_size and the mode capacity weights; no agency reports it directly.
+- **Common confusions:**
+  - Weighted fleet COUNT vs seated passenger capacity (seats) — these are different measures
+  - Capacity-weighted fleet vs raw unweighted fleet_size
+  - Modes with no weight (ferry, paratransit, on-demand) are excluded, not counted at zero use
 - **Source tier:** annual_report
 
 ### Capital Expenditure (`capital_expenditure`)
