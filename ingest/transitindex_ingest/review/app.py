@@ -12,6 +12,7 @@ directly (Invariant #1: an unreviewed value never reaches metric_values).
 from __future__ import annotations
 
 import secrets
+import threading
 from decimal import Decimal, InvalidOperation
 from typing import Optional
 
@@ -69,7 +70,7 @@ def _detail(repo: Repository, p: PendingValue) -> dict:
     return row
 
 
-def create_app(repo: Repository, *, token: Optional[str] = None, scanner=None):
+def create_app(repo: Repository, *, token: Optional[str] = None, scanner=None, storage=None):
     """Build the FastAPI review app over `repo`.
 
     Mutating endpoints (approve/reject/edit) require an
@@ -80,10 +81,20 @@ def create_app(repo: Repository, *, token: Optional[str] = None, scanner=None):
 
     `scanner`, when supplied, is a callable(document_id) -> result dict that the
     mounted documents console uses for its Scan buttons (see review/console.py).
+    `storage`, when supplied, lets the review page stream source PDFs (GET
+    /source/{sdid}) so the reviewer reads the report beside each number.
     """
     from fastapi import Body, Depends, FastAPI, Header, HTTPException
 
     app = FastAPI(title="TransitIndex review queue")
+
+    # The repository wraps ONE psycopg connection. FastAPI runs these sync handlers
+    # on a threadpool, so two requests touching the connection at once (e.g. an
+    # approve while the PDF viewer hits /source) interleave their transaction blocks
+    # and psycopg raises OutOfOrderTransactionNesting -- the approve sets the status
+    # but never promotes. Serialize every DB-touching handler on one lock so no two
+    # use the shared connection concurrently. Shared with the mounted console/queue.
+    db_lock = threading.Lock()
 
     def require_token(authorization: Optional[str] = Header(default=None)) -> None:
         """Reject a mutating request lacking a valid bearer token."""
@@ -101,33 +112,37 @@ def create_app(repo: Repository, *, token: Optional[str] = None, scanner=None):
 
     @app.get("/pending")
     def list_pending(status: Optional[str] = "pending") -> list[dict]:
-        return [_summary(repo, p) for p in repo.list_pending_values(status)]
+        with db_lock:
+            return [_summary(repo, p) for p in repo.list_pending_values(status)]
 
     @app.get("/pending/{pending_id}")
     def get_pending(pending_id: int) -> dict:
-        return _detail(repo, _require_pending(pending_id))
+        with db_lock:
+            return _detail(repo, _require_pending(pending_id))
 
     @app.post("/pending/{pending_id}/approve", dependencies=[Depends(require_token)])
     def approve(pending_id: int) -> dict:
-        p = _require_pending(pending_id)
-        # Idempotency guard: a promoted row stays review_status='approved' and is
-        # stamped with _PROMOTED_NOTE. promote_one only checks review_status, so a
-        # repeat approve (double-click, retried request) would otherwise re-promote
-        # and write a duplicate metric_value with a bogus restatement chain. Reject
-        # the same way promote_approved skips already-stamped rows.
-        if p.reviewer_notes == _PROMOTED_NOTE:
-            raise HTTPException(
-                status_code=409, detail=f"pending {pending_id} already promoted"
-            )
-        repo.update_pending(pending_id, review_status="approved")
-        metric_value_id = promote_one(repo, pending_id)
-        return {"pending_id": pending_id, "metric_value_id": metric_value_id}
+        with db_lock:
+            p = _require_pending(pending_id)
+            # Idempotency guard: a promoted row stays review_status='approved' and is
+            # stamped with _PROMOTED_NOTE. promote_one only checks review_status, so a
+            # repeat approve (double-click, retried request) would otherwise re-promote
+            # and write a duplicate metric_value with a bogus restatement chain. Reject
+            # the same way promote_approved skips already-stamped rows.
+            if p.reviewer_notes == _PROMOTED_NOTE:
+                raise HTTPException(
+                    status_code=409, detail=f"pending {pending_id} already promoted"
+                )
+            repo.update_pending(pending_id, review_status="approved")
+            metric_value_id = promote_one(repo, pending_id)
+            return {"pending_id": pending_id, "metric_value_id": metric_value_id}
 
     @app.post("/pending/{pending_id}/reject", dependencies=[Depends(require_token)])
     def reject(pending_id: int, reason: Optional[str] = Body(default=None, embed=True)) -> dict:
-        _require_pending(pending_id)
-        repo.update_pending(pending_id, review_status="rejected", reviewer_notes=reason)
-        return _detail(repo, _require_pending(pending_id))
+        with db_lock:
+            _require_pending(pending_id)
+            repo.update_pending(pending_id, review_status="rejected", reviewer_notes=reason)
+            return _detail(repo, _require_pending(pending_id))
 
     @app.patch("/pending/{pending_id}", dependencies=[Depends(require_token)])
     def edit(
@@ -135,23 +150,26 @@ def create_app(repo: Repository, *, token: Optional[str] = None, scanner=None):
         value: Optional[str] = Body(default=None, embed=True),
         reviewer_notes: Optional[str] = Body(default=None, embed=True),
     ) -> dict:
-        _require_pending(pending_id)
         new_value: Optional[Decimal] = None
         if value is not None:
             try:
                 new_value = Decimal(value)
             except (InvalidOperation, ValueError):
                 raise HTTPException(status_code=422, detail=f"invalid value: {value!r}")
-        repo.update_pending(
-            pending_id,
-            value=new_value,
-            review_status="needs_edit",
-            reviewer_notes=reviewer_notes,
-        )
-        return _detail(repo, _require_pending(pending_id))
+        with db_lock:
+            _require_pending(pending_id)
+            repo.update_pending(
+                pending_id,
+                value=new_value,
+                review_status="needs_edit",
+                reviewer_notes=reviewer_notes,
+            )
+            return _detail(repo, _require_pending(pending_id))
 
     from .console import mount_console
+    from .queue_page import mount_review
 
-    mount_console(app, repo, scanner=scanner)
+    mount_console(app, repo, scanner=scanner, db_lock=db_lock)
+    mount_review(app, repo, token=token, storage=storage, db_lock=db_lock)
 
     return app

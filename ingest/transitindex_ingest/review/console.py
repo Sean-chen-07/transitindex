@@ -48,9 +48,15 @@ def _page(body: str) -> str:
     )
 
 
-def mount_console(app, repo, *, scanner: Optional[Scanner] = None) -> None:
+def mount_console(app, repo, *, scanner: Optional[Scanner] = None, db_lock=None) -> None:
     """Add the GET / documents page and POST scan route to `app`."""
+    import threading
+
     from fastapi.responses import HTMLResponse, RedirectResponse
+
+    # Serialize DB access on the shared connection (see app.create_app). Own lock
+    # when mounted standalone (tests) so `with lock` always works.
+    lock = db_lock or threading.Lock()
 
     slug_by_id = {}
     for slug in AGENCIES:
@@ -68,7 +74,8 @@ def mount_console(app, repo, *, scanner: Optional[Scanner] = None) -> None:
         parts = [
             "<h1>Source documents</h1>",
             f"<p class='muted'>{counts['unscanned']} unscanned · "
-            f"{counts['scanned']} scanned · {counts['failed']} failed</p>",
+            f"{counts['scanned']} scanned · {counts['failed']} failed · "
+            "<a href='/review'>review staged values &rarr;</a></p>",
         ]
         if msg:
             cls = "note err" if is_err else "note"
@@ -117,7 +124,8 @@ def mount_console(app, repo, *, scanner: Optional[Scanner] = None) -> None:
     @app.get("/", response_class=HTMLResponse)
     @app.get("/documents", response_class=HTMLResponse)
     def documents_page(msg: Optional[str] = None, err: int = 0):
-        return _render(msg, bool(err))
+        with lock:
+            return _render(msg, bool(err))
 
     def _back(msg: str, *, err: bool) -> "RedirectResponse":
         # urlencode the message so an error string with %, &, or # can't produce
@@ -131,7 +139,8 @@ def mount_console(app, repo, *, scanner: Optional[Scanner] = None) -> None:
         # doesn't block the event loop.
         if scanner is None:
             return _back("Scanning is not configured", err=True)
-        result = scanner(document_id)
+        with lock:
+            result = scanner(document_id)
         if result.get("ok"):
             return _back(
                 f"Scanned doc #{document_id}: {result.get('staged_count', 0)} value(s) staged for review.",
