@@ -25,7 +25,7 @@ from typing import NamedTuple
 from decimal import Decimal
 
 from ..equations import ATTR_PREFIX, EQUATIONS, solve
-from ..refdata import METRICS, NON_RANKABLE_METRICS
+from ..refdata import METRICS, RATED_METRICS
 
 # Derivation equation codes produced by the WITHIN-PERIOD solver. A current value
 # carrying one of these is prior solver output -> excluded from the seed so it is
@@ -124,8 +124,8 @@ def recompute_derived(repo, agency_slug: str, period_id: int) -> RecomputeResult
                 equation_code=sv.equation_code,
                 input_value_ids=input_ids,
                 currency="CAD" if meta["unit_type"] == "currency" else None,
-                # Raw balance-sheet dollars measure size, not performance -> never ranked.
-                comparable_flag=code not in NON_RANKABLE_METRICS,
+                # Only the five rated hero metrics carry ranks; everything else is view-only.
+                comparable_flag=code in RATED_METRICS,
             )
             ids.append(vid)
             code_to_vid[code] = vid

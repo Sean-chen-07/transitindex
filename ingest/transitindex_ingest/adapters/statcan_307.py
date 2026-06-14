@@ -33,7 +33,7 @@ from decimal import Decimal
 
 from ..contract import MetricValueRecord, SourceRef
 from ..periods import monthly_period
-from ..refdata import STATCAN_AGENCY_MAP
+from ..refdata import RATED_METRICS, STATCAN_AGENCY_MAP
 
 #: Canonical 23-10-0307 table URL (matches the seed/fixture provenance).
 STATCAN_307_URL = "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2310030701"
@@ -107,6 +107,8 @@ class StatCan23100307Adapter:
                     unit="CAD" if metric_code == "operating_revenue" else "count",
                     quality=quality,
                     currency=currency,
+                    # Only rated hero metrics carry ranks (both feed metrics are rated).
+                    comparable_flag=metric_code in RATED_METRICS,
                     source=SourceRef(
                         document_type="statcan_table",
                         extraction_method="statcan_passthrough",

@@ -40,7 +40,7 @@ import re
 from typing import Optional
 
 from .equations import RatioEquation, defining_equation
-from .refdata import METRICS, MODE_CAPACITY_WEIGHT, NON_RANKABLE_METRICS
+from .refdata import METRICS, MODE_CAPACITY_WEIGHT, RATED_METRICS
 
 # A fiscal agency's year-block header is written as its real fiscal label
 # ('FY2024-25'); the leading 4-digit year IS the START year annual_period wants.
@@ -667,7 +667,7 @@ def import_workbook(repo, path: str) -> dict:
                 quality="verified",
                 mode_code=mode_code,
                 currency="CAD" if meta["unit_type"] == "currency" else None,
-                comparable_flag=code not in NON_RANKABLE_METRICS,
+                comparable_flag=code in RATED_METRICS,
                 source=source,
             )
         )

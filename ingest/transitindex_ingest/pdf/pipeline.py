@@ -16,6 +16,7 @@ from typing import Callable, Optional
 from ..contract import SERVICE_SCOPES, DocumentType, License, MetricValueRecord, SourceRef
 from ..db.repository import Repository
 from ..periods import annual_period_from_end_year, monthly_period
+from ..refdata import RATED_METRICS
 from ..validation import validate_cohort
 from .extract import Page
 from .extractor import Extractor, ExtractionRequest, LegacyTextExtractor
@@ -103,6 +104,8 @@ def _to_record(agency_slug: str, ev: ExtractedValue, meta: SourceRefMeta) -> Met
         unit=ev.unit,
         quality="preliminary",
         currency="CAD" if ev.unit == "CAD" else None,
+        # Only the five rated hero metrics carry ranks; everything else is view-only.
+        comparable_flag=ev.metric_code in RATED_METRICS,
         notes=_notes_for(ev),
         source=source,
     )

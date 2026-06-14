@@ -276,10 +276,20 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
     }
 )
 
+# RANKING SOURCE OF TRUTH (2026-06-14 decision): only the five Highlights hero
+# boxes are rated. Every other metric is shown without a rank. A value's
+# comparable_flag is set to `code in RATED_METRICS`; rank_refresh additionally
+# skips any metric not in this set. See docs/planning/metric-set-build-plan.md
+# (Phase 1) and metric-standards-review.md ("Decisions taken").
+RATED_METRICS: frozenset[str] = frozenset({
+    "ridership", "operating_revenue", "on_time_performance",
+    "cost_per_rider", "subsidy_per_rider",
+})
+
 # Balance-sheet dollar figures measure SIZE, not performance, so they are never
-# ranked (their values carry comparable_flag=false). Only the two scale-free
-# ratios (debt_to_assets, net_debt_per_capita) rank. See
-# balance-sheet-and-frequency-plan.md.
+# ranked. SUPERSEDED by RATED_METRICS above for the comparable_flag decision
+# (RATED_METRICS is the positive allow-list and the source of truth); kept for
+# any code that still references the balance-sheet exclusion set.
 NON_RANKABLE_METRICS: frozenset[str] = frozenset({
     "total_financial_assets", "total_liabilities", "total_non_financial_assets",
     "total_assets", "tangible_capital_assets", "accumulated_surplus",
