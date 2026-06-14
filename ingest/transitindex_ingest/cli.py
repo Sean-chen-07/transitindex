@@ -651,15 +651,26 @@ def cmd_review(args) -> int:
         return 2
     from .review.app import create_app
 
-    # Wire the documents-console Scan button to the real scan path when storage +
-    # the Anthropic key are configured. Missing keys -> scanner=None: review still
-    # works and the console shows a "scanning unavailable" notice (no crash).
-    scanner = None
-    if cfg.supabase_url and cfg.supabase_service_role_key and cfg.anthropic_api_key:
-        from .scan import scan_document
+    # Storage (Supabase) powers BOTH the review page's source-PDF viewer and the
+    # console Scan button. The viewer needs only storage; the Scan button also
+    # needs the Anthropic key (it spends credits). Build each independently so the
+    # PDF viewer works even when no Anthropic key is set.
+    storage = None
+    if cfg.supabase_url and cfg.supabase_service_role_key:
         from .storage import SupabaseStorage
 
         storage = SupabaseStorage.from_config(cfg)
+    else:
+        print(
+            "[note] source-PDF viewer disabled until SUPABASE_URL and "
+            "SUPABASE_SERVICE_ROLE_KEY are set in .env.",
+            file=sys.stderr,
+        )
+
+    scanner = None
+    if storage is not None and cfg.anthropic_api_key:
+        from .scan import scan_document
+
         scanner = lambda document_id: scan_document(repo, storage, document_id, cfg=cfg)
     else:
         print(
@@ -669,7 +680,7 @@ def cmd_review(args) -> int:
         )
 
     uvicorn.run(
-        create_app(repo, token=cfg.review_api_token, scanner=scanner),
+        create_app(repo, token=cfg.review_api_token, scanner=scanner, storage=storage),
         host=args.host,
         port=args.port,
     )
