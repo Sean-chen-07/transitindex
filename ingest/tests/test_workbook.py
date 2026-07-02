@@ -140,16 +140,38 @@ def test_quarter_year_and_derived_cells_are_formulas(repo, tmp_path):
     af = _year_cell(ws, label=NAMES["average_fare"], year=2023)
     assert isinstance(af, str) and af.startswith("=") and "/" in af
 
+    # other_revenue is a component-residual metric (defines a TERM of its
+    # equation, not the result): its Year formula must isolate itself as
+    # total_revenue_excluding_subsidy - farebox_revenue, and must NOT
+    # reference its own row (a circular/self-referential formula).
+    other_rev_row = _row_for(ws, NAMES["other_revenue"])
+    other_rev_cell = f"{workbook._col(ystart + workbook._YEAR_OFFSET)}{other_rev_row}"
+    orv = ws.cell(row=other_rev_row, column=ystart + workbook._YEAR_OFFSET).value
+    assert isinstance(orv, str) and orv.startswith("=")
+    assert other_rev_cell not in orv
 
-def test_fleet_block_present_with_modes_and_scale(repo, tmp_path):
+
+def test_derived_year_formula_isolates_component_residual():
+    """Direct unit check of the term-isolation fix (not just the ratio case)."""
+    year_rows = {
+        "farebox_revenue": 10,
+        "other_revenue": 11,
+        "total_revenue_excluding_subsidy": 5,
+    }
+    formula = workbook._derived_year_formula("other_revenue", 2024, year_rows)
+    # Must reference the result (row 5) and the OTHER term (row 10), never its
+    # own row (11) -- a self-reference is a circular-formula Excel error.
+    assert "BZM11" not in formula
+    assert "BZM5" in formula and "BZM10" in formula
+
+
+def test_fleet_block_present_with_modes(repo, tmp_path):
     out = str(tmp_path / "wb.xlsx")
     workbook.export_workbook(repo, out, [2023])
     ws = _load(out)["TTC"]
 
     for _mode, label in workbook.FLEET_MODES:
         _row_for(ws, f"Fleet — {label}")  # raises if missing
-    scale = _year_cell(ws, label="Fleet scale", year=2023)
-    assert isinstance(scale, str) and scale.startswith("=")  # computed Fleet scale
 
 
 def test_dictionary_lists_all_metrics(repo, tmp_path):
@@ -160,7 +182,7 @@ def test_dictionary_lists_all_metrics(repo, tmp_path):
     assert [c.value for c in ws[1]] == [
         "Column", "Plain meaning", "Unit", "Type", "Formula", "Native frequency",
     ]
-    assert ws.max_row - 1 == 32  # all metrics, including fleet_capacity + balance sheet
+    assert ws.max_row - 1 == 41  # all metrics, incl. balance sheet + financial-statement additions
     by_name = {ws.cell(row=r, column=1).value: r for r in range(2, ws.max_row + 1)}
     assert ws.cell(row=by_name[NAMES["ridership"]], column=6).value == "Monthly"
     assert ws.cell(row=by_name[NAMES["operating_expenses"]], column=6).value == "Annual"
@@ -179,19 +201,22 @@ def test_monthly_round_trip_rolls_up_and_derives_average_fare(repo, tmp_path):
     # Use agency-scale numbers: monthly revenue must clear the currency floor
     # (validation.flags._CURRENCY_FLOOR) or it is flagged and never auto-promoted.
     _fill_year_of_months(ws, metric_code="ridership", year=2023, value=10000)
-    _fill_year_of_months(ws, metric_code="operating_revenue", year=2023, value=25000)
+    _fill_year_of_months(ws, metric_code="total_revenue_excluding_subsidy", year=2023, value=25000)
+    # average_fare derives from farebox_revenue (Phase 3), an annual line -> type it
+    # once in the Year column so the ratio (farebox / rolled-up ridership) resolves.
+    _set_year_cell(ws, label=NAMES["farebox_revenue"], year=2023, value=300000)
     wb.save(out)
 
     summary = workbook.import_workbook(repo, out)
-    assert summary["promoted"] == 24  # 12 months x 2 metrics
+    assert summary["promoted"] == 25  # 12 months x 2 metrics + 1 annual farebox
     # 2 native annuals + the 4 calendar quarters each metric also rolls up (the
     # annual_calendar slot is already filled by the native roll-up, so it is skipped).
     assert summary["rolled"] == 10
 
     ap = annual_period("ttc", 2023)
     assert _current(repo, "ttc", ap, "ridership").value == Decimal("120000")
-    assert _current(repo, "ttc", ap, "operating_revenue").value == Decimal("300000")
-    assert _current(repo, "ttc", ap, "average_fare").value == Decimal("2.5")
+    assert _current(repo, "ttc", ap, "total_revenue_excluding_subsidy").value == Decimal("300000")
+    assert _current(repo, "ttc", ap, "average_fare").value == Decimal("2.5")  # farebox 300000 / 120000
 
 
 def test_partial_months_land_as_monthly_values(repo, tmp_path):
@@ -277,9 +302,8 @@ def test_year_header_label_is_fiscal_for_fiscal_agency_and_plain_for_calendar(re
     assert ttc.cell(row=workbook._YEAR_HEADER_ROW, column=ttc_col).value == 2023
 
 
-def test_per_mode_fleet_imports_with_mode_id_and_aggregates_capacity(repo, tmp_path):
-    """Typed per-mode fleet rows land as fleet_size at the right mode_id; the server
-    aggregates them into fleet_capacity (the grey Fleet-scale cell is not imported)."""
+def test_per_mode_fleet_imports_with_mode_id(repo, tmp_path):
+    """Typed per-mode fleet rows land as fleet_size at the right mode_id."""
     out = str(tmp_path / "wb.xlsx")
     workbook.export_workbook(repo, out, [2023])
 
@@ -287,8 +311,6 @@ def test_per_mode_fleet_imports_with_mode_id_and_aggregates_capacity(repo, tmp_p
     ws = wb["TTC"]
     _set_year_cell(ws, label="Fleet — Bus", year=2023, value=100)
     _set_year_cell(ws, label="Fleet — Subway", year=2023, value=10)
-    # Bogus number typed into the grey Fleet-scale cell: must be ignored.
-    _set_year_cell(ws, label="Fleet scale", year=2023, value=99999)
     wb.save(out)
 
     workbook.import_workbook(repo, out)
@@ -296,11 +318,6 @@ def test_per_mode_fleet_imports_with_mode_id_and_aggregates_capacity(repo, tmp_p
 
     assert _current(repo, "ttc", ap, "fleet_size", mode_code="bus").value == Decimal("100")
     assert _current(repo, "ttc", ap, "fleet_size", mode_code="subway").value == Decimal("10")
-    # fleet_capacity = 1*100 (bus) + 4*10 (subway) = 140, derived server-side; the
-    # typed 99999 is ignored because that cell is never imported.
-    cap = _current(repo, "ttc", ap, "fleet_capacity")
-    assert cap is not None and cap.value == Decimal("140")
-    assert cap.mode_id is None  # a system-wide aggregate, not a per-mode row
 
 
 def test_grey_computed_cells_are_not_imported(repo, tmp_path):
@@ -312,7 +329,9 @@ def test_grey_computed_cells_are_not_imported(repo, tmp_path):
     ws = wb["TTC"]
     # Agency-scale numbers so monthly revenue clears the currency floor.
     _fill_year_of_months(ws, metric_code="ridership", year=2023, value=10000)
-    _fill_year_of_months(ws, metric_code="operating_revenue", year=2023, value=25000)
+    _fill_year_of_months(ws, metric_code="total_revenue_excluding_subsidy", year=2023, value=25000)
+    # farebox_revenue (average_fare's numerator, Phase 3) is an annual white cell.
+    _set_year_cell(ws, label=NAMES["farebox_revenue"], year=2023, value=300000)
     # Bogus number typed over the grey ridership Year roll-up cell + derived ratio.
     _set_year_cell(ws, label=NAMES["ridership"], year=2023, value=5)
     _set_year_cell(ws, label=NAMES["average_fare"], year=2023, value=999)
@@ -320,7 +339,7 @@ def test_grey_computed_cells_are_not_imported(repo, tmp_path):
 
     workbook.import_workbook(repo, out)
     ap = annual_period("ttc", 2023)
-    # Roll-up (120000), not the typed 5; derived (2.5), not the typed 999.
+    # Roll-up (120000), not the typed 5; derived (2.5 = farebox 300000 / 120000), not 999.
     assert _current(repo, "ttc", ap, "ridership").value == Decimal("120000")
     assert _current(repo, "ttc", ap, "average_fare").value == Decimal("2.5")
 

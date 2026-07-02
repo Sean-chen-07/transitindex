@@ -64,6 +64,15 @@ two **scale-free derived ratios** (`debt_to_assets`, `net_debt_per_capita`) are 
 flow through the existing `metric_ranks` materialization exactly like the current 6 derived
 ratios. `net_debt` is derived for the cross-check but is itself a dollar figure → not ranked.
 
+> **Superseded 2026-06-14 / built 2026-07-01** ([metric-set-build-plan.md](metric-set-build-plan.md)
+> Phase 1, [metric-standards-review.md](metric-standards-review.md) Decision #1): the rated set is
+> narrowed to a positive allow-list of **five** Highlights hero metrics
+> (`ridership`, `total_revenue_excluding_subsidy`, `on_time_performance`, `cost_per_rider`,
+> `subsidy_per_rider`). **`debt_to_assets` and `net_debt_per_capita` are no longer ranked** —
+> both now carry `comparable_flag=False` like every other balance-sheet metric. The "ranked?"
+> column above and the "yes (true)" cells for these two rows are historical or the plan as
+> originally proposed, not the shipped behaviour.
+
 **Deferred to keep it tight (CLAUDE.md §2):** `reserves_reserve_funds` (a display-only component
 with no cross-check) and `annual_surplus_deficit` (enables the surplus roll-forward identity —
 a Phase-2 nicety). See Open Question #1.

@@ -96,7 +96,7 @@
       }
     },
     {
-      "metric_code": "operating_revenue",
+      "metric_code": "total_revenue_excluding_subsidy",
       "true_value": "3120000000.0",
       "unit": "CAD",
       "tolerance": "0.005",

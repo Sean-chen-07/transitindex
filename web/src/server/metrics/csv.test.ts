@@ -11,7 +11,7 @@ const FIN: FinancialsVM = {
   ],
   operations: [
     {
-      code: "operating_revenue",
+      code: "total_revenue_excluding_subsidy",
       label: "Fare & operating revenue",
       bold: false,
       indent: false,

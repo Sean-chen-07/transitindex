@@ -16,8 +16,9 @@
 
 When you click an agency card you land on a **two-tab** detail page:
 
-1. **Highlights** — a friendly overview: six hero numbers with charts, then the calculated
-   ratios and service/fleet facts as compact value tables. The approachable surface.
+1. **Highlights** — a friendly overview: five hero numbers with charts, then the calculated
+   ratios, service/fleet facts, and fleet composition as compact value tables. The approachable
+   surface.
 2. **Financials** — the agency's numbers laid out like its real audited financial statements,
    with every year shown as a column. The reference surface.
 
@@ -27,17 +28,22 @@ This replaces the previous plan of a five-tab Bloomberg-style spreadsheet
 
 **Two display rules decided this session, applied throughout:**
 
-- **Rank badges** (`#3 of 14`) appear **only** on the six metrics already ranked on the
+- **Rank badges** (`#3 of 14`) appear **only** on the five metrics already ranked on the
   directory card. Everything else shows the value with no rank.
-- **History charts** are for the things people actually track over time (the six hero numbers).
+- **History charts** are for the things people actually track over time (the five hero numbers).
   The ratios and service/fleet facts are shown as current values only; the Financials tab shows
   history as year columns instead of charts.
 
 ---
 
-## 2. The complete metric map (all 32)
+## 2. The complete metric map
 
-`★` = shows a rank badge (the six directory-card metrics). "History" = how earlier years surface.
+`★` = shows a rank badge (the five directory-card metrics). "History" = how earlier years surface.
+The weighted `fleet_capacity` hero is retired (metric-set-build-plan.md Phase 6); the fleet
+composition (Bus / Light rail / Heavy rail / Commuter rail, from per-mode `fleet_size`) is a
+separate non-ranked block, not a numbered row here. This table is otherwise pre-Phase-4/5 and due
+a full pass in Phase 7 (financial-statement additions + the revenue/subsidy code renames are not
+yet reflected).
 
 | # | Metric | code | Tab · section | Rank | History shown as | Example · cadence |
 |---|--------|------|---------------|:----:|------------------|-------------------|
@@ -46,39 +52,39 @@ This replaces the previous plan of a five-tab Bloomberg-style spreadsheet
 | 3 | On-time performance | `on_time_performance` | Highlights · Hero | ★ | drop-down chart | 81% · monthly→annual |
 | 4 | Cost per rider | `cost_per_rider` | Highlights · Hero | ★ | drop-down chart | $4.60 · annual |
 | 5 | Subsidy per rider | `subsidy_per_rider` | Highlights · Hero | ★ | drop-down chart | $1.95 · annual |
-| 6 | Fleet scale | `fleet_capacity` | Highlights · Hero | ★ | drop-down chart | 4,800 · annual |
-| 7 | Farebox recovery ratio | `farebox_recovery_ratio` | Highlights · Ratios | — | none (current only) | 58% · annual |
-| 8 | Cost per revenue hour | `cost_per_hour` | Highlights · Ratios | — | none (current only) | $185/hr · annual |
-| 9 | Trips per revenue hour | `trips_per_revenue_hour` | Highlights · Ratios | — | none (current only) | 52 trips/hr · annual |
-| 10 | Average fare | `average_fare` | Highlights · Ratios | — | none (current only) | $2.65 · annual* |
-| 11 | Revenue service hours | `revenue_service_hours` | Highlights · Service & Fleet | — | none (current only) | 9.8M hrs · annual |
-| 12 | Vehicle revenue km | `vehicle_revenue_km` | Highlights · Service & Fleet | — | none (current only) | 220M km · annual |
-| 13 | Fleet size | `fleet_size` | Highlights · Service & Fleet | — | none (current only) | 2,100 · annual |
-| 14 | Fleet average age | `fleet_average_age` | Highlights · Service & Fleet | — | none (current only) | 7.4 yrs · annual |
-| 15 | Accessible fleet % | `accessible_fleet_pct` | Highlights · Service & Fleet | — | none (current only) | 100% · annual |
-| 16 | Operating revenue ‡ | `operating_revenue` | Financials · Operations | — | year columns | $ · annual |
-| 17 | Labour cost | `labour_cost` | Financials · Operations | — | year columns | $ · annual |
-| 18 | Energy & fuel cost | `energy_fuel_cost` | Financials · Operations | — | year columns | $ · annual |
-| 19 | Materials & services cost | `materials_services_cost` | Financials · Operations | — | year columns | $ · annual |
-| 20 | Total operating expenses | `operating_expenses` | Financials · Operations | — | year columns | $ · annual |
-| 21 | Total operating subsidy | `total_operating_subsidy` | Financials · Operations | — | year columns | $ · annual |
-| 22 | Capital expenditure | `capital_expenditure` | Financials · Operations | — | year columns | $ · annual |
-| 23 | Cash & investments | `cash_and_investments` | Financials · Position | — | year columns | $ · annual |
-| 24 | Total financial assets | `total_financial_assets` | Financials · Position | — | year columns | $ · annual |
-| 25 | Long-term debt | `long_term_debt` | Financials · Position | — | year columns | $ · annual |
-| 26 | Total liabilities | `total_liabilities` | Financials · Position | — | year columns | $ · annual |
-| 27 | Net debt | `net_debt` | Financials · Position | — | year columns | $ · annual |
-| 28 | Tangible capital assets | `tangible_capital_assets` | Financials · Position | — | year columns | $ · annual |
-| 29 | Total non-financial assets | `total_non_financial_assets` | Financials · Position | — | year columns | $ · annual |
-| 30 | Total assets | `total_assets` | Financials · Position | — | year columns | $ · annual |
-| 31 | Accumulated surplus | `accumulated_surplus` | Financials · Position | — | year columns | $ · annual |
-| 32 | Debt to assets | `debt_to_assets` | Financials · Position | — | year columns | % · annual |
-| 33 | Net debt per capita | `net_debt_per_capita` | Financials · Position | — | year columns | $ · annual |
+| 6 | Farebox recovery ratio | `farebox_recovery_ratio` | Highlights · Ratios | — | none (current only) | 58% · annual |
+| 7 | Cost per revenue hour | `cost_per_hour` | Highlights · Ratios | — | none (current only) | $185/hr · annual |
+| 8 | Trips per revenue hour | `trips_per_revenue_hour` | Highlights · Ratios | — | none (current only) | 52 trips/hr · annual |
+| 9 | Average fare | `average_fare` | Highlights · Ratios | — | none (current only) | $2.65 · annual* |
+| 10 | Revenue service hours | `revenue_service_hours` | Highlights · Service & Fleet | — | none (current only) | 9.8M hrs · annual |
+| 11 | Vehicle revenue km | `vehicle_revenue_km` | Highlights · Service & Fleet | — | none (current only) | 220M km · annual |
+| 12 | Fleet size | `fleet_size` | Highlights · Service & Fleet | — | none (current only) | 2,100 · annual |
+| 13 | Fleet average age | `fleet_average_age` | Highlights · Service & Fleet | — | none (current only) | 7.4 yrs · annual |
+| 14 | Accessible fleet % | `accessible_fleet_pct` | Highlights · Service & Fleet | — | none (current only) | 100% · annual |
+| — | Fleet composition (Bus / Light rail / Heavy rail / Commuter rail) | `fleet_size` (per mode) | Highlights · Fleet composition | — | none (current only) | 4 labelled counts · annual |
+| 15 | Operating revenue ‡ | `operating_revenue` | Financials · Operations | — | year columns | $ · annual |
+| 16 | Labour cost | `labour_cost` | Financials · Operations | — | year columns | $ · annual |
+| 17 | Energy & fuel cost | `energy_fuel_cost` | Financials · Operations | — | year columns | $ · annual |
+| 18 | Materials & services cost | `materials_services_cost` | Financials · Operations | — | year columns | $ · annual |
+| 19 | Total operating expenses | `operating_expenses` | Financials · Operations | — | year columns | $ · annual |
+| 20 | Total operating subsidy | `total_operating_subsidy` | Financials · Operations | — | year columns | $ · annual |
+| 21 | Capital expenditure | `capital_expenditure` | Financials · Operations | — | year columns | $ · annual |
+| 22 | Cash & investments | `cash_and_investments` | Financials · Position | — | year columns | $ · annual |
+| 23 | Total financial assets | `total_financial_assets` | Financials · Position | — | year columns | $ · annual |
+| 24 | Long-term debt | `long_term_debt` | Financials · Position | — | year columns | $ · annual |
+| 25 | Total liabilities | `total_liabilities` | Financials · Position | — | year columns | $ · annual |
+| 26 | Net debt | `net_debt` | Financials · Position | — | year columns | $ · annual |
+| 27 | Tangible capital assets | `tangible_capital_assets` | Financials · Position | — | year columns | $ · annual |
+| 28 | Total non-financial assets | `total_non_financial_assets` | Financials · Position | — | year columns | $ · annual |
+| 29 | Total assets | `total_assets` | Financials · Position | — | year columns | $ · annual |
+| 30 | Accumulated surplus | `accumulated_surplus` | Financials · Position | — | year columns | $ · annual |
+| 31 | Debt to assets | `debt_to_assets` | Financials · Position | — | year columns | % · annual |
+| 32 | Net debt per capita | `net_debt_per_capita` | Financials · Position | — | year columns | $ · annual |
 
 *Average fare's inputs (revenue, ridership) are both monthly, so it *can* be charted monthly later
 if we promote it to a hero — for now it's a current-value ratio.
 ‡ Operating revenue intentionally appears twice: once as a Highlights hero, once as the top line of
-the operations statement. That's the only deliberate repeat. 33 rows = 32 unique metrics + 1 repeat.
+the operations statement. That's the only deliberate repeat.
 
 **Not on Highlights, by decision:** `operating_expenses` and `total_operating_subsidy` (the big total
 dollar figures) live only on the Financials tab. The taxpayer angle is still represented on Highlights
@@ -95,23 +101,25 @@ HIGHLIGHTS
 │ 521M boardings         │ │ $1.42B                  │ │ 81%                    │
 │ ▲ 4.2% vs 2024         │ │ ▲ 4.4% vs 2024          │ │ ▼ 1.3% vs 2024         │
 └────────────────────────┘ └─────────────────────────┘ └────────────────────────┘
-┌─ Cost per rider #8/14 ─┐ ┌─ Subsidy per rider #6/14┐ ┌─ Fleet scale ─── #4/14 ┐
-│ $4.60                  │ │ $1.95                   │ │ 4,800                  │
-│ ▲ 2.1% vs 2024         │ │ ▲ 5.0% vs 2024          │ │ — flat vs 2024         │
-└────────────────────────┘ └─────────────────────────┘ └────────────────────────┘
+┌─ Cost per rider #8/14 ─┐ ┌─ Subsidy per rider #6/14┐
+│ $4.60                  │ │ $1.95                   │
+│ ▲ 2.1% vs 2024         │ │ ▲ 5.0% vs 2024          │
+└────────────────────────┘ └─────────────────────────┘
      ↑ click any box → history chart drops down beneath that row
 
-EFFICIENCY RATIOS                    SERVICE & FLEET
-Farebox recovery        58%          Revenue service hours    9.8M hrs
-Cost per revenue hour   $185/hr      Vehicle revenue km       220M km
-Trips per revenue hour  52           Fleet size               2,100
-Average fare            $2.65        Fleet average age        7.4 yrs
+EFFICIENCY RATIOS                    SERVICE & FLEET               FLEET COMPOSITION
+Farebox recovery        58%          Revenue service hours 9.8M hrs Bus              1,850
+Cost per revenue hour   $185/hr      Vehicle revenue km    220M km  Light rail         120
+Trips per revenue hour  52           Fleet size               2,100 Heavy rail         680
+Average fare            $2.65        Fleet average age       7.4 yrs Commuter rail     40
                                      Accessible fleet %       100%
 ```
 
-### 3.1 Hero boxes (6) — the directory-card metrics
-- The exact six metrics on the directory card (`agency-card.tsx` `METRIC_SLOTS`): **Ridership ·
-  Operating revenue · On-time performance · Cost per rider · Subsidy per rider · Fleet scale**.
+### 3.1 Hero boxes (5) — the directory-card metrics
+- The exact five metrics on the directory card (`agency-card.tsx` `METRIC_SLOTS`): **Ridership ·
+  Operating revenue · On-time performance · Cost per rider · Subsidy per rider**. The weighted
+  `fleet_capacity` hero is retired (metric-set-build-plan.md Phase 6) — the fleet composition is
+  a separate, non-ranked block (§3.3).
 - Each box shows: rank badge · the value · a **neutral up/down arrow + % vs the prior year**.
 - **The arrow is direction only — never green=good / red=bad.** Ridership up and cost-per-rider up
   are not "good" and "bad"; coloring them would break the neutral-ordinal invariant
@@ -128,8 +136,17 @@ Average fare            $2.65        Fleet average age        7.4 yrs
 ### 3.3 Service & fleet (5) — current value only
 - **Revenue service hours · Vehicle revenue km · Fleet size · Fleet average age · Accessible fleet %.**
 - Same two-column list treatment, sitting **beside** the ratios (two mini-tables side by side).
-- No charts, no history, no rank badge. (`on_time_performance` and `fleet_capacity` are
-  service/fleet metrics but they're promoted to the hero row.)
+- No charts, no history, no rank badge. (`on_time_performance` is a service metric but it's
+  promoted to the hero row.)
+
+### 3.4 Fleet composition (4) — current value only, not ranked
+- **Bus (bus, BRT, trolleybus) · Light rail (light rail, streetcar) · Heavy rail (subway) ·
+  Commuter rail** — four plain labelled counts, capacity-ordered (metric-set-build-plan.md Phase 6).
+  Replaces the retired weighted `fleet_capacity` hero. Ferry, paratransit, and on-demand fleets are
+  excluded from this block.
+- Built from the existing per-mode `fleet_size` (grouped by class), NOT a new stored metric.
+- Same two-column list treatment as §3.2/§3.3. **No charts, no history, no rank badge** — this is a
+  composition, not a "biggest fleet" leaderboard.
 
 ---
 

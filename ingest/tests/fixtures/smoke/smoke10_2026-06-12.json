@@ -34,13 +34,13 @@
       "labour_cost",
       "materials_services_cost",
       "operating_expenses",
-      "operating_revenue",
+      "total_revenue_excluding_subsidy",
       "ridership",
       "tangible_capital_assets",
       "total_financial_assets",
       "total_liabilities",
       "total_non_financial_assets",
-      "total_operating_subsidy",
+      "subsidy",
       "vehicle_revenue_km"
     ],
     "cost_usd": 0.4616,
@@ -215,7 +215,7 @@
         "quote": "Accumulated surplus | 12,060,661 | 11,568,749"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1264087000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -227,7 +227,7 @@
         "quote": "Total operating revenue 1,270,862 1,264,087 1,234,789"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1234789000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -239,7 +239,7 @@
         "quote": "Total operating revenue 1,270,862 1,264,087 1,234,789"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "804880000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -251,7 +251,7 @@
         "quote": "Operating subsidies (note 13) 825,329 804,880 710,767"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "710767000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -443,7 +443,7 @@
         "quote": "Total Kilometres Operated ... 239.8"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1234500000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -455,7 +455,7 @@
         "quote": "... 1,234.5"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1196300000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -467,7 +467,7 @@
         "quote": "1,196.3"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1179100000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -479,7 +479,7 @@
         "quote": "1,179.1"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1157500000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -491,7 +491,7 @@
         "quote": "1,157.5"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1120200000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -503,7 +503,7 @@
         "quote": "1,120.2"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1087300000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -515,7 +515,7 @@
         "quote": "1,087.3"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1026400000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -527,7 +527,7 @@
         "quote": "1,026.4"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "987500000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -635,7 +635,7 @@
         "quote": "1,385.9"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "461800000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -647,7 +647,7 @@
         "quote": "4 61.8"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "516300000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -659,7 +659,7 @@
         "quote": "5 16.3"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "516600000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -671,7 +671,7 @@
         "quote": "5 16.6"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "432000000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -683,7 +683,7 @@
         "quote": "4 32.0"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "371500000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -695,7 +695,7 @@
         "quote": "3 71.5"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "385100000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -707,7 +707,7 @@
         "quote": "3 85.1"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "433600000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -719,7 +719,7 @@
         "quote": "4 33.6"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "398400000.0",
         "unit": "$ millions",
         "period_kind": "annual",
@@ -887,14 +887,14 @@
       "capital_expenditure",
       "cash_and_investments",
       "operating_expenses",
-      "operating_revenue",
+      "total_revenue_excluding_subsidy",
       "ridership",
       "tangible_capital_assets",
       "total_assets",
       "total_financial_assets",
       "total_liabilities",
       "total_non_financial_assets",
-      "total_operating_subsidy"
+      "subsidy"
     ],
     "cost_usd": 0.5673,
     "tokens": 113457,
@@ -1087,7 +1087,7 @@
         "quote": "Accumulated surplus | 12,958,670"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1173077000",
         "unit": "$000s",
         "period_kind": "annual",
@@ -1099,7 +1099,7 @@
         "quote": "Total operating revenue  1,131,889      1 ,173,077"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1026289000",
         "unit": "$000s",
         "period_kind": "annual",
@@ -1111,7 +1111,7 @@
         "quote": "Total operating revenue ... 1 ,026,289"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "1362720000",
         "unit": "$000s",
         "period_kind": "annual",
@@ -1123,7 +1123,7 @@
         "quote": "Operating subsidies (note 15) 1,496,855      1 ,362,720"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "1302124000",
         "unit": "$000s",
         "period_kind": "annual",
@@ -1210,7 +1210,7 @@
       "materials_services_cost",
       "on_time_performance",
       "operating_expenses",
-      "operating_revenue",
+      "total_revenue_excluding_subsidy",
       "revenue_service_hours",
       "ridership",
       "tangible_capital_assets",
@@ -1469,7 +1469,7 @@
         "quote": "80.5%"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "2081684000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -1481,7 +1481,7 @@
         "quote": "Total Revenue 2,081,684"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1849203000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -1697,7 +1697,7 @@
         "quote": "Non\u2010Financial Assets 5,496,734 5,181,612"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1689500000.0",
         "unit": "CAD",
         "period_kind": "annual",
@@ -1709,7 +1709,7 @@
         "quote": "Sub Total Continuing Operations 1,625.4 1,730.2 1,689.5 1,849.3 2,081.2"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1730200000.0",
         "unit": "CAD",
         "period_kind": "annual",
@@ -1721,7 +1721,7 @@
         "quote": "Sub Total Continuing Operations 1,625.4 1,730.2 1,689.5 1,849.3 2,081.2"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1625400000.0",
         "unit": "CAD",
         "period_kind": "annual",
@@ -1998,12 +1998,12 @@
       "materials_services_cost",
       "on_time_performance",
       "operating_expenses",
-      "operating_revenue",
+      "total_revenue_excluding_subsidy",
       "ridership",
       "tangible_capital_assets",
       "total_assets",
       "total_liabilities",
-      "total_operating_subsidy"
+      "subsidy"
     ],
     "cost_usd": 0.5012,
     "tokens": 100239,
@@ -2016,7 +2016,7 @@
     "lowconf": 0,
     "values": [
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "706500000.0",
         "unit": "CAD",
         "period_kind": "annual",
@@ -2112,7 +2112,7 @@
         "quote": "1,156,399,000"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1355370000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -2124,7 +2124,7 @@
         "quote": "Total Revenues 1,355,370,000"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1583317000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -2136,7 +2136,7 @@
         "quote": "1,583,317,000"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "1840622000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -2280,7 +2280,7 @@
         "quote": "Labour & benefits* ... 352,201,000"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "262834000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -2292,7 +2292,7 @@
         "quote": "Provincial Contributions 262,834,000"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "341309000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -2304,7 +2304,7 @@
         "quote": "341,309,000"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "478135000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -2316,7 +2316,7 @@
         "quote": "478,135,000"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "590394000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -2524,7 +2524,7 @@
       "long_term_debt",
       "materials_services_cost",
       "operating_expenses",
-      "operating_revenue",
+      "total_revenue_excluding_subsidy",
       "ridership",
       "tangible_capital_assets",
       "total_financial_assets",
@@ -2542,7 +2542,7 @@
     "lowconf": 0,
     "values": [
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "181450000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -2830,7 +2830,7 @@
         "quote": "Financial liabilities 5,810,378"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "177204000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -2938,7 +2938,7 @@
         "quote": "Materials, equipment and supplies 356,138"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "173804000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -2950,7 +2950,7 @@
         "quote": "173,804 \u2013 173,804"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "176170000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -2962,7 +2962,7 @@
         "quote": "176,170 \u2013 176,170"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "195228000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -3317,7 +3317,7 @@
       "long_term_debt",
       "materials_services_cost",
       "operating_expenses",
-      "operating_revenue",
+      "total_revenue_excluding_subsidy",
       "tangible_capital_assets",
       "total_financial_assets",
       "total_liabilities",
@@ -3658,7 +3658,7 @@
         "quote": "compared to the 2018 balance of $11,687.0 million"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "3120000000.0",
         "unit": "millions of $",
         "period_kind": "annual",
@@ -3670,7 +3670,7 @@
         "quote": "Operating Revenues $ 3,210.0 $ 3,120.0 $ (90.0) $ 3,050.3 $ 69.7"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "3050300000.0",
         "unit": "millions of $",
         "period_kind": "annual",
@@ -3682,7 +3682,7 @@
         "quote": "Operating Revenues $ 3,210.0 $ 3,120.0 $ (90.0) $ 3,050.3 $ 69.7"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "3023800000.0",
         "unit": "millions of $",
         "period_kind": "annual",
@@ -3694,7 +3694,7 @@
         "quote": "Operating Revenues ... 3,023.8"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "3043200000.0",
         "unit": "millions of $",
         "period_kind": "annual",
@@ -3706,7 +3706,7 @@
         "quote": "Operating Revenues ... 3,043.2"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "2926400000.0",
         "unit": "millions of $",
         "period_kind": "annual",
@@ -3980,10 +3980,10 @@
       "fleet_size",
       "on_time_performance",
       "operating_expenses",
-      "operating_revenue",
+      "total_revenue_excluding_subsidy",
       "revenue_service_hours",
       "ridership",
-      "total_operating_subsidy"
+      "subsidy"
     ],
     "cost_usd": 0.2805,
     "tokens": 56099,
@@ -4105,7 +4105,7 @@
         "quote": "DATS on-time performance 90% 94% 93%"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "134684000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4117,7 +4117,7 @@
         "quote": "Revenue & Transfers 134,684 138,878 164,387 169,035"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "138878000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4129,7 +4129,7 @@
         "quote": "Revenue & Transfers 134,684 138,878 164,387 169,035"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "164387000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4141,7 +4141,7 @@
         "quote": "Revenue & Transfers 134,684 138,878 164,387 169,035"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "169035000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4201,7 +4201,7 @@
         "quote": "Expenditure & Transfers 336,983 341,796 370,629 375,820"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "200163000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4213,7 +4213,7 @@
         "quote": "Total Net Operating Requirement 200,163 200,782 204,106 204,649"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "200782000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4225,7 +4225,7 @@
         "quote": "Total Net Operating Requirement 200,163 200,782 204,106 204,649"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "204106000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4237,7 +4237,7 @@
         "quote": "Total Net Operating Requirement 200,163 200,782 204,106 204,649"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "204649000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4272,10 +4272,10 @@
       "labour_cost",
       "materials_services_cost",
       "operating_expenses",
-      "operating_revenue",
+      "total_revenue_excluding_subsidy",
       "revenue_service_hours",
       "ridership",
-      "total_operating_subsidy"
+      "subsidy"
     ],
     "cost_usd": 0.3033,
     "tokens": 60654,
@@ -4297,7 +4297,7 @@
     "lowconf": 2,
     "values": [
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "90693000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4309,7 +4309,7 @@
         "quote": "Net Investment ($000s) 2020 ... Operating 90,693"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "95605000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4321,7 +4321,7 @@
         "quote": "Operating 90,693 95,605 100,574 107,802"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "100574000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4333,7 +4333,7 @@
         "quote": "Operating 90,693 95,605 100,574 107,802"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "107802000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4633,7 +4633,7 @@
         "quote": "223,997"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "93160000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4645,7 +4645,7 @@
         "quote": "Total Revenues  (93,160)"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "91275000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4657,7 +4657,7 @@
         "quote": "Total Revenues  (91,275)"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "93555000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4669,7 +4669,7 @@
         "quote": "Total Revenues  (93,555)"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "94811000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4681,7 +4681,7 @@
         "quote": "(94,811)"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "96268000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4693,7 +4693,7 @@
         "quote": "(96,268)"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "97695000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4777,7 +4777,7 @@
         "quote": "168,050"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "75780000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4789,7 +4789,7 @@
         "quote": "Total Net Expenditures  75,780"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "87100000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -4977,14 +4977,14 @@
       "long_term_debt",
       "materials_services_cost",
       "operating_expenses",
-      "operating_revenue",
+      "total_revenue_excluding_subsidy",
       "revenue_service_hours",
       "ridership",
       "tangible_capital_assets",
       "total_financial_assets",
       "total_liabilities",
       "total_non_financial_assets",
-      "total_operating_subsidy"
+      "subsidy"
     ],
     "cost_usd": 0.4981,
     "tokens": 99625,
@@ -5019,7 +5019,7 @@
         "quote": "1.1a Total passenger trips, including taxi (millions) 57.4"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "343533000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -5031,7 +5031,7 @@
         "quote": "343,533"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "330825000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -5043,7 +5043,7 @@
         "quote": "330,825"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "108078000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -5451,12 +5451,12 @@
       "long_term_debt",
       "materials_services_cost",
       "operating_expenses",
-      "operating_revenue",
+      "total_revenue_excluding_subsidy",
       "tangible_capital_assets",
       "total_financial_assets",
       "total_liabilities",
       "total_non_financial_assets",
-      "total_operating_subsidy"
+      "subsidy"
     ],
     "cost_usd": 0.174,
     "tokens": 34804,
@@ -5635,7 +5635,7 @@
         "quote": "Cash and cash equivalents 57,559"
       },
       {
-        "metric": "total_operating_subsidy",
+        "metric": "subsidy",
         "value": "10174000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -5695,7 +5695,7 @@
         "quote": "Additions ... 107,818"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "47934000",
         "unit": "CAD",
         "period_kind": "annual",
@@ -5731,7 +5731,7 @@
         "quote": "Contracted services ... 27,911"
       },
       {
-        "metric": "operating_revenue",
+        "metric": "total_revenue_excluding_subsidy",
         "value": "41553000",
         "unit": "CAD",
         "period_kind": "annual",

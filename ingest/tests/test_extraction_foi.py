@@ -22,9 +22,10 @@ def test_extraction_guidance_covers_sourced_metrics_with_confusions():
 
 
 def test_extraction_guidance_can_scope_to_codes():
-    text = dictionary.extraction_guidance(["operating_revenue"])
-    assert "operating_revenue (Operating Revenue)" in text
-    assert "subsidy" not in text.lower() or "operating_revenue" in text  # scoped
+    text = dictionary.extraction_guidance(["total_revenue_excluding_subsidy"])
+    assert "total_revenue_excluding_subsidy (Total revenue excluding subsidy)" in text
+    # scoped: the standalone `subsidy` metric's own entry is not emitted
+    assert "subsidy (Subsidy)" not in text
 
 
 def test_foi_template_lists_requested_metrics_with_definitions():

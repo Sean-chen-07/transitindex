@@ -12,7 +12,12 @@ from datetime import date
 from decimal import Decimal
 from types import SimpleNamespace
 
-from transitindex_ingest.jobs.rank_refresh import compute_ranks, refresh_ranks
+from transitindex_ingest.jobs.rank_refresh import (
+    bulk_refresh_ranks,
+    compute_ranks,
+    refresh_ranks,
+)
+from transitindex_ingest.refdata import RATED_METRICS
 
 
 # --- helpers ----------------------------------------------------------------
@@ -139,12 +144,12 @@ def test_refresh_ranks_lower_is_better(repo):
 
 def test_refresh_ranks_neutral_direction(repo):
     pid = _period(repo)
-    _put(repo, "ttc", "operating_revenue", pid, "200")
-    _put(repo, "stm", "operating_revenue", pid, "100")
+    _put(repo, "ttc", "total_revenue_excluding_subsidy", pid, "200")
+    _put(repo, "stm", "total_revenue_excluding_subsidy", pid, "100")
 
-    refresh_ranks(repo, "operating_revenue", pid)
+    refresh_ranks(repo, "total_revenue_excluding_subsidy", pid)
 
-    rows = _ranks(repo, "operating_revenue", pid, "all")
+    rows = _ranks(repo, "total_revenue_excluding_subsidy", pid, "all")
     assert all(r.direction == "neutral" for r in rows)
     by_agency = {r.agency_id: r for r in rows}
     assert by_agency[repo.agency_id("ttc")].rank == 1  # higher value first
@@ -167,6 +172,63 @@ def test_refresh_ranks_excludes_non_comparable(repo):
     assert repo.agency_id("translink") not in agency_ids
     assert len(rows) == 2
     assert all(r.denominator == 2 for r in rows)
+
+
+# --- rated allow-list: only the five hero metrics rank ----------------------
+
+
+def test_rated_metrics_is_exactly_the_five_hero_boxes():
+    assert RATED_METRICS == frozenset({
+        "ridership", "total_revenue_excluding_subsidy", "on_time_performance",
+        "cost_per_rider", "subsidy_per_rider",
+    })
+
+
+def test_refresh_ranks_noop_for_non_rated_metric(repo):
+    """A view-only metric never produces rank rows, even with comparable values."""
+    pid = _period(repo)
+    _put(repo, "ttc", "operating_expenses", pid, "300")
+    _put(repo, "stm", "operating_expenses", pid, "200")
+
+    refresh_ranks(repo, "operating_expenses", pid)
+
+    assert _ranks(repo, "operating_expenses", pid, "all") == []
+    assert _ranks(repo, "operating_expenses", pid, "subdivision") == []
+
+
+def test_refresh_ranks_only_rated_metrics_produce_ranks(repo):
+    """The five hero metrics rank; the retired balance-sheet ratios and other
+    size figures do not."""
+    pid = _period(repo)
+    rated = ["ridership", "total_revenue_excluding_subsidy", "on_time_performance",
+             "cost_per_rider", "subsidy_per_rider"]
+    view_only = ["operating_expenses", "fleet_size",
+                 "debt_to_assets", "net_debt_per_capita"]
+    for code in rated + view_only:
+        _put(repo, "ttc", code, pid, "300")
+        _put(repo, "stm", code, pid, "200")
+        refresh_ranks(repo, code, pid)
+
+    for code in rated:
+        assert _ranks(repo, code, pid, "all"), f"{code} should rank"
+    for code in view_only:
+        assert _ranks(repo, code, pid, "all") == [], f"{code} must not rank"
+
+
+def test_bulk_refresh_ranks_drops_non_rated(repo):
+    """The bulk path filters out non-rated metrics up front."""
+    pid = _period(repo)
+    _put(repo, "ttc", "ridership", pid, "300", scope="total")
+    _put(repo, "stm", "ridership", pid, "200", scope="total")
+    _put(repo, "ttc", "operating_expenses", pid, "300", scope="total")
+    _put(repo, "stm", "operating_expenses", pid, "200", scope="total")
+
+    cohorts = bulk_refresh_ranks(repo, ["ridership", "operating_expenses"], [pid])
+
+    # Only ridership ranks -> 2 cohorts written (all + subdivision), not 4.
+    assert cohorts == 2
+    assert _ranks(repo, "ridership", pid, "all")
+    assert _ranks(repo, "operating_expenses", pid, "all") == []
 
 
 def test_refresh_ranks_missing_agency_absent(repo):

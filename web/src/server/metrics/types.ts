@@ -30,3 +30,9 @@ export interface MetricView {
   suppressedReason?: MetricSuppressedReason;
   points: SeriesPoint[];
 }
+
+/** One fleet display class's latest summed count (metric-set-build-plan.md Phase 6). */
+export interface FleetClassCount {
+  fleetClass: string;
+  value: number;
+}

@@ -25,19 +25,20 @@ MODES: tuple[str, ...] = (
     "on_demand",
 )
 
-# Per-mode capacity weight for the aggregated `fleet_capacity` metric
-# (Σ capacity_weight × fleet_size(mode)). Mirrors db/seeds/01_modes.sql +
-# db/migrations/015_mode_capacity_weight.sql. Modes absent here (ferry,
-# paratransit, on_demand) keep a NULL weight and are excluded from the aggregation.
-MODE_CAPACITY_WEIGHT: Mapping[str, int] = MappingProxyType(
+# Mode -> display class for the 4-class fleet composition shown on the detail page
+# (metric-set-build-plan.md Phase 6; supersedes the removed weighted `fleet_capacity`
+# metric). Groups the existing per-mode `fleet_size` into four capacity-ordered,
+# plain labelled counts. Modes absent here (ferry, paratransit, on_demand) are
+# excluded from the composition.
+FLEET_CLASS: Mapping[str, str] = MappingProxyType(
     {
-        "bus": 1,
-        "streetcar": 2,
-        "light_rail": 3,
-        "subway": 4,
-        "commuter_rail": 5,
-        "brt": 1,
-        "trolleybus": 1,
+        "bus": "bus",
+        "brt": "bus",
+        "trolleybus": "bus",
+        "light_rail": "light_rail",
+        "streetcar": "light_rail",
+        "subway": "heavy_rail",
+        "commuter_rail": "commuter_rail",
     }
 )
 
@@ -134,12 +135,15 @@ AGENCIES: Mapping[str, Mapping] = MappingProxyType(
     }
 )
 
-# --- 32 metrics (db/seeds/04_metrics.sql) ------------------------------------
+# --- 41 metrics (db/seeds/04_metrics.sql) ------------------------------------
 # code -> unit, unit_type, is_derived, formula (None unless derived),
 # higher_is_better (None = neutral). Insertion order preserved.
 # Ridership is ONE metric; monthly vs annual is the reporting period's
-# granularity (a dimension), not a separate metric code. The last 11 entries are
-# the balance-sheet family (8 sourced + 3 derived).
+# granularity (a dimension), not a separate metric code. The balance-sheet
+# family (8 sourced + 3 derived) sits before the 10 financial-statement
+# additions (metric-set-build-plan.md Phase 4): 5 sourced income-statement /
+# revenue lines, plus 5 derived residuals (other_revenue, annual_surplus_deficit,
+# and the three balance-sheet component residuals). All 10 are NON-rated.
 
 METRICS: Mapping[str, Mapping] = MappingProxyType(
     {
@@ -157,7 +161,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         ),
         "average_fare": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
-             "formula": "operating_revenue / ridership", "higher_is_better": None}
+             "formula": "farebox_revenue / ridership", "higher_is_better": None}
         ),
         "trips_per_revenue_hour": MappingProxyType(
             {"unit": "trips/hr", "unit_type": "ratio", "is_derived": True,
@@ -167,7 +171,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
             {"unit": "%", "unit_type": "ratio", "is_derived": False,
              "formula": None, "higher_is_better": True}
         ),
-        "operating_revenue": MappingProxyType(
+        "total_revenue_excluding_subsidy": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": False,
              "formula": None, "higher_is_better": None}
         ),
@@ -175,7 +179,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": False,
              "formula": None, "higher_is_better": None}
         ),
-        "total_operating_subsidy": MappingProxyType(
+        "subsidy": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": False,
              "formula": None, "higher_is_better": None}
         ),
@@ -193,7 +197,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         ),
         "farebox_recovery_ratio": MappingProxyType(
             {"unit": "%", "unit_type": "ratio", "is_derived": True,
-             "formula": "operating_revenue / operating_expenses", "higher_is_better": None}
+             "formula": "farebox_revenue / operating_expenses", "higher_is_better": None}
         ),
         "cost_per_rider": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
@@ -205,7 +209,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         ),
         "subsidy_per_rider": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
-             "formula": "total_operating_subsidy / ridership",
+             "formula": "subsidy / ridership",
              "higher_is_better": None}
         ),
         "fleet_size": MappingProxyType(
@@ -219,10 +223,6 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         "accessible_fleet_pct": MappingProxyType(
             {"unit": "%", "unit_type": "ratio", "is_derived": False,
              "formula": None, "higher_is_better": True}
-        ),
-        "fleet_capacity": MappingProxyType(
-            {"unit": "count", "unit_type": "count", "is_derived": False,
-             "formula": None, "higher_is_better": None}
         ),
         "capital_expenditure": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": False,
@@ -273,13 +273,67 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
              "formula": "net_debt / service_area_population", "higher_is_better": False}
         ),
+        # --- financial-statement additions (metric-set-build-plan.md Phase 4) --
+        # Sourced income-statement / revenue lines (non-rated, neutral):
+        "amortization": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "other_operating_expenses": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "total_revenue": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "farebox_revenue": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "total_expenses": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        # Derived residuals so the statements close (each defined by a SumEquation):
+        "other_revenue": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": True,
+             "formula": "total_revenue_excluding_subsidy - farebox_revenue", "higher_is_better": None}
+        ),
+        "annual_surplus_deficit": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": True,
+             "formula": "total_revenue - total_expenses", "higher_is_better": None}
+        ),
+        "other_financial_assets": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": True,
+             "formula": "total_financial_assets - cash_and_investments", "higher_is_better": None}
+        ),
+        "other_liabilities": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": True,
+             "formula": "total_liabilities - long_term_debt", "higher_is_better": None}
+        ),
+        "other_non_financial_assets": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": True,
+             "formula": "total_non_financial_assets - tangible_capital_assets",
+             "higher_is_better": None}
+        ),
     }
 )
 
+# RANKING SOURCE OF TRUTH (2026-06-14 decision): only the five Highlights hero
+# boxes are rated. Every other metric is shown without a rank. A value's
+# comparable_flag is set to `code in RATED_METRICS`; rank_refresh additionally
+# skips any metric not in this set. See docs/planning/metric-set-build-plan.md
+# (Phase 1) and metric-standards-review.md ("Decisions taken").
+RATED_METRICS: frozenset[str] = frozenset({
+    "ridership", "total_revenue_excluding_subsidy", "on_time_performance",
+    "cost_per_rider", "subsidy_per_rider",
+})
+
 # Balance-sheet dollar figures measure SIZE, not performance, so they are never
-# ranked (their values carry comparable_flag=false). Only the two scale-free
-# ratios (debt_to_assets, net_debt_per_capita) rank. See
-# balance-sheet-and-frequency-plan.md.
+# ranked. SUPERSEDED by RATED_METRICS above for the comparable_flag decision
+# (RATED_METRICS is the positive allow-list and the source of truth); kept for
+# any code that still references the balance-sheet exclusion set.
 NON_RANKABLE_METRICS: frozenset[str] = frozenset({
     "total_financial_assets", "total_liabilities", "total_non_financial_assets",
     "total_assets", "tangible_capital_assets", "accumulated_surplus",

@@ -55,13 +55,13 @@ def test_slug_mapping():
 def test_measure_to_metric_code():
     _, records = _parse()
     codes = {r.metric_code for r in records}
-    assert codes == {"ridership", "operating_revenue"}
+    assert codes == {"ridership", "total_revenue_excluding_subsidy"}
 
 
 def test_scalar_factor_applied():
     # Toronto Jan revenue: VALUE 52000 with SCALAR_FACTOR 'thousands' -> x1000.
     _, records = _parse()
-    rev = _one(records, "ttc", "operating_revenue", date(2026, 1, 1))
+    rev = _one(records, "ttc", "total_revenue_excluding_subsidy", date(2026, 1, 1))
     assert rev.value == Decimal("52000") * Decimal(1000)
     assert rev.value == Decimal("52000000")
     # Ridership: VALUE 45000 with SCALAR_FACTOR 'thousands' -> x1000.
@@ -80,7 +80,7 @@ def test_monthly_period_bounds_and_label():
 
 def test_scope_currency_and_source():
     _, records = _parse()
-    rev = _one(records, "calgary-transit", "operating_revenue", date(2026, 1, 1))
+    rev = _one(records, "calgary-transit", "total_revenue_excluding_subsidy", date(2026, 1, 1))
     trips = _one(records, "calgary-transit", "ridership", date(2026, 1, 1))
     assert rev.service_scope == "total"
     assert rev.currency == "CAD"

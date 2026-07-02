@@ -271,10 +271,10 @@ class PostgresRepository:
                 "INSERT INTO core.pending_values "
                 "(agency_id, metric_id, reporting_period_id, mode_id, service_scope, "
                 " value, unit, currency, quality, comparable_flag, crosscheck_value, "
-                " source_document_id, page_number, table_reference, extraction_method, "
-                " confidence, review_status, flags) "
+                " cost_basis, source_document_id, page_number, table_reference, "
+                " extraction_method, confidence, review_status, flags) "
                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, "
-                "%s, %s) RETURNING id",
+                "%s, %s, %s) RETURNING id",
                 (
                     agency_id,
                     metric_id,
@@ -287,6 +287,7 @@ class PostgresRepository:
                     record.quality,
                     record.comparable_flag,
                     record.crosscheck_value,
+                    record.cost_basis,
                     source_document_id,
                     src.page_number if src else None,
                     src.table_reference if src else None,
@@ -302,7 +303,8 @@ class PostgresRepository:
             "SELECT id, agency_id, metric_id, reporting_period_id, mode_id, service_scope, "
             "value, unit, currency, quality, comparable_flag, crosscheck_value, "
             "source_document_id, page_number, table_reference, extraction_method, "
-            "confidence, review_status, flags, reviewer_notes FROM core.pending_values"
+            "confidence, review_status, flags, reviewer_notes, cost_basis "
+            "FROM core.pending_values"
         )
         params: tuple = ()
         if status is not None:
@@ -316,7 +318,7 @@ class PostgresRepository:
             "SELECT id, agency_id, metric_id, reporting_period_id, mode_id, service_scope, "
             "value, unit, currency, quality, comparable_flag, crosscheck_value, "
             "source_document_id, page_number, table_reference, extraction_method, "
-            "confidence, review_status, flags, reviewer_notes "
+            "confidence, review_status, flags, reviewer_notes, cost_basis "
             "FROM core.pending_values WHERE id = %s",
             (pending_id,),
         ).fetchone()
@@ -432,6 +434,7 @@ class PostgresRepository:
                 currency=pending.currency,
                 comparable_flag=pending.comparable_flag,
                 crosscheck_value=pending.crosscheck_value,
+                cost_basis=pending.cost_basis,
                 notes=None,
             )
             if pending.source_document_id is not None:
@@ -469,6 +472,7 @@ class PostgresRepository:
         comparable_flag: bool = True,
         crosscheck_value: Optional[Decimal] = None,
         notes: Optional[str] = None,
+        cost_basis: str = "operating",
     ) -> int:
         with self._conn.transaction():
             return self._insert_value_locked(
@@ -483,6 +487,7 @@ class PostgresRepository:
                 currency=currency,
                 comparable_flag=comparable_flag,
                 crosscheck_value=crosscheck_value,
+                cost_basis=cost_basis,
                 notes=notes,
             )
 
@@ -501,6 +506,7 @@ class PostgresRepository:
         comparable_flag: bool,
         crosscheck_value: Optional[Decimal],
         notes: Optional[str],
+        cost_basis: str = "operating",
     ) -> int:
         """Supersede any current row, then insert the new current row.
 
@@ -526,8 +532,8 @@ class PostgresRepository:
             "INSERT INTO core.metric_values "
             "(agency_id, metric_id, reporting_period_id, mode_id, service_scope, value, "
             " unit, currency, quality, comparable_flag, crosscheck_value, "
-            " restatement_of_id, is_current, notes) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, true, %s) RETURNING id",
+            " restatement_of_id, is_current, notes, cost_basis) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, true, %s, %s) RETURNING id",
             (
                 agency_id,
                 metric_id,
@@ -542,6 +548,7 @@ class PostgresRepository:
                 crosscheck_value,
                 superseded_id,
                 notes,
+                cost_basis,
             ),
         ).fetchone()[0]
 
@@ -560,6 +567,7 @@ class PostgresRepository:
         currency: Optional[str] = None,
         comparable_flag: bool = True,
         notes: Optional[str] = None,
+        cost_basis: str = "operating",
     ) -> int:
         with self._conn.transaction():
             vid = self._insert_value_locked(
@@ -574,6 +582,7 @@ class PostgresRepository:
                 currency=currency,
                 comparable_flag=comparable_flag,
                 crosscheck_value=None,
+                cost_basis=cost_basis,
                 notes=notes,
             )
             did = self._conn.execute(
@@ -684,23 +693,23 @@ class PostgresRepository:
             for i in range(0, len(rows), self._BULK_BATCH):
                 batch = rows[i : i + self._BULK_BATCH]
                 ph = ",".join(
-                    ["(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"] * len(batch)
+                    ["(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"] * len(batch)
                 )
                 params: list = []
                 for r in batch:
                     params.extend([
                         r.agency_id, r.metric_id, r.reporting_period_id, r.mode_id,
                         r.service_scope, r.value, r.unit, r.currency, r.quality,
-                        r.comparable_flag, r.crosscheck_value, r.source_document_id,
-                        r.page_number, r.table_reference, r.extraction_method,
-                        r.confidence, r.review_status, r.flags,
+                        r.comparable_flag, r.crosscheck_value, r.cost_basis,
+                        r.source_document_id, r.page_number, r.table_reference,
+                        r.extraction_method, r.confidence, r.review_status, r.flags,
                     ])
                 batch_ids = self._conn.execute(
                     "INSERT INTO core.pending_values "
                     "(agency_id, metric_id, reporting_period_id, mode_id, service_scope, "
                     "value, unit, currency, quality, comparable_flag, crosscheck_value, "
-                    "source_document_id, page_number, table_reference, extraction_method, "
-                    f"confidence, review_status, flags) VALUES {ph} RETURNING id",
+                    "cost_basis, source_document_id, page_number, table_reference, "
+                    f"extraction_method, confidence, review_status, flags) VALUES {ph} RETURNING id",
                     tuple(params),
                 ).fetchall()
                 all_ids.extend(r[0] for r in batch_ids)
@@ -726,13 +735,13 @@ class PostgresRepository:
                 "SELECT id, agency_id, metric_id, reporting_period_id, mode_id, "
                 "service_scope, value, unit, currency, quality, comparable_flag, "
                 "crosscheck_value, source_document_id, page_number, table_reference, "
-                "extraction_method, confidence "
+                "extraction_method, confidence, cost_basis "
                 "FROM core.pending_values WHERE id = ANY(%s)",
                 (pending_ids,),
             ).fetchall()
             # idx: 0=id 1=agency 2=metric 3=period 4=mode 5=scope 6=value 7=unit
             #      8=currency 9=quality 10=comparable 11=crosscheck 12=source_doc
-            #      13=page 14=table_ref 15=extract_method 16=confidence
+            #      13=page 14=table_ref 15=extract_method 16=confidence 17=cost_basis
             pending_map = {r[0]: r for r in pending_rows}
 
             # (3) Read current cohort for touched agencies+metrics in one SELECT.
@@ -786,7 +795,7 @@ class PostgresRepository:
             for i in range(0, len(to_insert), self._BULK_BATCH):
                 batch = to_insert[i : i + self._BULK_BATCH]
                 ph = ",".join(
-                    ["(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,true,NULL)"] * len(batch)
+                    ["(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,true,NULL,%s)"] * len(batch)
                 )
                 params = []
                 for r, restatement_id in batch:
@@ -795,12 +804,13 @@ class PostgresRepository:
                         r[6], r[7], r[8], r[9],          # value, unit, currency, quality
                         r[10], r[11],                    # comparable_flag, crosscheck_value
                         restatement_id,                  # restatement_of_id
+                        r[17],                           # cost_basis
                     ])
                 batch_mv_ids = self._conn.execute(
                     "INSERT INTO core.metric_values "
                     "(agency_id, metric_id, reporting_period_id, mode_id, service_scope, "
                     "value, unit, currency, quality, comparable_flag, crosscheck_value, "
-                    f"restatement_of_id, is_current, notes) VALUES {ph} RETURNING id",
+                    f"restatement_of_id, is_current, notes, cost_basis) VALUES {ph} RETURNING id",
                     tuple(params),
                 ).fetchall()
 
@@ -982,5 +992,5 @@ class PostgresRepository:
 _MV_COLS = (
     "id, agency_id, metric_id, reporting_period_id, mode_id, service_scope, value, "
     "unit, currency, quality, comparable_flag, crosscheck_value, restatement_of_id, "
-    "is_current, notes"
+    "is_current, notes, cost_basis"
 )

@@ -81,12 +81,13 @@ def test_rollup_then_recompute_derives_annual_ratios():
         _seed_month(repo, "ttc", 2024, m, "100")  # annual ridership -> 1200
     rollup_ridership(repo, "ttc", 2024)
 
-    # Add annual operating_revenue at the same annual period + scope.
+    # Add annual farebox_revenue (average_fare's numerator, Phase 3) at the same
+    # annual period + scope.
     ap = annual_period("ttc", 2024)
     annual_pid = repo.get_or_create_reporting_period(ap.period_type, ap.start, ap.end, ap.label)
     repo.insert_metric_value(
         agency_id=repo.agency_id("ttc"),
-        metric_id=repo.metric_id("operating_revenue"),
+        metric_id=repo.metric_id("farebox_revenue"),
         reporting_period_id=annual_pid,
         mode_id=None,
         service_scope="total",
@@ -101,4 +102,4 @@ def test_rollup_then_recompute_derives_annual_ratios():
         repo.agency_id("ttc"), repo.metric_id("average_fare"), annual_pid, None, "total"
     )
     assert af is not None
-    assert af.value == Decimal("2.5")  # 3000 / 1200, from the rolled-up annual ridership
+    assert af.value == Decimal("2.5")  # farebox 3000 / 1200, from the rolled-up annual ridership

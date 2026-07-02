@@ -103,7 +103,7 @@ def test_build_doc_result_shapes_smoke_fixture_fields():
 
     values = [
         _ev("ridership", "500000000", 2019),
-        _ev("operating_revenue", "1264087000", 2019, conf="0.5",
+        _ev("total_revenue_excluding_subsidy", "1264087000", 2019, conf="0.5",
             note="x; ⚠ chunks disagree — 1264087000, 1253900000 (reviewer confirm)"),
         _ev("operating_expenses", "2921698000", 2010),  # weird (far prior) year
     ]
@@ -119,7 +119,7 @@ def test_build_doc_result_shapes_smoke_fixture_fields():
     assert out["values_merged"] == 3
     assert out["values_raw"] == 7
     assert out["distinct_metrics"] == 3
-    assert out["metrics"] == ["operating_expenses", "operating_revenue", "ridership"]
+    assert out["metrics"] == ["operating_expenses", "ridership", "total_revenue_excluding_subsidy"]
     assert out["cost_usd"] == 0.25
     assert out["tokens"] == 50000
     assert out["conflicts"] == 1          # only the disagree note
@@ -130,7 +130,7 @@ def test_build_doc_result_shapes_smoke_fixture_fields():
     assert out["dropped_basis"] == 1
     assert out["dropped_below_floor"] == 1
     assert out["segments_raw"] == _diag()["segments_raw"]
-    assert {v["metric"] for v in out["values"]} == {"ridership", "operating_revenue", "operating_expenses"}
+    assert {v["metric"] for v in out["values"]} == {"ridership", "total_revenue_excluding_subsidy", "operating_expenses"}
 
 
 # --- run_smoke aggregation --------------------------------------------------
@@ -145,7 +145,7 @@ def test_run_smoke_aggregates_per_doc_and_totals():
     res_a = ExtractionResult(
         values=[
             _ev("ridership", "1", 2019, conf="0.9"),
-            _ev("operating_revenue", "2", 2019, conf="0.4"),  # low-conf review item
+            _ev("total_revenue_excluding_subsidy", "2", 2019, conf="0.4"),  # low-conf review item
         ],
         diagnostics=_diag(est_cost_usd=0.2, input_tokens=1000, dropped_scope=1, dropped_basis=0),
     )
@@ -231,7 +231,7 @@ def test_gold_assessments_filter_scope_basis_and_flag():
     gold_meta = {"agency_slug": "ttc", "period_year": 2024, "period_kind": "annual"}
     values = [
         _ev("ridership", "100", 2024, conf="0.9"),                 # kept, clean
-        _ev("operating_revenue", "200", 2024, conf="0.5"),         # kept, low_confidence
+        _ev("total_revenue_excluding_subsidy", "200", 2024, conf="0.5"),         # kept, low_confidence
         _ev("fleet_size", "10", 2024, conf="0.9", scope="city_wide"),  # dropped: scope
         _ev("labour_cost", "5", 2024, conf="0.9", basis="forecast"),   # dropped: basis
         _ev("operating_expenses", "9", 2023, conf="0.9"),          # dropped: wrong year
@@ -239,9 +239,9 @@ def test_gold_assessments_filter_scope_basis_and_flag():
     out = gold_assessments(values, gold_meta)
 
     by_code = {a.metric_code: a for a in out}
-    assert set(by_code) == {"ridership", "operating_revenue"}
+    assert set(by_code) == {"ridership", "total_revenue_excluding_subsidy"}
     assert by_code["ridership"].flags == ()
-    assert by_code["operating_revenue"].flags == ("low_confidence",)
+    assert by_code["total_revenue_excluding_subsidy"].flags == ("low_confidence",)
 
 
 # --- baseline delta math ----------------------------------------------------

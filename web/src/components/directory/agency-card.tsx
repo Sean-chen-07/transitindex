@@ -16,15 +16,15 @@ function modeGroup(modes: string[]): { cls: string; label: string } {
 
 // The free "fundamentals" (chosen in the 2026-06-06 design review). The card payload is
 // rank-only — these are ORDINALS, never raw numbers (raw values live on the detail page).
-// Farebox (redundant with subsidy) was dropped; the 6 slots fill the grid-cols-3 grid as a
-// clean 3×2.
+// Farebox (redundant with subsidy) was dropped; the weighted `fleet_capacity` hero was
+// retired (metric-set-build-plan.md Phase 6) in favour of a non-ranked fleet composition
+// shown only on the detail page. The remaining 5 slots fill the grid-cols-3 grid.
 const METRIC_SLOTS: { label: string; codes: string[] }[] = [
   { label: "Ridership", codes: ["ridership"] },
   { label: "On-time", codes: ["on_time_performance"] },
   { label: "Cost / rider", codes: ["cost_per_rider"] },
   { label: "Subsidy / rider", codes: ["subsidy_per_rider"] },
-  { label: "Revenue", codes: ["operating_revenue"] },
-  { label: "Fleet scale", codes: ["fleet_capacity"] },
+  { label: "Revenue", codes: ["total_revenue_excluding_subsidy"] },
 ];
 
 function rankFor(ranks: AgencyRank[], codes: string[]): string | null {

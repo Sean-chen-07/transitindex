@@ -93,10 +93,12 @@ def test_recompute_balance_sheet_flags_and_population():
     assert net_debt.value == Decimal("200")
     assert net_debt.comparable_flag is False  # raw dollar -> never ranked
     assert cur("debt_to_assets").value == Decimal("0.6")
-    assert cur("debt_to_assets").comparable_flag is True  # scale-free ratio -> ranked
+    # 2026-06-14 decision: only the five hero metrics are rated. The two
+    # balance-sheet ratios are now view-only (retired from ranking).
+    assert cur("debt_to_assets").comparable_flag is False
     ndpc = cur("net_debt_per_capita")
     assert ndpc.value == Decimal("0.2")  # 200 / 1000
-    assert ndpc.comparable_flag is True
+    assert ndpc.comparable_flag is False
 
     # provenance: net_debt_per_capita cites the net_debt value row (population is an
     # attribute, reconstructed from the equation, not a metric_value input).

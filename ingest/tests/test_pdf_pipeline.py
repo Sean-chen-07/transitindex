@@ -116,7 +116,7 @@ def test_extraction_method_and_provenance_recorded(repo):
 def test_annual_calendar_period_mapping(repo):
     values = [
         ExtractedValue(
-            metric_code="operating_revenue",
+            metric_code="total_revenue_excluding_subsidy",
             value=Decimal("1300000000"),
             unit="CAD",
             period_kind="annual",
@@ -128,7 +128,7 @@ def test_annual_calendar_period_mapping(repo):
     (pid,) = _run(repo, values)
     p = repo.get_pending_value(pid)
 
-    assert p.metric_id == repo.metric_id("operating_revenue")
+    assert p.metric_id == repo.metric_id("total_revenue_excluding_subsidy")
     assert p.service_scope == "total"
     assert p.quality == "preliminary"
     assert p.currency == "CAD"

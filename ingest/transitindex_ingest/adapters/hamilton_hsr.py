@@ -22,6 +22,7 @@ from decimal import Decimal
 
 from ..contract import MetricValueRecord, SourceRef
 from ..periods import monthly_period
+from ..refdata import RATED_METRICS
 
 HAMILTON_HSR_URL = (
     "https://services.arcgis.com/rYz782eMbySr2srL/arcgis/rest/services/"
@@ -82,6 +83,8 @@ class HamiltonHSRAdapter:
                     unit="count",
                     quality="verified",
                     currency=None,
+                    # Only rated hero metrics carry ranks; ridership is rated.
+                    comparable_flag="ridership" in RATED_METRICS,
                     source=SourceRef(
                         document_type="open_data_csv",
                         extraction_method="structured_import",

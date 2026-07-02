@@ -19,7 +19,7 @@ from __future__ import annotations
 from typing import Optional
 
 from ..db.models import BulkMetricRankRow, MetricRankRow
-from ..refdata import AGENCIES, METRICS
+from ..refdata import AGENCIES, METRICS, RATED_METRICS
 
 
 def compute_ranks(values, higher_is_better: Optional[bool]):
@@ -75,7 +75,14 @@ def refresh_ranks(
     (ranked within each province group) comparison sets via
     `repo.replace_metric_ranks`. Only current, comparable values in the given
     service scope and period participate.
+
+    Only the five rated hero metrics carry ranks (refdata.RATED_METRICS); any
+    other metric is a no-op here, so a stray caller can never rank a view-only
+    metric even if its values were mistakenly left comparable.
     """
+    if metric_code not in RATED_METRICS:
+        return
+
     metric_id = repo.metric_id(metric_code)
     higher_is_better = METRICS[metric_code]["higher_is_better"]
     direction = _direction(higher_is_better)
@@ -118,7 +125,11 @@ def bulk_refresh_ranks(
     computation in Python, then one set-based DELETE + one multi-row INSERT via
     repo.replace_ranks_bulk. Returns the number of (metric, period, comparison_set)
     triples written.
+
+    Non-rated metrics are dropped up front (only refdata.RATED_METRICS rank), so a
+    caller passing a view-only metric can never produce ranks for it.
     """
+    metric_codes = [c for c in metric_codes if c in RATED_METRICS]
     if not metric_codes or not period_ids:
         return 0
 

@@ -60,8 +60,8 @@ Jan Feb Mar  Q1  |  Apr May Jun  Q2  |  Jul Aug Sep  Q3  |  Oct Nov Dec  Q4  |  
 ```
 
 At the bottom of every agency tab is a small **Fleet** section: one row per
-vehicle type (Bus, Subway, Light rail, Commuter rail, Streetcar), plus a
-**Fleet scale** row that's worked out for you.
+vehicle type (Bus, Subway, Light rail, Commuter rail, Streetcar). For rail,
+count **trains**, not individual cars.
 
 ### The colour code
 
@@ -69,7 +69,7 @@ The two colours mean the same thing everywhere:
 
 - **White cells** — type here.
 - **Grey cells** — worked out automatically (the quarter, year-to-date and
-  full-year totals, the ratios, and Fleet scale). **Don't type in them** —
+  full-year totals, and the ratios). **Don't type in them** —
   anything you put there is ignored and recalculated.
 
 ## Step 2 — Add data
@@ -87,7 +87,7 @@ number means.
   use them.
 - **Fleet** — in the Fleet section at the bottom, type the number of vehicles for
   each mode (Bus, Subway, Light rail, Commuter rail, Streetcar) in the **Year**
-  column. The **Fleet scale** row is worked out for you.
+  column. For rail, count **trains**, not individual cars.
 - **Calculated rows** (ratios like farebox recovery and cost per rider, and net
   debt) show a grey formula in the **Year** column — they fill themselves in once
   their inputs are present. You never type them.
@@ -111,7 +111,7 @@ python -m transitindex_ingest import-xlsx transitindex-data.xlsx
 
 This reads your white cells, saves them into the database, **rolls the months up
 into quarter and yearly totals**, works out the calculated metrics (ratios, net
-debt, Fleet scale), and refreshes the rankings. You'll see a short summary of how
+debt), and refreshes the rankings. You'll see a short summary of how
 many values were saved.
 
 To confirm the round-trip worked, run the export again and reopen the file —

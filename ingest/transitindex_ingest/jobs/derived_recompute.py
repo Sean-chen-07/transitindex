@@ -25,13 +25,25 @@ from typing import NamedTuple
 from decimal import Decimal
 
 from ..equations import ATTR_PREFIX, EQUATIONS, solve
-from ..refdata import METRICS, NON_RANKABLE_METRICS
+from ..refdata import METRICS, RATED_METRICS
 
 # Derivation equation codes produced by the WITHIN-PERIOD solver. A current value
 # carrying one of these is prior solver output -> excluded from the seed so it is
 # re-derived and superseded. Sourced values (no derivation) and cross-period
 # aggregations (e.g. the period_rollup annual ridership) ARE valid seed inputs.
 _WITHIN_PERIOD_CODES = frozenset(eq.code for eq in EQUATIONS)
+
+# The efficiency ratios must consume the CUTA/NTD *operating* expense basis
+# (amortization EXCLUDED), never a PSAB statement-of-operations total. When a
+# cohort's operating_expenses is recorded on the 'psab_total' basis we normalize
+# it to the operating basis (Phase 3):
+#   rule (a) -- PREFERRED: if amortization is present, seed
+#              operating = psab_total - amortization (auditable, fully comparable);
+#   rule (b) -- fallback: no amortization to subtract, so we still compute the
+#              ratios but mark every value that consumed the un-normalized expense
+#              comparable_flag=False and flag it (a psab-basis ratio must never be
+#              ranked against an operating-basis one).
+_MIXED_COST_BASIS = "mixed_cost_basis"
 
 # Weakest-wins ordering: a derived value never claims more certainty than its
 # weakest input (rank 0 = strongest).
@@ -87,6 +99,25 @@ def recompute_derived(repo, agency_slug: str, period_id: int) -> RecomputeResult
             observed[code] = v
             seed[code] = v.value
 
+        # Normalize operating_expenses to the operating (amortization-excluded)
+        # basis before solving any ratio. `basis_tainted` marks the expense value
+        # (and everything derived from it) as non-comparable when rule (b) applies.
+        basis_tainted = False
+        opex = observed.get("operating_expenses")
+        if opex is not None and getattr(opex, "cost_basis", "operating") == "psab_total":
+            amort = observed.get("amortization")
+            if amort is not None:
+                # rule (a): operating = psab_total - amortization.
+                seed["operating_expenses"] = opex.value - amort.value
+            else:
+                # rule (b): compute anyway, but the result is not comparable.
+                basis_tainted = True
+                warnings.append(
+                    f"{_MIXED_COST_BASIS}: operating_expenses on psab_total basis "
+                    f"with no amortization to normalize ({agency_slug}, period "
+                    f"{period_id}, scope {scope}) -- derived ratios not comparable"
+                )
+
         # Agency attributes the solver may READ but never solve into (e.g.
         # net_debt_per_capita = net_debt / service_area_population).
         population = repo.agency_population(agency_id)
@@ -102,6 +133,10 @@ def recompute_derived(repo, agency_slug: str, period_id: int) -> RecomputeResult
         # solved input's id is always known by the time a value that uses it is written.
         code_to_vid: dict[str, int] = {c: v.id for c, v in observed.items()}
         code_to_quality: dict[str, str] = {c: v.quality for c, v in observed.items()}
+        # Values (transitively) derived from an un-normalized psab_total expense
+        # are not comparable (rule b). res.values is in dependency order, so a
+        # single forward pass propagates the taint from operating_expenses.
+        tainted: set[str] = {"operating_expenses"} if basis_tainted else set()
         for code, sv in result.values.items():
             if sv.origin != "solved":
                 continue
@@ -112,6 +147,9 @@ def recompute_derived(repo, agency_slug: str, period_id: int) -> RecomputeResult
             quality = weakest_quality(
                 [code_to_quality[c] for c in sv.inputs if c in code_to_quality]
             )
+            code_tainted = any(c in tainted for c in sv.inputs)
+            if code_tainted:
+                tainted.add(code)
             vid = repo.insert_derived_value(
                 agency_id=agency_id,
                 metric_id=repo.metric_id(code),
@@ -124,8 +162,10 @@ def recompute_derived(repo, agency_slug: str, period_id: int) -> RecomputeResult
                 equation_code=sv.equation_code,
                 input_value_ids=input_ids,
                 currency="CAD" if meta["unit_type"] == "currency" else None,
-                # Raw balance-sheet dollars measure size, not performance -> never ranked.
-                comparable_flag=code not in NON_RANKABLE_METRICS,
+                # Only the five rated hero metrics carry ranks; a value derived from
+                # an un-normalized psab_total expense is never comparable (rule b).
+                comparable_flag=(code in RATED_METRICS) and not code_tainted,
+                notes=_MIXED_COST_BASIS if code_tainted else None,
             )
             ids.append(vid)
             code_to_vid[code] = vid

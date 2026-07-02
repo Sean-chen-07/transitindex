@@ -5,17 +5,17 @@ Every relationship is one of TWO algebraic shapes so any single unknown is
 exactly solvable:
 
   - SUM    `result = Σ sign_i · term_i`   (e.g. operating_expenses =
-           operating_revenue + total_operating_subsidy; net_debt =
+           total_revenue_excluding_subsidy + subsidy; net_debt =
            total_liabilities − total_financial_assets). Solvable for any one
            missing term.
   - RATIO  `quotient = numerator / denominator`  (e.g. farebox_recovery_ratio =
-           operating_revenue / operating_expenses). Solvable for ANY one of the
+           farebox_revenue / operating_expenses). Solvable for ANY one of the
            three -- including the denominator, since "farebox + revenue ->
            expenses" (expenses = revenue / farebox) is the flagship goal.
 
 Composites are normalized into named intermediates rather than special-cased:
-`subsidy_per_rider` is the RATIO `total_operating_subsidy / ridership`, and
-`total_operating_subsidy = operating_expenses − operating_revenue` is its own
+`subsidy_per_rider` is the RATIO `subsidy / ridership`, and
+`subsidy = operating_expenses − total_revenue_excluding_subsidy` is its own
 SUM. So a sourced or back-solved subsidy stays mutually consistent.
 
 `solve()` is pure arithmetic over a `{metric_code: Decimal}` map of OBSERVED
@@ -81,13 +81,33 @@ class SumEquation:
     def operands(self) -> frozenset[str]:
         return frozenset({self.result, *(t for _s, t in self.terms)})
 
-    def display(self) -> str:
+    def _raw_terms(self) -> str:
+        """The terms rendered verbatim (`Σ sign · term`), independent of `defines`."""
         parts: list[str] = []
         for i, (sign, term) in enumerate(self.terms):
             op = "-" if sign < 0 else ("+" if i else "")
             label = _render(term)
             parts.append(f"{op} {label}".strip() if op else label)
         return " ".join(parts)
+
+    def display(self) -> str:
+        # `defines` usually names `result` (result = Σ terms): render the terms
+        # verbatim. When `defines` instead names one of the TERMS (a component
+        # residual, e.g. other_revenue in `total_revenue_excluding_subsidy =
+        # farebox_revenue + other_revenue`), the caption must show that term
+        # ISOLATED -- result minus every other term -- mirroring the same
+        # algebra `_solve_for` uses, or the formula is circular (the defined
+        # metric would appear as its own operand).
+        if self.defines is not None and self.defines != self.result:
+            defined_sign = next(s for s, t in self.terms if t == self.defines)
+            other_terms = [(s, t) for s, t in self.terms if t != self.defines]
+            parts = [_render(self.result)]
+            for sign, term in other_terms:
+                op = "-" if sign > 0 else "+"  # subtract the other terms from result
+                parts.append(f"{op} {_render(term)}")
+            rhs = " ".join(parts)
+            return rhs if defined_sign > 0 else f"-({rhs})"
+        return self._raw_terms()
 
 
 @dataclass(frozen=True)
@@ -126,7 +146,7 @@ EQUATIONS: tuple[Equation, ...] = (
     SumEquation(
         code="expense_revenue_subsidy",
         result="operating_expenses",
-        terms=((+1, "operating_revenue"), (+1, "total_operating_subsidy")),
+        terms=((+1, "total_revenue_excluding_subsidy"), (+1, "subsidy")),
     ),
     SumEquation(
         code="expense_components",
@@ -135,10 +155,40 @@ EQUATIONS: tuple[Equation, ...] = (
             (+1, "labour_cost"),
             (+1, "energy_fuel_cost"),
             (+1, "materials_services_cost"),
+            (+1, "amortization"),
+            (+1, "other_operating_expenses"),
         ),
     ),
-    # Derived ratios (each defines its quotient).
-    RatioEquation("average_fare_def", "average_fare", "operating_revenue", "ridership"),
+    # Revenue decomposition + enterprise-lens bridges (metric-set-build-plan.md
+    # Phase 4). `total_revenue_excluding_subsidy` = the StatCan line (sourced);
+    # farebox is sourced from the PDF; `other_revenue` is the broad residual.
+    SumEquation(
+        code="earned_revenue_components",
+        result="total_revenue_excluding_subsidy",
+        terms=((+1, "farebox_revenue"), (+1, "other_revenue")),
+        defines="other_revenue",
+    ),
+    # Ties out by construction (total_revenue_excluding_subsidy is DEFINED as
+    # total_revenue - subsidy); a pure cross-source constraint when all three
+    # are sourced.
+    SumEquation(
+        code="total_revenue_def",
+        result="total_revenue",
+        terms=((+1, "total_revenue_excluding_subsidy"), (+1, "subsidy")),
+    ),
+    SumEquation(
+        code="annual_surplus_deficit_def",
+        result="annual_surplus_deficit",
+        terms=((+1, "total_revenue"), (-1, "total_expenses")),
+        defines="annual_surplus_deficit",
+    ),
+    # Derived ratios (each defines its quotient). The rider-share ratios take
+    # farebox_revenue as the numerator, NOT the broad total_revenue_excluding_subsidy
+    # (= total_revenue − subsidy), which would inflate them for capital-heavy
+    # agencies (metric-set-build-plan.md Phase 3, Decision #4).
+    RatioEquation(
+        "average_fare_def", "average_fare", "farebox_revenue", "ridership"
+    ),
     RatioEquation(
         "cost_per_hour_def", "cost_per_hour", "operating_expenses", "revenue_service_hours"
     ),
@@ -146,11 +196,11 @@ EQUATIONS: tuple[Equation, ...] = (
     RatioEquation(
         "farebox_recovery_def",
         "farebox_recovery_ratio",
-        "operating_revenue",
+        "farebox_revenue",
         "operating_expenses",
     ),
     RatioEquation(
-        "subsidy_per_rider_def", "subsidy_per_rider", "total_operating_subsidy", "ridership"
+        "subsidy_per_rider_def", "subsidy_per_rider", "subsidy", "ridership"
     ),
     RatioEquation(
         "trips_per_revenue_hour_def",
@@ -183,6 +233,27 @@ EQUATIONS: tuple[Equation, ...] = (
         "net_debt_per_capita",
         "net_debt",
         "attr:service_area_population",
+    ),
+    # Balance-sheet component residuals (metric-set-build-plan.md addendum #2):
+    # each closes a component + residual to its PSAB total (same pattern as
+    # other_revenue), so `assets = liabilities + equity` holds at every level.
+    SumEquation(
+        code="financial_assets_components",
+        result="total_financial_assets",
+        terms=((+1, "cash_and_investments"), (+1, "other_financial_assets")),
+        defines="other_financial_assets",
+    ),
+    SumEquation(
+        code="liabilities_components",
+        result="total_liabilities",
+        terms=((+1, "long_term_debt"), (+1, "other_liabilities")),
+        defines="other_liabilities",
+    ),
+    SumEquation(
+        code="non_financial_assets_components",
+        result="total_non_financial_assets",
+        terms=((+1, "tangible_capital_assets"), (+1, "other_non_financial_assets")),
+        defines="other_non_financial_assets",
     ),
 )
 
@@ -230,20 +301,22 @@ def equation_kind(eq: Equation) -> str:
 
 
 def full_display(eq: Equation) -> str:
-    """The full 'lhs = rhs' relation, for the metric_equations display column."""
-    lhs = eq.result if isinstance(eq, SumEquation) else eq.quotient
-    return f"{lhs} = {eq.display()}"
+    """The full 'lhs = rhs' relation, for the metric_equations display column.
+
+    Always shows the equation's raw shape (`result = Σ terms`), NOT the
+    isolated-term caption `display()` uses for a component-residual metric's
+    formula -- this mirrors db/seeds/07_equations.sql's `display` column,
+    which documents the equation itself, not any one operand solved for.
+    """
+    if isinstance(eq, SumEquation):
+        return f"{eq.result} = {eq._raw_terms()}"
+    return f"{eq.quotient} = {eq.display()}"
 
 
 # A reserved derivation code for the cross-period aggregation (annual = sum of the
 # 12 monthly values). Not a within-period SUM/RATIO equation, so it lives outside
 # the EQUATIONS catalog but is a valid metric_value_derivations.equation_code.
 PERIOD_ROLLUP = "period_rollup"
-
-# A reserved derivation code for fleet_capacity: a cross-MODE weighted aggregation
-# (Σ capacity_weight × fleet_size(mode)). Not a within-period SUM/RATIO equation, so it
-# lives outside the EQUATIONS catalog but is a valid metric_value_derivations.equation_code.
-MODE_WEIGHTED_FLEET = "mode_weighted_fleet"
 
 
 # --- the solver --------------------------------------------------------------

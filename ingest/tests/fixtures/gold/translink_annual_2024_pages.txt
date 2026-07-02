@@ -1,0 +1,54 @@
+=== PAGE 1 ===
+TransLink
+2024 Annual Report and Consolidated Financial Statements
+Fiscal year ended December 31, 2024
+
+Message from the CEO
+
+This report presents TransLink's consolidated statement of operations and
+statement of financial position for the entire reporting organization --
+conventional transit, custom (specialized) transit, and every other business
+line -- for the year ended December 31, 2024.
+
+=== PAGE 2 ===
+Consolidated Statement of Operations (year ended December 31, 2024, $ thousands)
+
+Revenue
+  Fare revenue ........................................... $480,000
+  Other revenue (advertising, property, investment) ...... $120,000
+  Total revenue, excluding subsidies ...................... $600,000
+  Government operating contributions (all sources) ....... $1,030,000
+    of which: Provincial operating grant ................. $410,000
+  Total revenue ............................................ $1,630,000
+
+Expenses
+  Labour ................................................... $700,000
+  Fuel and power ........................................... $120,000
+  Materials, services and other ............................ $380,000
+  Amortization of tangible capital assets .................. $250,000
+  Other operating expenses .................................. $50,000
+  Total expenses ............................................ $1,500,000
+
+Annual surplus for the year ................................ $130,000
+
+Note: the Provincial operating grant of $410,000 above is one component of
+the combined $1,030,000 government operating contribution -- it is not the
+total subsidy figure on its own.
+
+=== PAGE 3 ===
+Consolidated Statement of Financial Position (as at December 31, 2024, $ thousands)
+
+Financial assets
+  Cash and investments .................................... $650,000
+  Total financial assets .................................... $900,000
+
+Liabilities
+  Long-term debt ........................................... $2,600,000
+  Total liabilities .......................................... $3,200,000
+
+Non-financial assets
+  Tangible capital assets .................................. $7,900,000
+  Total non-financial assets ................................. $8,100,000
+
+All figures are reported for the whole TransLink enterprise (conventional +
+custom transit + roads and bridges), consolidated -- no segment carve-outs.
