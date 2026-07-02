@@ -135,7 +135,32 @@ EQUATIONS: tuple[Equation, ...] = (
             (+1, "labour_cost"),
             (+1, "energy_fuel_cost"),
             (+1, "materials_services_cost"),
+            (+1, "amortization"),
+            (+1, "other_operating_expenses"),
         ),
+    ),
+    # Revenue decomposition + enterprise-lens bridges (metric-set-build-plan.md
+    # Phase 4). `total_revenue_excluding_subsidy` = the StatCan line (sourced);
+    # farebox is sourced from the PDF; `other_revenue` is the broad residual.
+    SumEquation(
+        code="earned_revenue_components",
+        result="total_revenue_excluding_subsidy",
+        terms=((+1, "farebox_revenue"), (+1, "other_revenue")),
+        defines="other_revenue",
+    ),
+    # Ties out by construction (total_revenue_excluding_subsidy is DEFINED as
+    # total_revenue - subsidy); a pure cross-source constraint when all three
+    # are sourced.
+    SumEquation(
+        code="total_revenue_def",
+        result="total_revenue",
+        terms=((+1, "total_revenue_excluding_subsidy"), (+1, "subsidy")),
+    ),
+    SumEquation(
+        code="annual_surplus_deficit_def",
+        result="annual_surplus_deficit",
+        terms=((+1, "total_revenue"), (-1, "total_expenses")),
+        defines="annual_surplus_deficit",
     ),
     # Derived ratios (each defines its quotient).
     RatioEquation(
@@ -185,6 +210,27 @@ EQUATIONS: tuple[Equation, ...] = (
         "net_debt_per_capita",
         "net_debt",
         "attr:service_area_population",
+    ),
+    # Balance-sheet component residuals (metric-set-build-plan.md addendum #2):
+    # each closes a component + residual to its PSAB total (same pattern as
+    # other_revenue), so `assets = liabilities + equity` holds at every level.
+    SumEquation(
+        code="financial_assets_components",
+        result="total_financial_assets",
+        terms=((+1, "cash_and_investments"), (+1, "other_financial_assets")),
+        defines="other_financial_assets",
+    ),
+    SumEquation(
+        code="liabilities_components",
+        result="total_liabilities",
+        terms=((+1, "long_term_debt"), (+1, "other_liabilities")),
+        defines="other_liabilities",
+    ),
+    SumEquation(
+        code="non_financial_assets_components",
+        result="total_non_financial_assets",
+        terms=((+1, "tangible_capital_assets"), (+1, "other_non_financial_assets")),
+        defines="other_non_financial_assets",
     ),
 )
 

@@ -50,11 +50,13 @@ def test_recompute_writes_ratios_and_backsolved_subsidy_with_provenance():
 
     res = recompute_derived(repo, "ttc", pid)
 
-    # 6 ratios + back-solved subsidy = 7 written.
-    assert len(res.ids) == 7
+    # 6 ratios + back-solved subsidy + total_revenue (revenue_excl_subsidy + subsidy) = 8 written.
+    assert len(res.ids) == 8
     assert _current(repo, pid, "average_fare").value == Decimal("2.5")
     assert _current(repo, pid, "subsidy_per_rider").value == Decimal("2.5")
     assert _current(repo, pid, "subsidy").value == Decimal("2500")
+    # total_revenue = total_revenue_excluding_subsidy + subsidy = 2500 + 2500.
+    assert _current(repo, pid, "total_revenue").value == Decimal("5000")
 
     # average_fare carries provenance: its equation + the exact input value rows.
     af = _current(repo, pid, "average_fare")

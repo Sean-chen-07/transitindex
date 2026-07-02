@@ -58,6 +58,8 @@ class MetricSpec:
     is_derived: bool  # from refdata
     formula: Optional[str]  # from equations.display_formula (derived only)
     source_tier: str
+    entity_scope: str = ""  # whole-organization scope note (financial metrics)
+    scale_note: str = ""  # $000s/$M vs whole-CAD recording guidance
     period_semantics: str = ""
     includes: tuple[str, ...] = ()
     excludes: tuple[str, ...] = ()
@@ -122,6 +124,8 @@ def load_dictionary() -> dict[str, MetricSpec]:
             is_derived=bool(meta["is_derived"]),
             formula=display_formula(code),
             source_tier=str(entry["source_tier"]),
+            entity_scope=str(entry.get("entity_scope", "")),
+            scale_note=str(entry.get("scale_note", "")),
             period_semantics=str(entry.get("period_semantics", "")),
             includes=_tuple(entry.get("includes")),
             excludes=_tuple(entry.get("excludes")),
@@ -225,6 +229,10 @@ def generate_markdown() -> str:
         lines.append("")
         lines.append(f"- **Is:** {s.definition}")
         lines.append(f"- **Is NOT:** {s.is_not}")
+        if s.entity_scope:
+            lines.append(f"- **Entity scope:** {s.entity_scope}")
+        if s.scale_note:
+            lines.append(f"- **Scale/unit:** {s.scale_note}")
         lines.append(f"- **Unit:** {s.unit} ({s.unit_type})")
         if s.formula:
             lines.append(f"- **Formula:** `{s.formula}`")
@@ -277,6 +285,10 @@ def extraction_guidance(codes: Optional[list[str]] = None) -> str:
         out.append(f"- {code} ({s.display_name}): {s.definition}")
         if s.is_not:
             out.append(f"    NOT: {s.is_not}")
+        if s.entity_scope:
+            out.append(f"    Entity scope: {s.entity_scope}")
+        if s.scale_note:
+            out.append(f"    Scale/unit: {s.scale_note}")
         if s.labels_en or s.labels_fr:
             en = "; ".join(s.labels_en)
             fr = "; ".join(s.labels_fr)

@@ -134,12 +134,15 @@ AGENCIES: Mapping[str, Mapping] = MappingProxyType(
     }
 )
 
-# --- 32 metrics (db/seeds/04_metrics.sql) ------------------------------------
+# --- 42 metrics (db/seeds/04_metrics.sql) ------------------------------------
 # code -> unit, unit_type, is_derived, formula (None unless derived),
 # higher_is_better (None = neutral). Insertion order preserved.
 # Ridership is ONE metric; monthly vs annual is the reporting period's
-# granularity (a dimension), not a separate metric code. The last 11 entries are
-# the balance-sheet family (8 sourced + 3 derived).
+# granularity (a dimension), not a separate metric code. The balance-sheet
+# family (8 sourced + 3 derived) sits before the 10 financial-statement
+# additions (metric-set-build-plan.md Phase 4): 5 sourced income-statement /
+# revenue lines, plus 5 derived residuals (other_revenue, annual_surplus_deficit,
+# and the three balance-sheet component residuals). All 10 are NON-rated.
 
 METRICS: Mapping[str, Mapping] = MappingProxyType(
     {
@@ -272,6 +275,50 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         "net_debt_per_capita": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
              "formula": "net_debt / service_area_population", "higher_is_better": False}
+        ),
+        # --- financial-statement additions (metric-set-build-plan.md Phase 4) --
+        # Sourced income-statement / revenue lines (non-rated, neutral):
+        "amortization": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "other_operating_expenses": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "total_revenue": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "farebox_revenue": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        "total_expenses": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": False,
+             "formula": None, "higher_is_better": None}
+        ),
+        # Derived residuals so the statements close (each defined by a SumEquation):
+        "other_revenue": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": True,
+             "formula": "farebox_revenue + other_revenue", "higher_is_better": None}
+        ),
+        "annual_surplus_deficit": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": True,
+             "formula": "total_revenue - total_expenses", "higher_is_better": None}
+        ),
+        "other_financial_assets": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": True,
+             "formula": "cash_and_investments + other_financial_assets", "higher_is_better": None}
+        ),
+        "other_liabilities": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": True,
+             "formula": "long_term_debt + other_liabilities", "higher_is_better": None}
+        ),
+        "other_non_financial_assets": MappingProxyType(
+            {"unit": "CAD", "unit_type": "currency", "is_derived": True,
+             "formula": "tangible_capital_assets + other_non_financial_assets",
+             "higher_is_better": None}
         ),
     }
 )

@@ -160,7 +160,7 @@ def test_dictionary_lists_all_metrics(repo, tmp_path):
     assert [c.value for c in ws[1]] == [
         "Column", "Plain meaning", "Unit", "Type", "Formula", "Native frequency",
     ]
-    assert ws.max_row - 1 == 32  # all metrics, including fleet_capacity + balance sheet
+    assert ws.max_row - 1 == 42  # all metrics, incl. fleet_capacity + balance sheet + financial-statement additions
     by_name = {ws.cell(row=r, column=1).value: r for r in range(2, ws.max_row + 1)}
     assert ws.cell(row=by_name[NAMES["ridership"]], column=6).value == "Monthly"
     assert ws.cell(row=by_name[NAMES["operating_expenses"]], column=6).value == "Annual"

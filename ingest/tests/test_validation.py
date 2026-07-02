@@ -132,8 +132,13 @@ def test_unit_mismatch_silent_on_zero_currency(make_record):
 
 
 def _expense_cohort(make_record, labour, energy, materials, expenses,
-                    revenue=None, subsidy=None):
-    """Build a cohort of expense-family records for one agency+period."""
+                    amortization="0", other="0", revenue=None, subsidy=None):
+    """Build a cohort of expense-family records for one agency+period.
+
+    The PSAB expense identity is 5-term (labour + energy + materials +
+    amortization + other_operating_expenses == operating_expenses); all five are
+    included so the identity can be exercised (amortization/other default to 0).
+    """
     common = dict(
         agency_slug="ttc",
         period_type="monthly",
@@ -149,6 +154,8 @@ def _expense_cohort(make_record, labour, energy, materials, expenses,
         make_record(metric_code="labour_cost", value=Decimal(labour), **common),
         make_record(metric_code="energy_fuel_cost", value=Decimal(energy), **common),
         make_record(metric_code="materials_services_cost", value=Decimal(materials), **common),
+        make_record(metric_code="amortization", value=Decimal(amortization), **common),
+        make_record(metric_code="other_operating_expenses", value=Decimal(other), **common),
         make_record(metric_code="operating_expenses", value=Decimal(expenses), **common),
     ]
     if revenue is not None:
@@ -161,19 +168,26 @@ def _expense_cohort(make_record, labour, energy, materials, expenses,
 
 
 def test_sum_mismatch_silent_when_components_reconcile(make_record):
-    cohort = _expense_cohort(make_record, labour="60", energy="20", materials="20", expenses="100")
+    # 60 + 20 + 10 + 8 + 2 = 100 == operating_expenses.
+    cohort = _expense_cohort(
+        make_record, labour="60", energy="20", materials="10",
+        amortization="8", other="2", expenses="100",
+    )
     assert sum_mismatch(cohort) == []
 
 
 def test_sum_mismatch_fires_when_components_disagree(make_record):
-    # 60 + 20 + 30 = 110, but operating_expenses says 100 -> 10% off, > 2%.
+    # 60 + 20 + 30 + 0 + 0 = 110, but operating_expenses says 100 -> 10% off, > 2%.
     cohort = _expense_cohort(make_record, labour="60", energy="20", materials="30", expenses="100")
     assert sum_mismatch(cohort) == [SUM_MISMATCH]  # de-duped at cohort level
 
 
 def test_sum_mismatch_silent_within_tolerance(make_record):
-    # 60 + 20 + 21 = 101 vs 100 -> 1% off, within 2%.
-    cohort = _expense_cohort(make_record, labour="60", energy="20", materials="21", expenses="100")
+    # 60 + 20 + 10 + 8 + 3 = 101 vs 100 -> 1% off, within 2%.
+    cohort = _expense_cohort(
+        make_record, labour="60", energy="20", materials="10",
+        amortization="8", other="3", expenses="100",
+    )
     assert sum_mismatch(cohort) == []
 
 
@@ -282,6 +296,130 @@ def test_sum_mismatch_no_assets_anchor_is_silent(make_record):
     cohort = [
         make_record(metric_code="total_financial_assets", value=Decimal("40"), unit="CAD"),
         make_record(metric_code="total_non_financial_assets", value=Decimal("60"), unit="CAD"),
+    ]
+    assert sum_mismatch(cohort) == []
+
+
+# --- sum_mismatch: Phase 5 additions (honest surplus, net-debt, components) ---
+
+
+def _bs_record(make_record, code, value):
+    return make_record(
+        metric_code=code,
+        value=Decimal(value),
+        agency_slug="ttc",
+        period_type="annual_calendar",
+        period_start=date(2024, 1, 1),
+        period_end=date(2024, 12, 31),
+        period_label="2024",
+        service_scope="total",
+        quality="preliminary",
+        unit="CAD",
+        currency="CAD",
+    )
+
+
+def test_honest_surplus_identity_fires_when_broken(make_record):
+    # total_revenue 100 - total_expenses 90 = 10, but reported surplus is 30 -> off.
+    cohort = [
+        _bs_record(make_record, "total_revenue", "100"),
+        _bs_record(make_record, "total_expenses", "90"),
+        _bs_record(make_record, "annual_surplus_deficit", "30"),
+    ]
+    assert sum_mismatch(cohort) == [SUM_MISMATCH]
+
+
+def test_honest_surplus_identity_silent_when_reconciles(make_record):
+    # 100 - 90 = 10 == reported surplus 10.
+    cohort = [
+        _bs_record(make_record, "total_revenue", "100"),
+        _bs_record(make_record, "total_expenses", "90"),
+        _bs_record(make_record, "annual_surplus_deficit", "10"),
+    ]
+    assert sum_mismatch(cohort) == []
+
+
+def test_honest_surplus_identity_handles_deficit(make_record):
+    # A negative annual result (deficit) reconciles exactly: 90 - 100 = -10.
+    cohort = [
+        _bs_record(make_record, "total_revenue", "90"),
+        _bs_record(make_record, "total_expenses", "100"),
+        _bs_record(make_record, "annual_surplus_deficit", "-10"),
+    ]
+    assert sum_mismatch(cohort) == []
+
+
+def test_subsidy_identity_is_informational_widened(make_record):
+    # expenses 100, revenue 30 -> expected subsidy 70. A 5% gap (subsidy 73.5) is
+    # within the widened 10% subsidy tolerance -> no flag (the annual result absorbs it).
+    cohort = _expense_cohort(
+        make_record, labour="60", energy="20", materials="20", expenses="100",
+        revenue="30", subsidy="73.5",
+    )
+    assert sum_mismatch(cohort) == []
+
+
+def test_subsidy_identity_still_fires_beyond_widened_tolerance(make_record):
+    # A 20% gap (subsidy 90 vs expected 70) exceeds even the widened 10% tolerance.
+    cohort = _expense_cohort(
+        make_record, labour="60", energy="20", materials="20", expenses="100",
+        revenue="30", subsidy="90",
+    )
+    assert sum_mismatch(cohort) == [SUM_MISMATCH]
+
+
+def test_net_debt_identity_fires_when_broken(make_record):
+    # net_debt should be liabilities 300 - financial 100 = 200; reported 250 -> off.
+    cohort = [
+        _bs_record(make_record, "total_liabilities", "300"),
+        _bs_record(make_record, "total_financial_assets", "100"),
+        _bs_record(make_record, "net_debt", "250"),
+    ]
+    assert sum_mismatch(cohort) == [SUM_MISMATCH]
+
+
+def test_net_debt_identity_silent_when_reconciles(make_record):
+    cohort = [
+        _bs_record(make_record, "total_liabilities", "300"),
+        _bs_record(make_record, "total_financial_assets", "100"),
+        _bs_record(make_record, "net_debt", "200"),
+    ]
+    assert sum_mismatch(cohort) == []
+
+
+def test_component_identity_fires_when_broken(make_record):
+    # cash 40 + other 40 = 80, but total_financial_assets says 100 -> 20% off.
+    cohort = [
+        _bs_record(make_record, "total_financial_assets", "100"),
+        _bs_record(make_record, "cash_and_investments", "40"),
+        _bs_record(make_record, "other_financial_assets", "40"),
+    ]
+    assert sum_mismatch(cohort) == [SUM_MISMATCH]
+
+
+def test_component_identity_silent_when_reconciles(make_record):
+    # long_term_debt 70 + other_liabilities 30 = 100 == total_liabilities.
+    cohort = [
+        _bs_record(make_record, "total_liabilities", "100"),
+        _bs_record(make_record, "long_term_debt", "70"),
+        _bs_record(make_record, "other_liabilities", "30"),
+    ]
+    assert sum_mismatch(cohort) == []
+
+
+def test_component_bound_fires_when_part_exceeds_total(make_record):
+    # tangible_capital_assets 120 > total_non_financial_assets 100 -> impossible.
+    cohort = [
+        _bs_record(make_record, "total_non_financial_assets", "100"),
+        _bs_record(make_record, "tangible_capital_assets", "120"),
+    ]
+    assert sum_mismatch(cohort) == [SUM_MISMATCH]
+
+
+def test_component_bound_silent_when_part_within_total(make_record):
+    cohort = [
+        _bs_record(make_record, "total_non_financial_assets", "100"),
+        _bs_record(make_record, "tangible_capital_assets", "80"),
     ]
     assert sum_mismatch(cohort) == []
 

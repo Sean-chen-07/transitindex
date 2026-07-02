@@ -906,3 +906,392 @@ metrics:
     confusions:
       - "Per capita (population served) vs per rider (ridership)"
       - "Uses net debt, not total liabilities or long-term debt"
+
+  # --- financial-statement additions (metric-set-build-plan.md Phase 4) --------
+  amortization:
+    display_name: Amortization
+    plain_meaning: The non-cash charge that spreads the cost of capital assets over their life.
+    definition: >-
+      The annual amortization/depreciation expense — the non-cash charge that spreads the cost
+      of tangible capital assets (vehicles, facilities, track) over their useful lives. Printed
+      as an expense line on the statement of operations. It is the reconciling item between the
+      PSAB total operating expense (amortization included) and the CUTA/NTD operating basis
+      (amortization excluded): operating basis = operating_expenses − amortization.
+    is_not: >-
+      NOT capital expenditure (the cash spent buying assets — amortization is the later non-cash
+      spread of that cost), and NOT accumulated amortization (the balance-sheet stock to date).
+      It is a single year's expense, not a stock.
+    source_tier: annual_report
+    entity_scope: >-
+      Company-wide: the amortization for the entire reporting organization from the audited
+      financial statements. For a transit division inside a city (Calgary Transit, Edmonton ETS,
+      Hamilton HSR) use the transit division's own schedule, never the municipality-wide figure.
+    scale_note: >-
+      Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar
+      CAD amount (e.g. "$4,231 (thousands)" is recorded as 4231000).
+    period_semantics: "Annual (a flow over the year)."
+    includes:
+      - "Amortization/depreciation of tangible capital assets for the year"
+    excludes:
+      - "Capital expenditure (the cash cost of acquiring assets)"
+      - "Accumulated amortization (the cumulative balance-sheet figure)"
+    labels_en:
+      - "Amortization"
+      - "Depreciation"
+      - "Amortization of tangible capital assets"
+      - "Depreciation and amortization"
+    labels_fr:
+      - "Amortissement"
+      - "Amortissement des immobilisations corporelles"
+      - "Dotation aux amortissements"
+    report_location: >-
+      Statement of operations (as an expense line) and the expenses-by-object note; also
+      reconciled in the tangible capital assets note.
+    confusions:
+      - "Amortization (non-cash expense) vs capital expenditure (cash out to buy assets)"
+      - "This year's amortization expense vs accumulated amortization (the cumulative stock)"
+      - "Whether operating_expenses includes it (PSAB) or excludes it (CUTA operating basis)"
+
+  other_operating_expenses:
+    display_name: Other Operating Expenses
+    plain_meaning: Operating costs that are not labour, energy/fuel, materials/services, or amortization.
+    definition: >-
+      The residual "other" operating-expense object class — insurance/casualty, purchased
+      transportation, taxes, and miscellaneous operating costs not captured by labour, energy/fuel,
+      materials & services, or amortization. Its purpose is to let the expense components sum to
+      operating_expenses (PSAB basis) so no residual is forced into materials & services.
+    is_not: >-
+      NOT capital expenditure, NOT amortization (its own line), and NOT a catch-all for
+      mis-bucketed labour, energy, or materials — only the genuinely "other" object class belongs
+      here. It is a component of operating_expenses, never the total.
+    source_tier: annual_report
+    entity_scope: >-
+      Company-wide: the whole reporting organization from the audited statements (the transit
+      division's schedule for a transit-as-a-city-division agency), never a segment carve-out.
+    scale_note: >-
+      Record whole-dollar CAD; statements printed in $000s or $M must be scaled up to whole dollars.
+    period_semantics: "Annual."
+    includes:
+      - "Insurance/casualty, purchased transportation, taxes, and miscellaneous operating costs"
+    excludes:
+      - "Labour, energy/fuel, materials & services, amortization (their own lines)"
+      - "Capital expenditure"
+    labels_en:
+      - "Other operating expenses"
+      - "Other expenses"
+      - "Miscellaneous operating costs"
+      - "Insurance and other"
+    labels_fr:
+      - "Autres charges d'exploitation"
+      - "Autres dépenses d'exploitation"
+      - "Divers"
+    report_location: "Expenses-by-object note in the audited financial statements."
+    confusions:
+      - "A component of operating_expenses vs the operating_expenses total itself"
+      - "Genuinely-other costs vs mis-bucketed labour/energy/materials"
+      - "Operating 'other' vs capital purchases"
+
+  total_revenue:
+    display_name: Total Revenue
+    plain_meaning: All money the organization took in — fares, other revenue, and government subsidy combined.
+    definition: >-
+      The audited PSAB statement-of-operations total revenue — the whole enterprise's revenue,
+      equal to total_revenue_excluding_subsidy + subsidy. The enterprise-lens "how big" figure:
+      it deliberately includes government operating transfers and any capital-contribution
+      amortization recognized as revenue.
+    is_not: >-
+      NOT operating/earned revenue (that is total_revenue_excluding_subsidy, which excludes
+      subsidy), and NOT fares only. It is the broad statement total; a bigger number here means a
+      bigger organization, not a more self-funding one — do not use it as the farebox-recovery
+      numerator.
+    source_tier: annual_report
+    entity_scope: >-
+      Company-wide: the audited entity total for the whole reporting organization (conventional +
+      specialized + every business line). For multi-division agencies (TransLink incl.
+      roads/bridges, Metrolinx incl. GO + UP + PRESTO) use the audited entity total, not a transit
+      segment carve-out. For a transit division inside a city, use the transit division's schedule,
+      never the municipality-wide total.
+    scale_note: >-
+      Record whole-dollar CAD; scale up figures printed in thousands or millions.
+    period_semantics: "Annual (statement of operations)."
+    includes:
+      - "Fares + other earned revenue + government operating subsidy/transfers"
+      - "Any capital-contribution amortization recognized as revenue under PSAB"
+    excludes:
+      - "Nothing on the revenue side — this is the audited total"
+    labels_en:
+      - "Total revenue"
+      - "Total revenues"
+      - "Revenue (total)"
+    labels_fr:
+      - "Total des revenus"
+      - "Produits totaux"
+      - "Total des produits"
+    report_location: "Statement of operations (total revenue line) in the audited financial statements."
+    confusions:
+      - "Total revenue (incl. subsidy) vs total_revenue_excluding_subsidy (earned, excl. subsidy)"
+      - "Enterprise scale vs self-funding — a big total_revenue is mostly subsidy for transfer-heavy agencies"
+
+  farebox_revenue:
+    display_name: Farebox Revenue
+    plain_meaning: Money riders themselves pay in fares.
+    definition: >-
+      Passenger fare revenue only — cash, passes, and concession fares paid by riders. The honest
+      numerator for farebox recovery and average fare, kept narrow so those ratios are not inflated
+      by ancillary or capital income.
+    is_not: >-
+      NOT total_revenue_excluding_subsidy (which is the broader "all revenue except subsidy",
+      including advertising/charter/investment income), NOT total revenue, and NOT subsidy.
+      Third-party fare-program reimbursements (One Fare, U-Pass) are SUBSIDY, not farebox revenue —
+      they do not belong here.
+    source_tier: annual_report
+    entity_scope: >-
+      Company-wide: fares for the whole reporting organization (the transit division's schedule for
+      a transit-as-a-city-division agency), not a single route or segment.
+    scale_note: >-
+      Record whole-dollar CAD; scale up figures printed in $000s or $M.
+    period_semantics: >-
+      Monthly for the farebox portion at large agencies (StatCan); otherwise annual from the audited
+      statement of operations.
+    includes:
+      - "Passenger fares: cash, passes, concession and student fares"
+    excludes:
+      - "Ancillary operating income (advertising, charter, fees) — that is other_revenue"
+      - "Government subsidy and third-party fare-program reimbursements (One Fare, U-Pass)"
+      - "Capital and investment income"
+    labels_en:
+      - "Farebox revenue"
+      - "Passenger fare revenue"
+      - "Fare revenue"
+      - "Transit fares"
+    labels_fr:
+      - "Recettes tarifaires"
+      - "Recettes de la clientèle"
+      - "Revenus des passagers"
+    report_location: >-
+      Statement of operations / revenue note (fare-revenue line); farebox and ridership tables.
+    confusions:
+      - "Farebox revenue (fares only) vs total_revenue_excluding_subsidy (fares + other earned revenue)"
+      - "Fares vs One Fare / U-Pass reimbursements, which are subsidy — never farebox"
+      - "Fares vs advertising/charter income (that is other_revenue)"
+
+  total_expenses:
+    display_name: Total Expenses
+    plain_meaning: All costs the organization incurred, including amortization.
+    definition: >-
+      The audited PSAB statement-of-operations total expenses for the whole enterprise —
+      operating costs plus amortization. The enterprise-lens expense figure that pairs with
+      total_revenue to give the annual surplus/deficit.
+    is_not: >-
+      NOT operating_expenses on the CUTA operating basis (which excludes amortization) — this is
+      the full audited total. NOT capital expenditure (a separate cash-flow / TCA-additions item).
+    source_tier: annual_report
+    entity_scope: >-
+      Company-wide: the audited entity total for the whole reporting organization; for multi-division
+      agencies use the entity total (no segment carve-outs), and for a transit division inside a city
+      use the transit division's schedule, never the municipality-wide total.
+    scale_note: >-
+      Record whole-dollar CAD; scale up figures printed in thousands or millions.
+    period_semantics: "Annual (statement of operations)."
+    includes:
+      - "All operating costs plus amortization for the whole organization"
+    excludes:
+      - "Capital expenditure (a separate item, not an operating-statement expense)"
+    labels_en:
+      - "Total expenses"
+      - "Total expenditures"
+      - "Expenses (total)"
+    labels_fr:
+      - "Total des charges"
+      - "Total des dépenses"
+      - "Charges totales"
+    report_location: "Statement of operations (total expenses line) in the audited financial statements."
+    confusions:
+      - "Total expenses (incl. amortization) vs operating_expenses on the CUTA basis (excl. amortization)"
+      - "Total expenses (a flow) vs capital expenditure or total liabilities"
+
+  other_revenue:
+    display_name: Other Revenue
+    plain_meaning: Earned revenue that is not fares and not government subsidy.
+    definition: >-
+      The broad non-fare, non-subsidy earned-revenue residual — advertising, charter, fees,
+      investment income, and any capital-contribution revenue swept into the earned side. Defined
+      so farebox_revenue + other_revenue = total_revenue_excluding_subsidy (the StatCan
+      "total revenue, excluding subsidies" line). Computed by TransitIndex as the residual.
+    is_not: >-
+      NOT government subsidy (that is its own line and is excluded from total_revenue_excluding_subsidy),
+      and NOT passenger fares (that is farebox_revenue). It is deliberately broad on the earned side.
+    source_tier: derived
+    entity_scope: >-
+      Company-wide: it is the residual of two company-wide figures (total_revenue_excluding_subsidy
+      and farebox_revenue), so it inherits the whole-organization scope.
+    scale_note: >-
+      A derived whole-dollar CAD figure; inherits the scale of its sourced inputs.
+    period_semantics: "Matches its inputs' period (same agency, same period)."
+    includes:
+      - "Advertising, charter, fees, investment income, and other non-fare earned revenue"
+    excludes:
+      - "Passenger fares (farebox_revenue)"
+      - "Government operating subsidy/transfers"
+    labels_en:
+      - "Other revenue"
+      - "Non-fare revenue"
+      - "Ancillary revenue"
+    labels_fr:
+      - "Autres revenus"
+      - "Revenus divers"
+      - "Produits accessoires"
+    report_location: >-
+      Computed by TransitIndex as total_revenue_excluding_subsidy − farebox_revenue; some reports
+      print an "other revenue" line as a cross-check.
+    confusions:
+      - "Other (non-fare) revenue vs government subsidy — subsidy is never part of other_revenue"
+      - "The broad earned residual vs a specific ancillary line"
+
+  annual_surplus_deficit:
+    display_name: Annual Surplus / (Deficit)
+    plain_meaning: Whether the organization ended the year up (surplus) or down (deficit).
+    definition: >-
+      The bottom line of the statement of operations — total_revenue minus total_expenses for the
+      year. The bridge from the operating statement to the balance sheet: accumulated_surplus(end)
+      = accumulated_surplus(start) + annual_surplus_deficit. Computed by TransitIndex from the two
+      enterprise totals.
+    is_not: >-
+      NOT accumulated surplus (the cumulative net position on the balance sheet — this is one
+      year's flow), and NOT the operating gap covered by subsidy. A NEGATIVE value is a deficit
+      (expenses exceeded revenue); a positive value is a surplus.
+    source_tier: derived
+    entity_scope: >-
+      Company-wide: derived from company-wide total_revenue and total_expenses, so it is the whole
+      organization's annual result.
+    scale_note: >-
+      A derived whole-dollar CAD figure (can be negative — a deficit).
+    period_semantics: "Matches its inputs' period (annual)."
+    includes:
+      - "The single year's revenue-minus-expenses result for the whole organization"
+    excludes:
+      - "The cumulative accumulated surplus (a balance-sheet stock)"
+    labels_en:
+      - "Annual surplus"
+      - "Annual surplus (deficit)"
+      - "Annual deficit"
+      - "Surplus / (deficit) for the year"
+    labels_fr:
+      - "Excédent annuel"
+      - "Excédent (déficit) de l'exercice"
+      - "Résultat de l'exercice"
+    report_location: >-
+      Statement of operations (bottom line); computed by TransitIndex from total_revenue −
+      total_expenses.
+    confusions:
+      - "Annual surplus/deficit (one year's flow) vs accumulated surplus (the cumulative stock)"
+      - "A negative value means a DEFICIT (expenses > revenue), not a data error"
+
+  other_financial_assets:
+    display_name: Other Financial Assets
+    plain_meaning: Financial assets other than cash and investments — mainly receivables.
+    definition: >-
+      The residual within financial assets: total_financial_assets minus cash_and_investments —
+      chiefly accounts receivable and other short-term financial assets. Defined so
+      cash_and_investments + other_financial_assets = total_financial_assets. Computed by
+      TransitIndex as the residual.
+    is_not: >-
+      NOT total_financial_assets (it is only the non-cash portion), and NOT non-financial/tangible
+      capital assets. A point-in-time stock, not a flow. A negative residual means the components
+      exceed the total — flag it, do not record a negative "other".
+    source_tier: derived
+    entity_scope: >-
+      Company-wide: the residual of two company-wide balance-sheet figures, so it is the whole
+      organization's figure.
+    scale_note: >-
+      A derived whole-dollar CAD point-in-time figure.
+    period_semantics: "Matches its inputs' period (annual, point-in-time at fiscal year-end)."
+    includes:
+      - "Accounts receivable and other financial assets that are not cash or investments"
+    excludes:
+      - "Cash and investments (cash_and_investments)"
+      - "Non-financial / tangible capital assets"
+    labels_en:
+      - "Other financial assets"
+      - "Receivables and other financial assets"
+    labels_fr:
+      - "Autres actifs financiers"
+      - "Débiteurs et autres actifs financiers"
+    report_location: >-
+      Computed by TransitIndex as total_financial_assets − cash_and_investments (both from the
+      statement of financial position).
+    confusions:
+      - "A component of total_financial_assets vs the total itself"
+      - "cash_and_investments vs total_financial_assets — other_financial_assets is the gap between them"
+
+  other_liabilities:
+    display_name: Other Liabilities
+    plain_meaning: Liabilities other than long-term debt — payables, deferred revenue, employee benefits.
+    definition: >-
+      The residual within liabilities: total_liabilities minus long_term_debt — accounts payable,
+      deferred revenue, and employee future benefits. Defined so long_term_debt + other_liabilities
+      = total_liabilities. Computed by TransitIndex as the residual.
+    is_not: >-
+      NOT total_liabilities (it is only the non-long-term-debt portion), and NOT net debt. A
+      point-in-time stock. A negative residual means the components exceed the total — flag it.
+    source_tier: derived
+    entity_scope: >-
+      Company-wide: the residual of two company-wide balance-sheet figures, so it is the whole
+      organization's figure.
+    scale_note: >-
+      A derived whole-dollar CAD point-in-time figure.
+    period_semantics: "Matches its inputs' period (annual, point-in-time at fiscal year-end)."
+    includes:
+      - "Accounts payable, deferred revenue, employee future benefits, other liabilities"
+    excludes:
+      - "Long-term debt (long_term_debt)"
+      - "Net debt (a derived figure, not a liability line)"
+    labels_en:
+      - "Other liabilities"
+      - "Accounts payable and other liabilities"
+    labels_fr:
+      - "Autres passifs"
+      - "Créditeurs et autres passifs"
+    report_location: >-
+      Computed by TransitIndex as total_liabilities − long_term_debt (both from the statement of
+      financial position).
+    confusions:
+      - "A component of total_liabilities vs the total_liabilities total itself"
+      - "long_term_debt vs total_liabilities — other_liabilities is the gap between them"
+
+  other_non_financial_assets:
+    display_name: Other Non-Financial Assets
+    plain_meaning: Non-financial assets other than tangible capital assets — inventories, prepaids.
+    definition: >-
+      The residual within non-financial assets: total_non_financial_assets minus
+      tangible_capital_assets — chiefly inventories and prepaid expenses. Defined so
+      tangible_capital_assets + other_non_financial_assets = total_non_financial_assets. Computed
+      by TransitIndex as the residual.
+    is_not: >-
+      NOT total_non_financial_assets (it is only the non-TCA portion), and NOT financial assets
+      (cash, investments, receivables). A point-in-time stock. A negative residual means the
+      components exceed the total — flag it.
+    source_tier: derived
+    entity_scope: >-
+      Company-wide: the residual of two company-wide balance-sheet figures, so it is the whole
+      organization's figure.
+    scale_note: >-
+      A derived whole-dollar CAD point-in-time figure.
+    period_semantics: "Matches its inputs' period (annual, point-in-time at fiscal year-end)."
+    includes:
+      - "Inventories, prepaid expenses, and other non-financial assets"
+    excludes:
+      - "Tangible capital assets (tangible_capital_assets)"
+      - "Financial assets (cash, investments, receivables)"
+    labels_en:
+      - "Other non-financial assets"
+      - "Inventories and prepaid expenses"
+    labels_fr:
+      - "Autres actifs non financiers"
+      - "Stocks et charges payées d'avance"
+    report_location: >-
+      Computed by TransitIndex as total_non_financial_assets − tangible_capital_assets (both from
+      the statement of financial position).
+    confusions:
+      - "A component of total_non_financial_assets vs the total itself"
+      - "tangible_capital_assets vs total_non_financial_assets — this is the gap between them"

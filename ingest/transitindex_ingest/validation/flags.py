@@ -117,65 +117,134 @@ def unit_mismatch(record: MetricValueRecord) -> Optional[str]:
     return None
 
 
+# The subsidy identity (subsidy == operating_expenses - total_revenue_excluding_subsidy)
+# is only exact when the annual result is ~0; a non-zero annual surplus/deficit
+# (deferred capital contributions, gas-tax/carbon timing, one-time program funding)
+# makes it an approximation. With annual_surplus_deficit available we prefer the
+# honest bottom-line check (total_revenue - total_expenses == annual_surplus_deficit)
+# and treat the subsidy gap-closure check as INFORMATIONAL only, at a widened
+# tolerance, so a genuinely-correct statement is not flagged. (metric-set-build-plan
+# Phase 5 item 2.)
+_SUBSIDY_IDENTITY_TOLERANCE = Decimal("0.10")
+
+
 def sum_mismatch(
     records_for_agency_period: Iterable[MetricValueRecord], tolerance: float = 0.02
 ) -> list[str]:
-    """Flag a cohort whose expense/subsidy/balance-sheet figures fail reconciliation.
+    """Flag a cohort whose expense/revenue/balance-sheet figures fail reconciliation.
 
-    Given the records for ONE agency in ONE period, four accounting identities
+    Given the records for ONE agency in ONE period, several accounting identities
     are checked (each only when all of its parts are present in the cohort):
 
-      * labour_cost + energy_fuel_cost + materials_services_cost == operating_expenses
+    Income statement:
+      * labour + energy + materials + amortization + other_operating_expenses
+        == operating_expenses  (the PSAB 5-component basis)
+      * total_revenue - total_expenses == annual_surplus_deficit  (honest bottom line)
       * subsidy == operating_expenses - total_revenue_excluding_subsidy
+        (INFORMATIONAL: exact only when the annual result is ~0, so checked at a
+        widened tolerance)
+
+    Balance sheet (PSAB statement of financial position):
       * total_financial_assets + total_non_financial_assets == total_assets
       * accumulated_surplus == total_assets - total_liabilities
+      * net_debt == total_liabilities - total_financial_assets
+      * component identities (addendum #2):
+          cash_and_investments + other_financial_assets == total_financial_assets
+          long_term_debt + other_liabilities == total_liabilities
+          tangible_capital_assets + other_non_financial_assets == total_non_financial_assets
+      * component bounds: cash_and_investments <= total_financial_assets,
+        long_term_debt <= total_liabilities,
+        tangible_capital_assets <= total_non_financial_assets
 
-    The tolerance is relative to the identity's anchor (operating_expenses for
-    the first two, total_assets for the PSAB balance-sheet pair). Returns
-    ``[sum_mismatch]`` if any identity fails, else ``[]`` -- the flag lands on
-    the cohort, so it is reported once regardless of which identity broke.
+    Each identity's tolerance is relative to its anchor (the total it reconciles
+    to). Returns ``[sum_mismatch]`` if any identity fails, else ``[]`` -- the flag
+    lands on the cohort, so it is reported once regardless of which identity broke.
     """
     by_code: dict[str, MetricValueRecord] = {
         r.metric_code: r for r in records_for_agency_period
     }
-    expenses = by_code.get("operating_expenses")
-    if expenses is not None:
-        abs_tol = expenses.value.copy_abs() * Decimal(str(tolerance))
 
-        # Identity 1: cost components sum to operating_expenses.
-        components = ("labour_cost", "energy_fuel_cost", "materials_services_cost")
+    def _val(code: str) -> Optional[Decimal]:
+        rec = by_code.get(code)
+        return rec.value if rec is not None else None
+
+    def _off(actual: Decimal, expected: Decimal, anchor: Decimal) -> bool:
+        """True when |actual - expected| exceeds `tolerance` * |anchor|."""
+        return (actual - expected).copy_abs() > anchor.copy_abs() * Decimal(str(tolerance))
+
+    expenses = _val("operating_expenses")
+    if expenses is not None:
+        # Identity 1: the five expense components sum to operating_expenses (PSAB basis).
+        components = (
+            "labour_cost", "energy_fuel_cost", "materials_services_cost",
+            "amortization", "other_operating_expenses",
+        )
         if all(c in by_code for c in components):
             total = sum((by_code[c].value for c in components), Decimal(0))
-            if (total - expenses.value).copy_abs() > abs_tol:
+            if _off(total, expenses, expenses):
                 return [SUM_MISMATCH]
 
-        # Identity 2: subsidy == expenses - revenue.
-        subsidy = by_code.get("subsidy")
-        revenue = by_code.get("total_revenue_excluding_subsidy")
+        # Identity 2 (INFORMATIONAL): subsidy == expenses - revenue, at a widened
+        # tolerance since it holds exactly only when the annual result is ~0.
+        subsidy = _val("subsidy")
+        revenue = _val("total_revenue_excluding_subsidy")
         if subsidy is not None and revenue is not None:
-            expected = expenses.value - revenue.value
-            if (subsidy.value - expected).copy_abs() > abs_tol:
+            expected = expenses - revenue
+            if (subsidy - expected).copy_abs() > expenses.copy_abs() * _SUBSIDY_IDENTITY_TOLERANCE:
                 return [SUM_MISMATCH]
 
-    assets = by_code.get("total_assets")
+    # Identity 3: honest bottom line -- total_revenue - total_expenses == annual_surplus_deficit.
+    total_revenue = _val("total_revenue")
+    total_expenses = _val("total_expenses")
+    surplus_deficit = _val("annual_surplus_deficit")
+    if total_revenue is not None and total_expenses is not None and surplus_deficit is not None:
+        if _off(surplus_deficit, total_revenue - total_expenses, total_revenue):
+            return [SUM_MISMATCH]
+
+    assets = _val("total_assets")
     if assets is not None:
-        abs_tol = assets.value.copy_abs() * Decimal(str(tolerance))
-
-        # Identity 3 (PSAB): financial + non-financial assets == total assets.
-        financial = by_code.get("total_financial_assets")
-        non_financial = by_code.get("total_non_financial_assets")
+        # Identity 4 (PSAB): financial + non-financial assets == total assets.
+        financial = _val("total_financial_assets")
+        non_financial = _val("total_non_financial_assets")
         if financial is not None and non_financial is not None:
-            total = financial.value + non_financial.value
-            if (total - assets.value).copy_abs() > abs_tol:
+            if _off(financial + non_financial, assets, assets):
                 return [SUM_MISMATCH]
 
-        # Identity 4 (PSAB): accumulated surplus == assets - liabilities.
-        surplus = by_code.get("accumulated_surplus")
-        liabilities = by_code.get("total_liabilities")
+        # Identity 5 (PSAB): accumulated surplus == assets - liabilities.
+        surplus = _val("accumulated_surplus")
+        liabilities = _val("total_liabilities")
         if surplus is not None and liabilities is not None:
-            expected = assets.value - liabilities.value
-            if (surplus.value - expected).copy_abs() > abs_tol:
+            if _off(surplus, assets - liabilities, assets):
                 return [SUM_MISMATCH]
+
+    # Identity 6 (PSAB net-debt model): net_debt == total_liabilities - total_financial_assets.
+    net_debt = _val("net_debt")
+    liabilities = _val("total_liabilities")
+    financial = _val("total_financial_assets")
+    if net_debt is not None and liabilities is not None and financial is not None:
+        if _off(net_debt, liabilities - financial, liabilities):
+            return [SUM_MISMATCH]
+
+    # Balance-sheet component identities (addendum #2) + bounds. Each fires only
+    # when all its terms are present, matching the expense-components behaviour;
+    # a residual solving negative IS the bound violation, so the equality
+    # subsumes the bound where both sides are sourced.
+    _component_families = (
+        ("total_financial_assets", "cash_and_investments", "other_financial_assets"),
+        ("total_liabilities", "long_term_debt", "other_liabilities"),
+        ("total_non_financial_assets", "tangible_capital_assets", "other_non_financial_assets"),
+    )
+    for total_code, part_code, residual_code in _component_families:
+        total = _val(total_code)
+        part = _val(part_code)
+        residual = _val(residual_code)
+        # Component identity: part + residual == total (all three present).
+        if total is not None and part is not None and residual is not None:
+            if _off(part + residual, total, total):
+                return [SUM_MISMATCH]
+        # Component bound: the sourced part must not exceed its total.
+        if total is not None and part is not None and part > total:
+            return [SUM_MISMATCH]
 
     return []
 

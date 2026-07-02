@@ -221,12 +221,14 @@ def test_bracketed_negative_arrives_signed_and_lands_negative():
 
 
 def test_non_reconciling_expense_cohort_earns_sum_mismatch():
-    """labour+energy+materials deliberately != operating_expenses -> the cohort
-    earns sum_mismatch through run_pdf's own validate_cohort wiring."""
+    """The 5-term PSAB expense identity deliberately != operating_expenses -> the
+    cohort earns sum_mismatch through run_pdf's own validate_cohort wiring."""
     scenario = [
         _ev("labour_cost", "60000000", "CAD", "0.95"),
         _ev("energy_fuel_cost", "20000000", "CAD", "0.95"),
         _ev("materials_services_cost", "50000000", "CAD", "0.95"),
+        _ev("amortization", "0", "CAD", "0.95"),
+        _ev("other_operating_expenses", "0", "CAD", "0.95"),
         _ev("operating_expenses", "100000000", "CAD", "0.95"),  # parts sum to 130M
     ]
     report = run_eval_through_pipeline(

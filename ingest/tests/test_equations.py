@@ -169,14 +169,17 @@ def test_zero_denominator_is_skipped_not_divided():
 
 
 def test_overdetermination_disagreement_writes_nothing_and_flags():
-    # expenses solvable two ways that disagree > 2%: 5300 vs 5000.
+    # expenses solvable two ways that disagree > 2%: 5300 vs 5000. The PSAB
+    # expense identity is 5-term, so all five components are seeded.
     res = solve(
         {
             "total_revenue_excluding_subsidy": Decimal("2500"),
             "subsidy": Decimal("2800"),  # -> 5300
             "labour_cost": Decimal("2000"),
             "energy_fuel_cost": Decimal("1000"),
-            "materials_services_cost": Decimal("2000"),  # -> 5000
+            "materials_services_cost": Decimal("2000"),
+            "amortization": Decimal("0"),
+            "other_operating_expenses": Decimal("0"),  # -> 5000
         }
     )
     assert "operating_expenses" not in res.solved
@@ -191,7 +194,9 @@ def test_overdetermination_agreement_writes_once_deterministically():
             "subsidy": Decimal("2500"),  # -> 5000
             "labour_cost": Decimal("2000"),
             "energy_fuel_cost": Decimal("1000"),
-            "materials_services_cost": Decimal("2000"),  # -> 5000
+            "materials_services_cost": Decimal("2000"),
+            "amortization": Decimal("0"),
+            "other_operating_expenses": Decimal("0"),  # -> 5000
         }
     )
     exp = res.solved["operating_expenses"]
@@ -201,13 +206,15 @@ def test_overdetermination_agreement_writes_once_deterministically():
 
 
 def test_sum_mismatch_on_inconsistent_observed_components():
-    # all observed: components sum 5500 vs sourced expenses 5000 -> sum_mismatch.
+    # all observed: 5-term components sum 5500 vs sourced expenses 5000 -> sum_mismatch.
     res = solve(
         {
             "operating_expenses": Decimal("5000"),
             "labour_cost": Decimal("1000"),
             "energy_fuel_cost": Decimal("1000"),
             "materials_services_cost": Decimal("3500"),
+            "amortization": Decimal("0"),
+            "other_operating_expenses": Decimal("0"),
         }
     )
     assert SUM_MISMATCH in res.flags

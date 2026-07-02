@@ -1,8 +1,10 @@
--- Seed: the 32 universal metrics (23 sourced + 9 derived). applicable_modes = NULL
--- (system-wide) at seed. The 9 derived carry a formula; the 23 sourced carry NULL.
+-- Seed: the 42 universal metrics (28 sourced + 14 derived). applicable_modes = NULL
+-- (system-wide) at seed. The derived carry a formula; the sourced carry NULL.
 -- higher_is_better: NULL = neutral (no good/bad framing). Re-runnable.
 -- Ridership is ONE metric; monthly vs annual is the reporting period's granularity.
--- The last 11 rows are the balance-sheet family (8 sourced + 3 derived).
+-- The balance-sheet family (8 sourced + 3 derived) precedes the 10 financial-
+-- statement additions (metric-set-build-plan.md Phase 4): 5 sourced income-statement /
+-- revenue lines + 5 derived residuals. All 10 additions are non-rated.
 INSERT INTO core.metrics (code, display_name, unit, unit_type, is_derived, formula, higher_is_better) VALUES
   ('ridership',                'Ridership',                 'count',    'count',    false, NULL,                                                              true),
   ('revenue_service_hours',    'Revenue Service Hours',     'hours',    'time',     false, NULL,                                                              NULL),
@@ -35,5 +37,16 @@ INSERT INTO core.metrics (code, display_name, unit, unit_type, is_derived, formu
   ('cash_and_investments',       'Cash & Investments',         'CAD', 'currency', false, NULL,                                          NULL),
   ('net_debt',                   'Net Debt',                   'CAD', 'currency', true,  'total_liabilities - total_financial_assets',  false),
   ('debt_to_assets',             'Debt to Assets',             '%',   'ratio',    true,  'total_liabilities / total_assets',            false),
-  ('net_debt_per_capita',        'Net Debt per Capita',        'CAD', 'currency', true,  'net_debt / service_area_population',          false)
+  ('net_debt_per_capita',        'Net Debt per Capita',        'CAD', 'currency', true,  'net_debt / service_area_population',          false),
+  -- financial-statement additions (Phase 4): 5 sourced + 5 derived residuals, all non-rated
+  ('amortization',                 'Amortization',                    'CAD', 'currency', false, NULL,                                                 NULL),
+  ('other_operating_expenses',     'Other Operating Expenses',        'CAD', 'currency', false, NULL,                                                 NULL),
+  ('total_revenue',                'Total Revenue',                   'CAD', 'currency', false, NULL,                                                 NULL),
+  ('farebox_revenue',              'Farebox Revenue',                 'CAD', 'currency', false, NULL,                                                 NULL),
+  ('total_expenses',               'Total Expenses',                  'CAD', 'currency', false, NULL,                                                 NULL),
+  ('other_revenue',                'Other Revenue',                   'CAD', 'currency', true,  'farebox_revenue + other_revenue',                    NULL),
+  ('annual_surplus_deficit',       'Annual Surplus / (Deficit)',      'CAD', 'currency', true,  'total_revenue - total_expenses',                     NULL),
+  ('other_financial_assets',       'Other Financial Assets',          'CAD', 'currency', true,  'cash_and_investments + other_financial_assets',      NULL),
+  ('other_liabilities',            'Other Liabilities',               'CAD', 'currency', true,  'long_term_debt + other_liabilities',                 NULL),
+  ('other_non_financial_assets',   'Other Non-Financial Assets',      'CAD', 'currency', true,  'tangible_capital_assets + other_non_financial_assets', NULL)
 ON CONFLICT (code) DO NOTHING;
