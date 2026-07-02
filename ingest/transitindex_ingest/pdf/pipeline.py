@@ -13,7 +13,7 @@ from datetime import date
 from pathlib import Path
 from typing import Callable, Optional
 
-from ..contract import SERVICE_SCOPES, DocumentType, License, MetricValueRecord, SourceRef
+from ..contract import COST_BASES, SERVICE_SCOPES, DocumentType, License, MetricValueRecord, SourceRef
 from ..db.repository import Repository
 from ..periods import annual_period_from_end_year, monthly_period
 from ..refdata import RATED_METRICS
@@ -100,6 +100,8 @@ def _to_record(agency_slug: str, ev: ExtractedValue, meta: SourceRefMeta) -> Met
         # Extraction-only scopes (mode_subset/city_wide) are filtered upstream;
         # anything else not contract-valid falls back to 'total'.
         service_scope=ev.service_scope if ev.service_scope in SERVICE_SCOPES else "total",
+        # Expense-line accounting basis (Phase 3); anything unrecognized -> 'operating'.
+        cost_basis=ev.cost_basis if ev.cost_basis in COST_BASES else "operating",
         value=ev.value,
         unit=ev.unit,
         quality="preliminary",

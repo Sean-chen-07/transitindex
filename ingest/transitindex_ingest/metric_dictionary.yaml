@@ -197,7 +197,10 @@ metrics:
     is_not: >-
       NOT total expenses including capital: typically EXCLUDES capital expenditure. Watch
       AMORTIZATION/DEPRECIATION — PSAB statements of operations INCLUDE it, while CUTA-style
-      operating cost EXCLUDES it; record which basis the source used.
+      operating cost EXCLUDES it. Record the structured cost_basis: 'psab_total' when the figure
+      is an audited statement-of-operations total (amortization included), 'operating' when the
+      source states amortization is excluded. The efficiency ratios use the operating basis;
+      never fold amortization into a component line to make it fit.
     source_tier: annual_report
     period_semantics: "Annual for most; quarterly for a few (TransLink, OC Transpo, Calgary)."
     includes:
@@ -500,8 +503,9 @@ metrics:
     display_name: Average Fare
     plain_meaning: Revenue collected per rider (boarding).
     definition: >-
-      Operating (fare) revenue divided by ridership — the average revenue earned per boarding.
-      A calculated figure, not a posted price.
+      Farebox revenue divided by ridership — the average fare earned per boarding. Uses
+      farebox_revenue (passenger fares only), NOT the broad total_revenue_excluding_subsidy,
+      so ancillary/investment income never inflates it. A calculated figure, not a posted price.
     is_not: >-
       NOT the posted/advertised adult cash fare. Because it blends passes, concessions, free
       riders and transfers, average fare is typically well BELOW the cash fare.
@@ -542,14 +546,16 @@ metrics:
 
   farebox_recovery_ratio:
     display_name: Farebox Recovery Ratio
-    plain_meaning: Share of operating cost covered by fares/operating revenue.
+    plain_meaning: Share of operating cost covered by fares.
     definition: >-
-      Operating revenue divided by operating expenses — the fraction of the cost of service
-      paid for by what the service earns.
+      Farebox revenue divided by operating expenses — the fraction of the cost of service
+      paid for by passenger fares. Uses farebox_revenue as the numerator (NOT the broad
+      total_revenue_excluding_subsidy) and the operating-basis operating_expenses (amortization
+      excluded) as the denominator.
     is_not: >-
       NOT fares ÷ total cost-including-capital. The result depends on the expense basis
-      (amortization included or not) and on whether the numerator is fares-only or all
-      operating revenue — keep numerator and denominator on consistent bases.
+      (amortization included or not); the numerator is fares-only (farebox_revenue), never the
+      broad revenue line — keep numerator and denominator on consistent bases.
     source_tier: derived
     period_semantics: "Matches its inputs' period; annual for most, quarterly for TransLink."
     labels_en:

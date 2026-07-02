@@ -114,6 +114,10 @@ export const metricValues = core.table("metric_values", {
   restatementOfId: bigint("restatement_of_id", { mode: "number" }),
   isCurrent: boolean("is_current").notNull(),
   notes: text("notes"),
+  // Accounting basis of an expense value: 'operating' (amortization-excluded) |
+  // 'psab_total' (amortization-included). Migration 020. Introspection only —
+  // never migrated from here (web/CLAUDE.md).
+  costBasis: text("cost_basis").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
 });

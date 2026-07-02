@@ -160,7 +160,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         ),
         "average_fare": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
-             "formula": "total_revenue_excluding_subsidy / ridership", "higher_is_better": None}
+             "formula": "farebox_revenue / ridership", "higher_is_better": None}
         ),
         "trips_per_revenue_hour": MappingProxyType(
             {"unit": "trips/hr", "unit_type": "ratio", "is_derived": True,
@@ -196,7 +196,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         ),
         "farebox_recovery_ratio": MappingProxyType(
             {"unit": "%", "unit_type": "ratio", "is_derived": True,
-             "formula": "total_revenue_excluding_subsidy / operating_expenses", "higher_is_better": None}
+             "formula": "farebox_revenue / operating_expenses", "higher_is_better": None}
         ),
         "cost_per_rider": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,

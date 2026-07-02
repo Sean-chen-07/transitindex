@@ -38,6 +38,14 @@ def test_bad_enum_values_rejected(make_record):
         make_record(service_scope="everything")
     with pytest.raises(ValueError):
         make_record(quality="guessed")
+    with pytest.raises(ValueError):
+        make_record(cost_basis="cash")
+
+
+def test_cost_basis_defaults_to_operating(sample_record, make_record):
+    # Default operating basis (amortization-excluded) unless set explicitly.
+    assert sample_record.cost_basis == "operating"
+    assert make_record(cost_basis="psab_total").cost_basis == "psab_total"
 
 
 def test_bad_period_bounds_rejected(make_record):

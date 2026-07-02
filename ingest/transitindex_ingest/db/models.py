@@ -98,6 +98,7 @@ class MetricValue:
     restatement_of_id: Optional[int]
     is_current: bool
     notes: Optional[str]
+    cost_basis: str = "operating"
 
 
 @dataclass(frozen=True)
@@ -124,6 +125,7 @@ class PendingValue:
     review_status: str
     flags: list[str]
     reviewer_notes: Optional[str]
+    cost_basis: str = "operating"
 
 
 @dataclass(frozen=True)
@@ -162,6 +164,7 @@ class BulkPendingRow:
     confidence: Optional[Decimal]
     review_status: str
     flags: list
+    cost_basis: str = "operating"
 
 
 @dataclass(frozen=True)

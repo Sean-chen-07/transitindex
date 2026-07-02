@@ -18,7 +18,10 @@ def _period(repo: InMemoryRepository) -> int:
     )
 
 
-def _seed(repo, period_id, code, value, *, scope="system_wide", quality="verified") -> int:
+def _seed(
+    repo, period_id, code, value, *, scope="system_wide", quality="verified",
+    cost_basis="operating",
+) -> int:
     return repo.insert_metric_value(
         agency_id=repo.agency_id("ttc"),
         metric_id=repo.metric_id(code),
@@ -28,6 +31,7 @@ def _seed(repo, period_id, code, value, *, scope="system_wide", quality="verifie
         value=Decimal(value),
         unit="x",
         quality=quality,
+        cost_basis=cost_basis,
     )
 
 
@@ -43,26 +47,28 @@ def _current(repo, period_id, code, scope="system_wide"):
 def test_recompute_writes_ratios_and_backsolved_subsidy_with_provenance():
     repo = InMemoryRepository()
     pid = _period(repo)
-    rev = _seed(repo, pid, "total_revenue_excluding_subsidy", "2500")
+    fb = _seed(repo, pid, "farebox_revenue", "2500")
+    _seed(repo, pid, "total_revenue_excluding_subsidy", "2500")
     _seed(repo, pid, "operating_expenses", "5000")
     rid = _seed(repo, pid, "ridership", "1000")
     _seed(repo, pid, "revenue_service_hours", "200")
 
     res = recompute_derived(repo, "ttc", pid)
 
-    # 6 ratios + back-solved subsidy + total_revenue (revenue_excl_subsidy + subsidy) = 8 written.
-    assert len(res.ids) == 8
-    assert _current(repo, pid, "average_fare").value == Decimal("2.5")
+    # 6 ratios + back-solved subsidy + total_revenue + other_revenue (residual) = 9.
+    assert len(res.ids) == 9
+    assert _current(repo, pid, "average_fare").value == Decimal("2.5")  # farebox / ridership
     assert _current(repo, pid, "subsidy_per_rider").value == Decimal("2.5")
     assert _current(repo, pid, "subsidy").value == Decimal("2500")
     # total_revenue = total_revenue_excluding_subsidy + subsidy = 2500 + 2500.
     assert _current(repo, pid, "total_revenue").value == Decimal("5000")
 
     # average_fare carries provenance: its equation + the exact input value rows.
+    # Its numerator is now farebox_revenue (Phase 3), not the broad revenue line.
     af = _current(repo, pid, "average_fare")
     deriv = repo.get_derivation(af.id)
     assert deriv["equation_code"] == "average_fare_def"
-    assert set(deriv["input_value_ids"]) == {rev, rid}
+    assert set(deriv["input_value_ids"]) == {fb, rid}
 
 
 def test_sourced_inputs_have_no_derivation():
@@ -79,16 +85,16 @@ def test_sourced_inputs_have_no_derivation():
 def test_recompute_backsolves_a_sourced_metric():
     repo = InMemoryRepository()
     pid = _period(repo)
-    rev = _seed(repo, pid, "total_revenue_excluding_subsidy", "2500")
-    fb = _seed(repo, pid, "farebox_recovery_ratio", "0.5")  # published ratio
+    fbr = _seed(repo, pid, "farebox_revenue", "2500")
+    frr = _seed(repo, pid, "farebox_recovery_ratio", "0.5")  # published ratio
 
     recompute_derived(repo, "ttc", pid)
 
     exp = _current(repo, pid, "operating_expenses")
-    assert exp.value == Decimal("5000")  # back-solved: 2500 / 0.5
+    assert exp.value == Decimal("5000")  # back-solved: farebox 2500 / 0.5
     deriv = repo.get_derivation(exp.id)
     assert deriv["equation_code"] == "farebox_recovery_def"
-    assert set(deriv["input_value_ids"]) == {rev, fb}
+    assert set(deriv["input_value_ids"]) == {fbr, frr}
 
 
 # --- quality inheritance ----------------------------------------------------
@@ -97,7 +103,7 @@ def test_recompute_backsolves_a_sourced_metric():
 def test_derived_quality_inherits_weakest_input():
     repo = InMemoryRepository()
     pid = _period(repo)
-    _seed(repo, pid, "total_revenue_excluding_subsidy", "2500", quality="preliminary")
+    _seed(repo, pid, "farebox_revenue", "2500", quality="preliminary")
     _seed(repo, pid, "ridership", "1000", quality="verified")
 
     recompute_derived(repo, "ttc", pid)
@@ -118,13 +124,13 @@ def test_weakest_quality_ordering():
 def test_recompute_restates_after_corrected_input():
     repo = InMemoryRepository()
     pid = _period(repo)
-    _seed(repo, pid, "total_revenue_excluding_subsidy", "2500")
+    _seed(repo, pid, "farebox_revenue", "2500")
     _seed(repo, pid, "ridership", "1000")
     recompute_derived(repo, "ttc", pid)
     first = _current(repo, pid, "average_fare")
     assert first.value == Decimal("2.5")
 
-    _seed(repo, pid, "total_revenue_excluding_subsidy", "3000")  # correction supersedes the old revenue
+    _seed(repo, pid, "farebox_revenue", "3000")  # correction supersedes the old farebox
     recompute_derived(repo, "ttc", pid)
     current = _current(repo, pid, "average_fare")
 
@@ -143,7 +149,7 @@ def test_recompute_restates_after_corrected_input():
 def test_recompute_is_idempotent():
     repo = InMemoryRepository()
     pid = _period(repo)
-    _seed(repo, pid, "total_revenue_excluding_subsidy", "2500")
+    _seed(repo, pid, "farebox_revenue", "2500")
     _seed(repo, pid, "ridership", "1000")
     recompute_derived(repo, "ttc", pid)
 
@@ -163,12 +169,55 @@ def test_recompute_is_idempotent():
 def test_scopes_solve_independently():
     repo = InMemoryRepository()
     pid = _period(repo)
-    _seed(repo, pid, "total_revenue_excluding_subsidy", "2500", scope="total")
+    _seed(repo, pid, "farebox_revenue", "2500", scope="total")
     _seed(repo, pid, "ridership", "1000", scope="total")
-    _seed(repo, pid, "total_revenue_excluding_subsidy", "6000", scope="system_wide")
+    _seed(repo, pid, "farebox_revenue", "6000", scope="system_wide")
     _seed(repo, pid, "ridership", "2000", scope="system_wide")
 
     recompute_derived(repo, "ttc", pid)
 
     assert _current(repo, pid, "average_fare", "total").value == Decimal("2.5")
     assert _current(repo, pid, "average_fare", "system_wide").value == Decimal("3")
+
+
+# --- cost_basis normalization (Phase 3) -------------------------------------
+
+
+def test_ratios_normalize_psab_expense_with_amortization():
+    # Rule (a): a psab_total operating_expenses (5500) with amortization (500) is
+    # normalized to the operating basis (5000) before the ratios use it; the
+    # result is fully comparable.
+    repo = InMemoryRepository()
+    pid = _period(repo)
+    _seed(repo, pid, "operating_expenses", "5500", cost_basis="psab_total")
+    _seed(repo, pid, "amortization", "500")
+    _seed(repo, pid, "ridership", "1000")
+
+    res = recompute_derived(repo, "ttc", pid)
+
+    cpr = _current(repo, pid, "cost_per_rider")
+    assert cpr.value == Decimal("5")  # (5500 - 500) / 1000, operating basis
+    assert cpr.comparable_flag is True  # rated + comparable
+    assert not any("mixed_cost_basis" in w for w in res.warnings)
+
+
+def test_ratios_flag_psab_expense_without_amortization():
+    # Rule (b): a psab_total operating_expenses with no amortization to subtract
+    # still computes, but the derived ratios are not comparable and are flagged.
+    repo = InMemoryRepository()
+    pid = _period(repo)
+    _seed(repo, pid, "operating_expenses", "5000", cost_basis="psab_total")
+    _seed(repo, pid, "ridership", "1000")
+
+    res = recompute_derived(repo, "ttc", pid)
+
+    cpr = _current(repo, pid, "cost_per_rider")
+    assert cpr.value == Decimal("5")  # computed anyway (5000 / 1000)
+    assert cpr.comparable_flag is False  # not comparable across bases
+    assert cpr.notes == "mixed_cost_basis"
+    assert any("mixed_cost_basis" in w for w in res.warnings)
+    # subsidy_per_rider transitively depends on the tainted expense -> also flagged.
+    _seed(repo, pid, "total_revenue_excluding_subsidy", "2500")
+    res2 = recompute_derived(repo, "ttc", pid)
+    spr = _current(repo, pid, "subsidy_per_rider")
+    assert spr.comparable_flag is False

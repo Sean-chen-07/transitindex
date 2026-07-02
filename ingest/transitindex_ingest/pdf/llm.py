@@ -61,6 +61,8 @@ class ExtractedValue:
     printed_sign: str = "positive"  # 'negative' for accounting parentheses, e.g. (1,234)
     service_scope: str = "total"  # 'total'|'conventional'|'specialized'|'system_wide'|'mode_subset'|'city_wide'
     basis: str = "actual"  # 'actual'|'budget'|'forecast'|'restated'
+    # Expense-line accounting basis; a DIFFERENT axis from `basis` above.
+    cost_basis: str = "operating"  # 'operating' (excl. amortization) | 'psab_total' (incl.)
     printed_label: Optional[str] = None  # verbatim printed row/line label the number was read from
     table_reference: Optional[str] = None  # statement/note/schedule id, e.g. "Note 7", "Schedule 2"
 
@@ -83,6 +85,7 @@ def value_to_dict(v: ExtractedValue) -> dict:
         "printed_sign": v.printed_sign,
         "service_scope": v.service_scope,
         "basis": v.basis,
+        "cost_basis": v.cost_basis,
         "printed_label": v.printed_label,
         "table_reference": v.table_reference,
     }
@@ -105,6 +108,7 @@ def value_from_dict(d: dict) -> ExtractedValue:
         printed_sign=d["printed_sign"],
         service_scope=d.get("service_scope", "total"),
         basis=d.get("basis", "actual"),
+        cost_basis=d.get("cost_basis", "operating"),
         printed_label=d.get("printed_label"),
         table_reference=d.get("table_reference"),
     )
@@ -160,6 +164,15 @@ Rules:
   figures (multi-year plans, budget columns); 'restated' = a prior-year figure
   restated.
 - A 'planned', 'projected', 'budget' or future-year figure is NEVER basis='actual'.
+- cost_basis (EXPENSE LINES ONLY -- operating_expenses, labour_cost,
+  energy_fuel_cost, materials_services_cost, other_operating_expenses,
+  total_expenses; a DIFFERENT axis from `basis` above): 'psab_total' when the
+  figure is a PSAB statement-of-operations total that INCLUDES amortization/
+  depreciation (the audited "Total expenses" line and its components); 'operating'
+  when the source states the operating basis EXCLUDES amortization (a CUTA-style
+  "(excludes amortization)"/"direct operating cost" figure). If unsure, an audited
+  statement-of-operations expense is 'psab_total'. Leave 'operating' for
+  non-expense metrics.
 - For financial-statement lines, set `printed_label` to the exact printed line
   label (e.g. "Tangible capital assets") and `table_reference` to the statement,
   note, or schedule it came from (e.g. "Statement of Financial Position",
@@ -240,6 +253,11 @@ EXTRACTION_TOOL = {
                             "type": "string",
                             "enum": ["actual", "budget", "forecast", "restated"],
                             "description": "'actual' = reported result; 'budget'/'forecast' = planned or projected figures (multi-year plans, budget columns); 'restated' = a prior-year figure restated.",
+                        },
+                        "cost_basis": {
+                            "type": "string",
+                            "enum": ["operating", "psab_total"],
+                            "description": "EXPENSE LINES ONLY (different axis from `basis`): 'psab_total' = a PSAB statement-of-operations expense total that INCLUDES amortization/depreciation; 'operating' = a CUTA-style operating figure the source states EXCLUDES amortization. Default 'operating' for non-expense metrics.",
                         },
                         "printed_label": {
                             "type": ["string", "null"],
@@ -377,6 +395,7 @@ def _row_to_value(row: dict) -> ExtractedValue:
     printed_sign = row.get("printed_sign") or "positive"
     service_scope = row.get("service_scope") or "total"
     basis = row.get("basis") or "actual"
+    cost_basis = row.get("cost_basis") or "operating"
     value = apply_scale_sign(parse_number(row["value"]), printed_scale, printed_sign)
     confidence = Decimal(str(row["confidence"]))
     note = row.get("note")
@@ -408,6 +427,7 @@ def _row_to_value(row: dict) -> ExtractedValue:
         printed_sign=printed_sign,
         service_scope=service_scope,
         basis=basis,
+        cost_basis=cost_basis,
         printed_label=row.get("printed_label"),
         table_reference=row.get("table_reference"),
     )

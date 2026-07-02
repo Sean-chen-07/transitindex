@@ -305,6 +305,7 @@ class InMemoryRepository:
             quality=record.quality,
             comparable_flag=record.comparable_flag,
             crosscheck_value=record.crosscheck_value,
+            cost_basis=record.cost_basis,
             source_document_id=source_document_id,
             page_number=src.page_number if src else None,
             table_reference=src.table_reference if src else None,
@@ -413,6 +414,7 @@ class InMemoryRepository:
             currency=pending.currency,
             comparable_flag=pending.comparable_flag,
             crosscheck_value=pending.crosscheck_value,
+            cost_basis=pending.cost_basis,
             notes=None,
         )
         # link source provenance (core.metric_value_sources)
@@ -442,6 +444,7 @@ class InMemoryRepository:
         comparable_flag: bool = True,
         crosscheck_value: Optional[Decimal] = None,
         notes: Optional[str] = None,
+        cost_basis: str = "operating",
     ) -> int:
         return self._write_metric_value(
             agency_id=agency_id,
@@ -455,6 +458,7 @@ class InMemoryRepository:
             currency=currency,
             comparable_flag=comparable_flag,
             crosscheck_value=crosscheck_value,
+            cost_basis=cost_basis,
             notes=notes,
         )
 
@@ -473,6 +477,7 @@ class InMemoryRepository:
         currency: Optional[str] = None,
         comparable_flag: bool = True,
         notes: Optional[str] = None,
+        cost_basis: str = "operating",
     ) -> int:
         vid = self._write_metric_value(
             agency_id=agency_id,
@@ -486,6 +491,7 @@ class InMemoryRepository:
             currency=currency,
             comparable_flag=comparable_flag,
             crosscheck_value=None,
+            cost_basis=cost_basis,
             notes=notes,
         )
         self._derivations[vid] = {
@@ -512,6 +518,7 @@ class InMemoryRepository:
         comparable_flag: bool,
         crosscheck_value: Optional[Decimal],
         notes: Optional[str],
+        cost_basis: str = "operating",
     ) -> int:
         """Insert one metric value enforcing one_current_value + audit.
 
@@ -547,6 +554,7 @@ class InMemoryRepository:
             restatement_of_id=superseded_id,
             is_current=True,
             notes=notes,
+            cost_basis=cost_basis,
         )
         self._current_index[key] = vid
         self._audit.append(
@@ -609,6 +617,7 @@ class InMemoryRepository:
                 quality=r.quality,
                 comparable_flag=r.comparable_flag,
                 crosscheck_value=r.crosscheck_value,
+                cost_basis=r.cost_basis,
                 source_document_id=r.source_document_id,
                 page_number=r.page_number,
                 table_reference=r.table_reference,
@@ -678,6 +687,7 @@ class InMemoryRepository:
                 currency=pending.currency,
                 comparable_flag=pending.comparable_flag,
                 crosscheck_value=pending.crosscheck_value,
+                cost_basis=pending.cost_basis,
                 notes=None,
             )
             if pending.source_document_id is not None:

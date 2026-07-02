@@ -180,10 +180,13 @@ def test_monthly_round_trip_rolls_up_and_derives_average_fare(repo, tmp_path):
     # (validation.flags._CURRENCY_FLOOR) or it is flagged and never auto-promoted.
     _fill_year_of_months(ws, metric_code="ridership", year=2023, value=10000)
     _fill_year_of_months(ws, metric_code="total_revenue_excluding_subsidy", year=2023, value=25000)
+    # average_fare derives from farebox_revenue (Phase 3), an annual line -> type it
+    # once in the Year column so the ratio (farebox / rolled-up ridership) resolves.
+    _set_year_cell(ws, label=NAMES["farebox_revenue"], year=2023, value=300000)
     wb.save(out)
 
     summary = workbook.import_workbook(repo, out)
-    assert summary["promoted"] == 24  # 12 months x 2 metrics
+    assert summary["promoted"] == 25  # 12 months x 2 metrics + 1 annual farebox
     # 2 native annuals + the 4 calendar quarters each metric also rolls up (the
     # annual_calendar slot is already filled by the native roll-up, so it is skipped).
     assert summary["rolled"] == 10
@@ -191,7 +194,7 @@ def test_monthly_round_trip_rolls_up_and_derives_average_fare(repo, tmp_path):
     ap = annual_period("ttc", 2023)
     assert _current(repo, "ttc", ap, "ridership").value == Decimal("120000")
     assert _current(repo, "ttc", ap, "total_revenue_excluding_subsidy").value == Decimal("300000")
-    assert _current(repo, "ttc", ap, "average_fare").value == Decimal("2.5")
+    assert _current(repo, "ttc", ap, "average_fare").value == Decimal("2.5")  # farebox 300000 / 120000
 
 
 def test_partial_months_land_as_monthly_values(repo, tmp_path):
@@ -313,6 +316,8 @@ def test_grey_computed_cells_are_not_imported(repo, tmp_path):
     # Agency-scale numbers so monthly revenue clears the currency floor.
     _fill_year_of_months(ws, metric_code="ridership", year=2023, value=10000)
     _fill_year_of_months(ws, metric_code="total_revenue_excluding_subsidy", year=2023, value=25000)
+    # farebox_revenue (average_fare's numerator, Phase 3) is an annual white cell.
+    _set_year_cell(ws, label=NAMES["farebox_revenue"], year=2023, value=300000)
     # Bogus number typed over the grey ridership Year roll-up cell + derived ratio.
     _set_year_cell(ws, label=NAMES["ridership"], year=2023, value=5)
     _set_year_cell(ws, label=NAMES["average_fare"], year=2023, value=999)
@@ -320,7 +325,7 @@ def test_grey_computed_cells_are_not_imported(repo, tmp_path):
 
     workbook.import_workbook(repo, out)
     ap = annual_period("ttc", 2023)
-    # Roll-up (120000), not the typed 5; derived (2.5), not the typed 999.
+    # Roll-up (120000), not the typed 5; derived (2.5 = farebox 300000 / 120000), not 999.
     assert _current(repo, "ttc", ap, "ridership").value == Decimal("120000")
     assert _current(repo, "ttc", ap, "average_fare").value == Decimal("2.5")
 

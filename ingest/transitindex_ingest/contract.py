@@ -22,6 +22,11 @@ from typing import Literal, Optional
 
 PeriodType = Literal["monthly", "quarterly", "annual_calendar", "annual_fiscal", "ytd"]
 ServiceScope = Literal["conventional", "specialized", "total", "system_wide"]
+# The accounting basis of an expense value: 'operating' EXCLUDES amortization
+# (the CUTA/NTD operating basis); 'psab_total' INCLUDES it (a PSAB statement-of-
+# operations total). Distinct from `SourceRef` provenance and from the PDF
+# extractor's `basis` field (actual/budget/forecast/restated) -- a different axis.
+CostBasis = Literal["operating", "psab_total"]
 Quality = Literal["verified", "preliminary", "estimated", "imputed"]
 ExtractionMethod = Literal["manual", "llm_assisted", "structured_import", "statcan_passthrough"]
 License = Literal[
@@ -52,6 +57,7 @@ DocumentType = Literal[
 # Allowed-value sets, derived from the Literals above so they never drift.
 PERIOD_TYPES: frozenset[str] = frozenset(PeriodType.__args__)
 SERVICE_SCOPES: frozenset[str] = frozenset(ServiceScope.__args__)
+COST_BASES: frozenset[str] = frozenset(CostBasis.__args__)
 QUALITIES: frozenset[str] = frozenset(Quality.__args__)
 EXTRACTION_METHODS: frozenset[str] = frozenset(ExtractionMethod.__args__)
 LICENSES: frozenset[str] = frozenset(License.__args__)
@@ -119,6 +125,9 @@ class MetricValueRecord:
     quality: Quality
     mode_code: Optional[str] = None
     currency: Optional[str] = None
+    # Accounting basis for expense values; 'operating' (amortization-excluded) for
+    # everything else. Only meaningful on expense lines (operating_expenses etc.).
+    cost_basis: CostBasis = "operating"
     comparable_flag: bool = True
     crosscheck_value: Optional[Decimal] = None
     notes: Optional[str] = None
@@ -128,6 +137,7 @@ class MetricValueRecord:
     def __post_init__(self) -> None:
         _require(self.period_type, PERIOD_TYPES, "period_type")
         _require(self.service_scope, SERVICE_SCOPES, "service_scope")
+        _require(self.cost_basis, COST_BASES, "cost_basis")
         _require(self.quality, QUALITIES, "quality")
         if not isinstance(self.period_start, date) or not isinstance(self.period_end, date):
             raise ValueError("period_start and period_end must be datetime.date")

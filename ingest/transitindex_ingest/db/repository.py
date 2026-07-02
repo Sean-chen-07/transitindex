@@ -226,6 +226,7 @@ class Repository(Protocol):
         comparable_flag: bool = True,
         crosscheck_value: Optional[Decimal] = None,
         notes: Optional[str] = None,
+        cost_basis: str = "operating",
     ) -> int:
         """Insert a metric value directly (used by the derived-metric job),
         with the SAME one-current/supersede/restatement semantics as
@@ -247,6 +248,7 @@ class Repository(Protocol):
         currency: Optional[str] = None,
         comparable_flag: bool = True,
         notes: Optional[str] = None,
+        cost_basis: str = "operating",
     ) -> int:
         """Insert a SOLVED (derived) metric value with the same one-current/
         supersede/audit semantics as insert_metric_value, AND record its

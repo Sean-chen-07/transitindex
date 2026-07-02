@@ -9,7 +9,7 @@ exactly solvable:
            total_liabilities − total_financial_assets). Solvable for any one
            missing term.
   - RATIO  `quotient = numerator / denominator`  (e.g. farebox_recovery_ratio =
-           total_revenue_excluding_subsidy / operating_expenses). Solvable for ANY one of the
+           farebox_revenue / operating_expenses). Solvable for ANY one of the
            three -- including the denominator, since "farebox + revenue ->
            expenses" (expenses = revenue / farebox) is the flagship goal.
 
@@ -162,9 +162,12 @@ EQUATIONS: tuple[Equation, ...] = (
         terms=((+1, "total_revenue"), (-1, "total_expenses")),
         defines="annual_surplus_deficit",
     ),
-    # Derived ratios (each defines its quotient).
+    # Derived ratios (each defines its quotient). The rider-share ratios take
+    # farebox_revenue as the numerator, NOT the broad total_revenue_excluding_subsidy
+    # (= total_revenue − subsidy), which would inflate them for capital-heavy
+    # agencies (metric-set-build-plan.md Phase 3, Decision #4).
     RatioEquation(
-        "average_fare_def", "average_fare", "total_revenue_excluding_subsidy", "ridership"
+        "average_fare_def", "average_fare", "farebox_revenue", "ridership"
     ),
     RatioEquation(
         "cost_per_hour_def", "cost_per_hour", "operating_expenses", "revenue_service_hours"
@@ -173,7 +176,7 @@ EQUATIONS: tuple[Equation, ...] = (
     RatioEquation(
         "farebox_recovery_def",
         "farebox_recovery_ratio",
-        "total_revenue_excluding_subsidy",
+        "farebox_revenue",
         "operating_expenses",
     ),
     RatioEquation(

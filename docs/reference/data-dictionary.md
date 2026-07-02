@@ -11,7 +11,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 | Ridership | Boardings (unlinked passenger trips), at the period shown. | count | Sourced | — | statcan |
 | Revenue Service Hours | Hours vehicles spent in service carrying (or available to carry) passengers. | hours | Sourced | — | annual_report |
 | Vehicle Revenue Kilometres | Distance vehicles travelled while in passenger service. | km | Sourced | — | annual_report |
-| Average Fare | Revenue collected per rider (boarding). | CAD | Calculated | total_revenue_excluding_subsidy / ridership | derived |
+| Average Fare | Revenue collected per rider (boarding). | CAD | Calculated | farebox_revenue / ridership | derived |
 | Trips per Revenue Hour | Riders carried per hour of service — a productivity measure. | trips/hr | Calculated | ridership / revenue_service_hours | derived |
 | On-Time Performance | Share of scheduled service that ran on time. | % | Sourced | — | annual_report |
 | Total revenue excluding subsidy | Money earned from fares and other operations (excludes subsidy). | CAD | Sourced | — | statcan |
@@ -20,7 +20,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 | Labour Cost | Wages, salaries, and benefits for staff. | CAD | Sourced | — | annual_report |
 | Energy & Fuel Cost | Spending on fuel and electricity to move the vehicles. | CAD | Sourced | — | annual_report |
 | Materials & Services Cost | Maintenance materials plus contracted-out services. | CAD | Sourced | — | annual_report |
-| Farebox Recovery Ratio | Share of operating cost covered by fares/operating revenue. | % | Calculated | total_revenue_excluding_subsidy / operating_expenses | derived |
+| Farebox Recovery Ratio | Share of operating cost covered by fares. | % | Calculated | farebox_revenue / operating_expenses | derived |
 | Cost per Rider | Operating cost for each trip taken. | CAD | Calculated | operating_expenses / ridership | derived |
 | Cost per Revenue Hour | Operating cost for each hour of service. | CAD/hr | Calculated | operating_expenses / revenue_service_hours | derived |
 | Subsidy per Rider | Public subsidy needed for each trip taken. | CAD | Calculated | subsidy / ridership | derived |
@@ -108,10 +108,10 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 ### Average Fare (`average_fare`)
 
-- **Is:** Operating (fare) revenue divided by ridership — the average revenue earned per boarding. A calculated figure, not a posted price.
+- **Is:** Farebox revenue divided by ridership — the average fare earned per boarding. Uses farebox_revenue (passenger fares only), NOT the broad total_revenue_excluding_subsidy, so ancillary/investment income never inflates it. A calculated figure, not a posted price.
 - **Is NOT:** NOT the posted/advertised adult cash fare. Because it blends passes, concessions, free riders and transfers, average fare is typically well BELOW the cash fare.
 - **Unit:** CAD (currency)
-- **Formula:** `total_revenue_excluding_subsidy / ridership`
+- **Formula:** `farebox_revenue / ridership`
 - **Period:** Matches its inputs' period (same agency, same period).
 - **Labels (EN):** Average fare; Revenue per boarding; Average fare recovery
 - **Labels (FR):** Tarif moyen; Recette moyenne par déplacement
@@ -166,13 +166,13 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 - **Common confusions:**
   - Operating revenue (earned) vs total revenue that includes government subsidy
   - Fares-only vs fares + ancillary income — operating revenue is the broader earned figure
-- **Equations:** `average_fare_def`, `earned_revenue_components`, `expense_revenue_subsidy`, `farebox_recovery_def`, `total_revenue_def`
+- **Equations:** `earned_revenue_components`, `expense_revenue_subsidy`, `total_revenue_def`
 - **Source tier:** statcan
 
 ### Operating Expenses (`operating_expenses`)
 
 - **Is:** The total cost of operating the service over the period — labour, energy/fuel, materials and contracted services, and other operating costs. The denominator of farebox recovery and the cost-efficiency ratios.
-- **Is NOT:** NOT total expenses including capital: typically EXCLUDES capital expenditure. Watch AMORTIZATION/DEPRECIATION — PSAB statements of operations INCLUDE it, while CUTA-style operating cost EXCLUDES it; record which basis the source used.
+- **Is NOT:** NOT total expenses including capital: typically EXCLUDES capital expenditure. Watch AMORTIZATION/DEPRECIATION — PSAB statements of operations INCLUDE it, while CUTA-style operating cost EXCLUDES it. Record the structured cost_basis: 'psab_total' when the figure is an audited statement-of-operations total (amortization included), 'operating' when the source states amortization is excluded. The efficiency ratios use the operating basis; never fold amortization into a component line to make it fit.
 - **Unit:** CAD (currency)
 - **Period:** Annual for most; quarterly for a few (TransLink, OC Transpo, Calgary).
 - **Includes:** Labour, energy/fuel, materials and contracted services, other operating costs
@@ -257,10 +257,10 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 ### Farebox Recovery Ratio (`farebox_recovery_ratio`)
 
-- **Is:** Operating revenue divided by operating expenses — the fraction of the cost of service paid for by what the service earns.
-- **Is NOT:** NOT fares ÷ total cost-including-capital. The result depends on the expense basis (amortization included or not) and on whether the numerator is fares-only or all operating revenue — keep numerator and denominator on consistent bases.
+- **Is:** Farebox revenue divided by operating expenses — the fraction of the cost of service paid for by passenger fares. Uses farebox_revenue as the numerator (NOT the broad total_revenue_excluding_subsidy) and the operating-basis operating_expenses (amortization excluded) as the denominator.
+- **Is NOT:** NOT fares ÷ total cost-including-capital. The result depends on the expense basis (amortization included or not); the numerator is fares-only (farebox_revenue), never the broad revenue line — keep numerator and denominator on consistent bases.
 - **Unit:** % (ratio)
-- **Formula:** `total_revenue_excluding_subsidy / operating_expenses`
+- **Formula:** `farebox_revenue / operating_expenses`
 - **Period:** Matches its inputs' period; annual for most, quarterly for TransLink.
 - **Labels (EN):** Farebox recovery ratio; Cost recovery (R/C); Revenue-to-cost ratio; Operating ratio
 - **Labels (FR):** Taux de recouvrement (recettes/dépenses); Ratio d'autofinancement
@@ -655,7 +655,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
   - Farebox revenue (fares only) vs total_revenue_excluding_subsidy (fares + other earned revenue)
   - Fares vs One Fare / U-Pass reimbursements, which are subsidy — never farebox
   - Fares vs advertising/charter income (that is other_revenue)
-- **Equations:** `earned_revenue_components`
+- **Equations:** `average_fare_def`, `earned_revenue_components`, `farebox_recovery_def`
 - **Source tier:** annual_report
 
 ### Total Expenses (`total_expenses`)
