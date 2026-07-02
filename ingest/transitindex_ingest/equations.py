@@ -291,11 +291,6 @@ def full_display(eq: Equation) -> str:
 # the EQUATIONS catalog but is a valid metric_value_derivations.equation_code.
 PERIOD_ROLLUP = "period_rollup"
 
-# A reserved derivation code for fleet_capacity: a cross-MODE weighted aggregation
-# (Σ capacity_weight × fleet_size(mode)). Not a within-period SUM/RATIO equation, so it
-# lives outside the EQUATIONS catalog but is a valid metric_value_derivations.equation_code.
-MODE_WEIGHTED_FLEET = "mode_weighted_fleet"
-
 
 # --- the solver --------------------------------------------------------------
 

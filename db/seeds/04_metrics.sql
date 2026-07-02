@@ -1,4 +1,4 @@
--- Seed: the 42 universal metrics (28 sourced + 14 derived). applicable_modes = NULL
+-- Seed: the 41 universal metrics (27 sourced + 14 derived). applicable_modes = NULL
 -- (system-wide) at seed. The derived carry a formula; the sourced carry NULL.
 -- higher_is_better: NULL = neutral (no good/bad framing). Re-runnable.
 -- Ridership is ONE metric; monthly vs annual is the reporting period's granularity.
@@ -25,7 +25,6 @@ INSERT INTO core.metrics (code, display_name, unit, unit_type, is_derived, formu
   ('fleet_size',               'Fleet Size',                'count',    'count',    false, NULL,                                                              NULL),
   ('fleet_average_age',        'Fleet Average Age',         'years',    'time',     false, NULL,                                                              false),
   ('accessible_fleet_pct',     'Accessible Fleet %',        '%',        'ratio',    false, NULL,                                                              true),
-  ('fleet_capacity',           'Fleet scale',               'count',    'count',    false, NULL,                                                              NULL),
   ('capital_expenditure',      'Capital Expenditure',       'CAD',      'currency', false, NULL,                                                              NULL),
   ('total_financial_assets',     'Total Financial Assets',     'CAD', 'currency', false, NULL,                                          NULL),
   ('total_liabilities',          'Total Liabilities',          'CAD', 'currency', false, NULL,                                          NULL),

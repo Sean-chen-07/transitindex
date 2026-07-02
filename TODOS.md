@@ -373,9 +373,6 @@ exact-pin next-auth, `backup-data.bat` + `scripts/backup-data.ps1`.
 - **Extraction notes/source quotes are dropped at staging** — `core.pending_values` has no
   `notes` column, so the auditability data commit 5a7610a built never reaches the reviewer.
   Lane-0 migration + persist in insert_pending_value + carry into metric_values.notes on promote.
-- **fleet_capacity goes permanently stale after a fleet_size correction** —
-  `fleet_capacity_aggregate.py` skips a scope when ANY current row exists, including its own
-  prior output. Recompute+supersede when the recomputed total differs.
 - **Bulk vs slow promote idempotency mismatch** — ✓ stamp half **fixed 2026-06-11**
   (`promote_approved_bulk` now stamps `reviewer_notes='promoted'` in both repos, regression test
   in test_bulk_load.py). Remaining (minor): `promote_pending` still doesn't diff, so a manual

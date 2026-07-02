@@ -27,7 +27,6 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 | Fleet Size | Number of active revenue vehicles in the fleet. | count | Sourced | — | annual_report |
 | Fleet Average Age | Average age of the active vehicles. | years | Sourced | — | annual_report |
 | Accessible Fleet % | Share of the active fleet that is wheelchair-accessible. | % | Sourced | — | annual_report |
-| Fleet scale | A rail-weighted count of the fleet, so a metro car is not equated with a bus. | count | Sourced | — | annual_report |
 | Capital Expenditure | Spending on long-term assets (vehicles, facilities, infrastructure). | CAD | Sourced | — | annual_report |
 | Total Financial Assets | Cash, investments, and money owed to the agency — what could become cash. | CAD | Sourced | — | annual_report |
 | Total Liabilities | Everything the agency owes — debt, payables, employee future benefits. | CAD | Sourced | — | annual_report |
@@ -321,19 +320,20 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 ### Fleet Size (`fleet_size`)
 
-- **Is:** The count of active revenue vehicles the agency operates. A bus is one vehicle; for rail, count individual cars unless the agency reports trainsets (record which).
-- **Is NOT:** NOT total vehicles including non-revenue (supervisor cars, work vehicles), and NOT stored/retired units. For rail, a metro CAR is not the same unit as a bus — do not mix cars, trainsets, and buses into one undifferentiated count without noting the basis.
+- **Is:** The count of active revenue vehicles the agency operates, per mode. A bus is one vehicle. For RAIL, count TRAINS, not individual cars: one train (however many cars it is made up of) is one unit. Displayed on the detail page grouped into four capacity-ordered classes (metric-set-build-plan.md Phase 6): Bus (bus, BRT, trolleybus) · Light rail (light rail, streetcar) · Heavy rail (subway) · Commuter rail (commuter rail). Ferry, paratransit, and on-demand are excluded from the composition (still recorded as fleet_size, just not shown in it).
+- **Is NOT:** NOT total vehicles including non-revenue (supervisor cars, work vehicles), and NOT stored/retired units. For rail, do NOT count individual cars — a 6-car train is ONE unit, not six. NOT seated passenger capacity.
 - **Unit:** count (count)
 - **Period:** Annual (point-in-time, usually fiscal year-end).
-- **Includes:** Active revenue vehicles in service
-- **Excludes:** Non-revenue vehicles (work/supervisor units); Stored, retired, or not-yet-commissioned vehicles
+- **Includes:** Active revenue vehicles in service; For rail: count by TRAIN, not by car
+- **Excludes:** Non-revenue vehicles (work/supervisor units); Stored, retired, or not-yet-commissioned vehicles; Individual rail cars counted separately from their train
 - **Labels (EN):** Fleet size; Revenue vehicles; Active fleet; Vehicles in service
 - **Labels (FR):** Parc de véhicules; Taille du parc; Véhicules en service
 - **Where in a report:** Fleet/asset profile section or the capital-assets note.
 - **Common confusions:**
-  - A metro CAR vs a bus — different units; note whether rail is counted by car or trainset
+  - Rail cars vs trains — count TRAINS (one train = one unit), even if the agency's own report counts cars
   - Revenue vehicles vs total including non-revenue
   - Active fleet vs total owned including stored/retired
+  - Data caveat (2026-07-01): before this change, rail fleet_size guidance said "count cars unless trainsets". Any EXISTING per-mode rail fleet_size value must be re-checked against its source before being trusted as a train count — do not silently reinterpret a stored car-count as a train-count.
 - **Source tier:** annual_report
 
 ### Fleet Average Age (`fleet_average_age`)
@@ -366,23 +366,6 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 - **Common confusions:**
   - Accessible vehicles vs accessible stops/stations
   - Low-floor only vs fully accessible (ramp/lift) definitions
-- **Source tier:** annual_report
-
-### Fleet scale (`fleet_capacity`)
-
-- **Is:** A single fleet-scale figure that weights each mode's fleet_size by a fixed capacity weight (bus=1, streetcar=2, light_rail=3, subway=4, commuter_rail=5; BRT and trolleybus=1) and sums across modes. It corrects raw fleet_size, which would treat a high-capacity metro car and a bus as one unit each. Ferry, paratransit, and on-demand carry no weight and are excluded.
-- **Is NOT:** NOT seated passenger capacity and NOT a passenger-count: it is a weighted COUNT of revenue vehicles, not seats or design capacity. NOT raw fleet_size (which is unweighted), and NOT a ridership figure.
-- **Unit:** count (count)
-- **Period:** Annual (point-in-time); derived from the same period's per-mode fleet_size.
-- **Includes:** Per-mode fleet_size weighted by the mode's capacity weight (bus=1 … commuter_rail=5); BRT and trolleybus at weight 1
-- **Excludes:** Ferry, paratransit, and on-demand (no capacity weight assigned); Non-revenue vehicles and stored/retired units (inherited from fleet_size)
-- **Labels (EN):** Fleet scale; Weighted fleet; Capacity-weighted fleet
-- **Labels (FR):** Parc pondéré; Échelle du parc
-- **Where in a report:** Computed by TransitIndex from per-mode fleet_size and the mode capacity weights; no agency reports it directly.
-- **Common confusions:**
-  - Weighted fleet COUNT vs seated passenger capacity (seats) — these are different measures
-  - Capacity-weighted fleet vs raw unweighted fleet_size
-  - Modes with no weight (ferry, paratransit, on-demand) are excluded, not counted at zero use
 - **Source tier:** annual_report
 
 ### Capital Expenditure (`capital_expenditure`)

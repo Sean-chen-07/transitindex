@@ -15,14 +15,14 @@ from transitindex_ingest.db.memory import InMemoryRepository
 
 
 def test_seed_lookups_resolve(repo):
-    # 10 agencies, 42 metrics, 10 modes, 8 feeds all resolve.
+    # 10 agencies, 41 metrics, 10 modes, 8 feeds all resolve.
     assert repo.agency_id("ttc") > 0
     assert repo.agency_id("burlington-transit") > 0
     assert repo.metric_id("subsidy_per_rider") > 0
     assert repo.mode_id("subway") > 0
     assert repo.mode_id(None) is None
     assert repo.feed_id("statcan_307") > 0
-    assert len(repo.list_metrics()) == 42
+    assert len(repo.list_metrics()) == 41
 
 
 def test_unknown_lookups_raise(repo):

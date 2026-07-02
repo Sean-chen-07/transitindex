@@ -1,4 +1,4 @@
-import type { MetricView, SeriesPoint } from "./types";
+import type { MetricView, SeriesPoint, FleetClassCount } from "./types";
 
 /**
  * Pure shaping of MetricView[] into the two-tab detail view-model
@@ -16,14 +16,23 @@ export interface StatementRowDef extends SlotDef {
   indent: boolean;
 }
 
-/** Spec §3.1 — the six directory-card metrics, in order. */
+/** Spec §3.1 — the five directory-card metrics, in order (metric-set-build-plan.md
+ * Phase 6 dropped the weighted `fleet_capacity` hero; the fleet composition is a
+ * separate, non-ranked block — see FLEET_CLASS_LABELS / FleetClassVM). */
 export const HERO_SLOTS: SlotDef[] = [
   { code: "ridership", label: "Ridership" },
   { code: "total_revenue_excluding_subsidy", label: "Total revenue excluding subsidy" },
   { code: "on_time_performance", label: "On-time performance" },
   { code: "cost_per_rider", label: "Cost per rider" },
   { code: "subsidy_per_rider", label: "Subsidy per rider" },
-  { code: "fleet_capacity", label: "Fleet scale" },
+];
+
+/** Display order + labels for the 4-class fleet composition (Phase 6 step 6/8). */
+export const FLEET_CLASS_LABELS: { fleetClass: string; label: string }[] = [
+  { fleetClass: "bus", label: "Bus" },
+  { fleetClass: "light_rail", label: "Light rail" },
+  { fleetClass: "heavy_rail", label: "Heavy rail" },
+  { fleetClass: "commuter_rail", label: "Commuter rail" },
 ];
 
 /** Spec §3.2 — current value only, no charts, no ranks. */
@@ -98,6 +107,13 @@ export interface ValueRowVM {
   asOfLabel: string;
 }
 
+/** One labelled count in the 4-class fleet composition (not ranked). */
+export interface FleetClassVM {
+  fleetClass: string;
+  label: string;
+  value: number | null;
+}
+
 export interface StatementRowVM {
   code: string;
   label: string;
@@ -120,6 +136,7 @@ export interface DetailViewModel {
   heroes: HeroVM[];
   ratios: ValueRowVM[];
   serviceFleet: ValueRowVM[];
+  fleetComposition: FleetClassVM[];
   financials: FinancialsVM;
 }
 
@@ -211,8 +228,12 @@ function buildFinancials(byCode: Map<string, MetricView>): FinancialsVM {
   };
 }
 
-export function buildDetailModel(metrics: MetricView[]): DetailViewModel {
+export function buildDetailModel(
+  metrics: MetricView[],
+  fleetComposition: FleetClassCount[] = [],
+): DetailViewModel {
   const byCode = new Map(metrics.map((m) => [m.metricCode, m]));
+  const fleetByClass = new Map(fleetComposition.map((f) => [f.fleetClass, f.value]));
 
   const heroes: HeroVM[] = HERO_SLOTS.map((slot) => {
     const m = byCode.get(slot.code);
@@ -248,10 +269,17 @@ export function buildDetailModel(metrics: MetricView[]): DetailViewModel {
     };
   });
 
+  const fleetVM: FleetClassVM[] = FLEET_CLASS_LABELS.map(({ fleetClass, label }) => ({
+    fleetClass,
+    label,
+    value: fleetByClass.get(fleetClass) ?? null,
+  }));
+
   return {
     heroes,
     ratios: RATIO_ROWS.map((def) => toValueRow(def, byCode.get(def.code))),
     serviceFleet: SERVICE_FLEET_ROWS.map((def) => toValueRow(def, byCode.get(def.code))),
+    fleetComposition: fleetVM,
     financials: buildFinancials(byCode),
   };
 }

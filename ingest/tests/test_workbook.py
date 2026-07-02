@@ -141,15 +141,13 @@ def test_quarter_year_and_derived_cells_are_formulas(repo, tmp_path):
     assert isinstance(af, str) and af.startswith("=") and "/" in af
 
 
-def test_fleet_block_present_with_modes_and_scale(repo, tmp_path):
+def test_fleet_block_present_with_modes(repo, tmp_path):
     out = str(tmp_path / "wb.xlsx")
     workbook.export_workbook(repo, out, [2023])
     ws = _load(out)["TTC"]
 
     for _mode, label in workbook.FLEET_MODES:
         _row_for(ws, f"Fleet — {label}")  # raises if missing
-    scale = _year_cell(ws, label="Fleet scale", year=2023)
-    assert isinstance(scale, str) and scale.startswith("=")  # computed Fleet scale
 
 
 def test_dictionary_lists_all_metrics(repo, tmp_path):
@@ -160,7 +158,7 @@ def test_dictionary_lists_all_metrics(repo, tmp_path):
     assert [c.value for c in ws[1]] == [
         "Column", "Plain meaning", "Unit", "Type", "Formula", "Native frequency",
     ]
-    assert ws.max_row - 1 == 42  # all metrics, incl. fleet_capacity + balance sheet + financial-statement additions
+    assert ws.max_row - 1 == 41  # all metrics, incl. balance sheet + financial-statement additions
     by_name = {ws.cell(row=r, column=1).value: r for r in range(2, ws.max_row + 1)}
     assert ws.cell(row=by_name[NAMES["ridership"]], column=6).value == "Monthly"
     assert ws.cell(row=by_name[NAMES["operating_expenses"]], column=6).value == "Annual"
@@ -280,9 +278,8 @@ def test_year_header_label_is_fiscal_for_fiscal_agency_and_plain_for_calendar(re
     assert ttc.cell(row=workbook._YEAR_HEADER_ROW, column=ttc_col).value == 2023
 
 
-def test_per_mode_fleet_imports_with_mode_id_and_aggregates_capacity(repo, tmp_path):
-    """Typed per-mode fleet rows land as fleet_size at the right mode_id; the server
-    aggregates them into fleet_capacity (the grey Fleet-scale cell is not imported)."""
+def test_per_mode_fleet_imports_with_mode_id(repo, tmp_path):
+    """Typed per-mode fleet rows land as fleet_size at the right mode_id."""
     out = str(tmp_path / "wb.xlsx")
     workbook.export_workbook(repo, out, [2023])
 
@@ -290,8 +287,6 @@ def test_per_mode_fleet_imports_with_mode_id_and_aggregates_capacity(repo, tmp_p
     ws = wb["TTC"]
     _set_year_cell(ws, label="Fleet — Bus", year=2023, value=100)
     _set_year_cell(ws, label="Fleet — Subway", year=2023, value=10)
-    # Bogus number typed into the grey Fleet-scale cell: must be ignored.
-    _set_year_cell(ws, label="Fleet scale", year=2023, value=99999)
     wb.save(out)
 
     workbook.import_workbook(repo, out)
@@ -299,11 +294,6 @@ def test_per_mode_fleet_imports_with_mode_id_and_aggregates_capacity(repo, tmp_p
 
     assert _current(repo, "ttc", ap, "fleet_size", mode_code="bus").value == Decimal("100")
     assert _current(repo, "ttc", ap, "fleet_size", mode_code="subway").value == Decimal("10")
-    # fleet_capacity = 1*100 (bus) + 4*10 (subway) = 140, derived server-side; the
-    # typed 99999 is ignored because that cell is never imported.
-    cap = _current(repo, "ttc", ap, "fleet_capacity")
-    assert cap is not None and cap.value == Decimal("140")
-    assert cap.mode_id is None  # a system-wide aggregate, not a per-mode row
 
 
 def test_grey_computed_cells_are_not_imported(repo, tmp_path):

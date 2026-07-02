@@ -160,13 +160,14 @@ describe("financials grid", () => {
 describe("placement (the spec's 32-metric map)", () => {
   // Hard-coded from docs/design/detail-view-metrics.md §2 — 32 unique codes,
   // 33 placements (total_revenue_excluding_subsidy is the one deliberate repeat).
+  // fleet_capacity (metric-set-build-plan.md Phase 6) is removed: the fleet
+  // composition is a non-ranked block outside this spec's placement map.
   const SPEC_CODES = [
     "ridership",
     "total_revenue_excluding_subsidy",
     "on_time_performance",
     "cost_per_rider",
     "subsidy_per_rider",
-    "fleet_capacity",
     "farebox_recovery_ratio",
     "cost_per_hour",
     "trips_per_revenue_hour",
@@ -195,9 +196,9 @@ describe("placement (the spec's 32-metric map)", () => {
     "net_debt_per_capita",
   ];
 
-  it("the union of all sections equals the 32 unique spec codes", () => {
-    expect(SPEC_CODES).toHaveLength(32);
-    expect(new Set(SPEC_CODES).size).toBe(32);
+  it("the union of all sections equals the 31 unique spec codes", () => {
+    expect(SPEC_CODES).toHaveLength(31);
+    expect(new Set(SPEC_CODES).size).toBe(31);
     const placed = [
       ...HERO_SLOTS,
       ...RATIO_ROWS,
@@ -205,7 +206,7 @@ describe("placement (the spec's 32-metric map)", () => {
       ...OPERATIONS_ROWS,
       ...POSITION_ROWS,
     ].map((d) => d.code);
-    expect(placed).toHaveLength(33); // 32 unique + the deliberate repeat
+    expect(placed).toHaveLength(32); // 31 unique + the deliberate repeat
     expect(new Set(placed)).toEqual(new Set(SPEC_CODES));
   });
 

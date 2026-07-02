@@ -21,9 +21,10 @@ plus two reference tabs.
         (grey). Derived ratios show as a grey live Excel formula in the Year cell.
 
         Each agency tab also carries a per-mode FLEET block: one white column per
-        weighted mode (Bus / Subway / Light rail / Commuter rail / Streetcar) that
-        IMPORTS into metric `fleet_size` at that mode, plus a grey computed
-        "Fleet scale" (fleet_capacity) cell.
+        mode (Bus / Subway / Light rail / Commuter rail / Streetcar) that IMPORTS
+        into metric `fleet_size` at that mode. The detail page groups these into a
+        4-class composition (Bus / Light rail / Heavy rail / Commuter rail) for
+        display; the workbook itself has no computed fleet cell.
 
 Colours: white = type here · grey = calculated / do-not-touch. Every grey cell is
 recomputed on the server, so import reads ONLY the white cells (never a grey /
@@ -40,7 +41,7 @@ import re
 from typing import Optional
 
 from .equations import RatioEquation, defining_equation
-from .refdata import METRICS, MODE_CAPACITY_WEIGHT, RATED_METRICS
+from .refdata import METRICS, RATED_METRICS
 
 # A fiscal agency's year-block header is written as its real fiscal label
 # ('FY2024-25'); the leading 4-digit year IS the START year annual_period wants.
@@ -74,30 +75,26 @@ def _parse_year_header(raw: object) -> Optional[int]:
 # month-by-month; their Q/YTD/Year cells are live SUM roll-ups.
 MONTHLY_METRICS: list[str] = ["ridership", "total_revenue_excluding_subsidy"]
 
-# fleet_size is entered PER MODE in the Fleet block, not as a system-wide row;
-# fleet_capacity is the derived Fleet-scale cell. Both are kept out of the main
-# metric rows.
+# fleet_size is entered PER MODE in the Fleet block, not as a system-wide row, so
+# it is kept out of the main metric rows.
 _FLEET_SIZE = "fleet_size"
-_FLEET_CAPACITY = "fleet_capacity"
 
 # System-wide sourced metrics typed once a year (everything sourced except the two
 # monthly feeds and the per-mode fleet_size). In METRICS order.
 ANNUAL_SOURCED_METRICS: list[str] = [
     c for c, m in METRICS.items()
-    if not m["is_derived"] and c not in MONTHLY_METRICS and c not in (_FLEET_SIZE, _FLEET_CAPACITY)
+    if not m["is_derived"] and c not in MONTHLY_METRICS and c != _FLEET_SIZE
 ]
-# Derived system-wide metrics shown as a live Year-cell formula. fleet_capacity is
-# excluded here -- it lives in the Fleet block as its own Fleet-scale cell.
+# Derived system-wide metrics shown as a live Year-cell formula.
 ANNUAL_DERIVED_METRICS: list[str] = [
-    c for c, m in METRICS.items() if m["is_derived"] and c != _FLEET_CAPACITY
+    c for c, m in METRICS.items() if m["is_derived"]
 ]
 
 # The full ordered list of metric ROWS on an agency tab: monthly feeds first, then
-# annual sourced, then derived. fleet_size / fleet_capacity are NOT here (Fleet block).
+# annual sourced, then derived. fleet_size is NOT here (Fleet block).
 METRIC_ROWS: list[str] = MONTHLY_METRICS + ANNUAL_SOURCED_METRICS + ANNUAL_DERIVED_METRICS
 
-# The weighted modes whose fleet_size the user enters, in display order (the modes
-# that carry a capacity weight; Σ weight × fleet_size = fleet_capacity).
+# The modes whose fleet_size the user enters, in display order.
 FLEET_MODES: list[tuple[str, str]] = [
     ("bus", "Bus"),
     ("subway", "Subway"),
@@ -244,18 +241,6 @@ def _derived_year_formula(code: str, year_start: int, year_rows: dict[str, int])
     return f'=IF({guard},"",{"".join(parts)})'
 
 
-def _fleet_capacity_formula(year_start: int, mode_rows: dict[str, int]) -> str:
-    """Live Fleet-scale formula: Σ capacity_weight × fleet_size(mode) over the year
-    block. Blank when no mode cell is filled."""
-    year_col = _col(year_start + _YEAR_OFFSET)
-    cells = [f"{year_col}{mode_rows[m]}" for m, _label in FLEET_MODES]
-    guard = "COUNT(" + ",".join(cells) + ")=0"
-    terms = "+".join(
-        f"{MODE_CAPACITY_WEIGHT[m]}*N({year_col}{mode_rows[m]})" for m, _label in FLEET_MODES
-    )
-    return f'=IF({guard},"",{terms})'
-
-
 # --- Export ------------------------------------------------------------------
 
 
@@ -342,15 +327,15 @@ def _build_howto_sheet(wb) -> None:
          "cells for those rows are greyed out -- you don't use them.", False),
         ("- Fleet: at the bottom of each tab, type the number of vehicles for each "
          "mode (Bus, Subway, Light rail, Commuter rail, Streetcar) in the YEAR "
-         "column. The 'Fleet scale' row is worked out for you.", False),
+         "column. For rail, count TRAINS, not individual cars.", False),
         ("", False),
         ("Leave a cell BLANK if you don't have the number yet -- never guess. The "
          "website keeps the last known number, so a blank here is fine.", False),
         ("", False),
         ("The colour code", True),
         ("- WHITE cells: type here.", False),
-        ("- GREY cells: worked out automatically (quarter / year totals, ratios, "
-         "Fleet scale). Don't type in them -- anything you put there is ignored "
+        ("- GREY cells: worked out automatically (quarter / year totals, ratios). "
+         "Don't type in them -- anything you put there is ignored "
          "and recalculated on the server.", False),
         ("", False),
         ("A note on years", True),
@@ -382,14 +367,12 @@ def _build_dictionary_sheet(wb, names: dict[str, str], meanings: dict[str, str])
 
     row = 2
     for code, meta in METRICS.items():
-        # fleet_capacity is is_derived=False (sourced per-mode), but it IS computed
-        # in the Fleet block, so show it as calculated for the reader.
-        is_calculated = meta["is_derived"] or code == _FLEET_CAPACITY
+        is_calculated = meta["is_derived"]
         ws.cell(row=row, column=1, value=names[code])
         ws.cell(row=row, column=2, value=meanings[code])
         ws.cell(row=row, column=3, value=meta["unit"])
         ws.cell(row=row, column=4, value="Calculated" if is_calculated else "Sourced")
-        ws.cell(row=row, column=5, value=meta["formula"] or ("Σ capacity_weight × fleet_size(mode)" if code == _FLEET_CAPACITY else ""))
+        ws.cell(row=row, column=5, value=meta["formula"] or "")
         ws.cell(row=row, column=6, value=_native_frequency(code))
         row += 1
 
@@ -507,7 +490,6 @@ def _build_agency_sheet(wb, slug, short_name, years, names, repo, index) -> int:
     mode_row: dict[str, int] = {
         m: fleet_header_row + 1 + i for i, (m, _label) in enumerate(FLEET_MODES)
     }
-    cap_row = fleet_header_row + 1 + len(FLEET_MODES)
     fmt_fleet = _excel_unit_format(_FLEET_SIZE)
 
     for m, label in FLEET_MODES:
@@ -531,19 +513,6 @@ def _build_agency_sheet(wb, slug, short_name, years, names, repo, index) -> int:
                     ycell.value = float(vals[_FLEET_SIZE])
                     filled += 1
 
-    # Fleet scale (fleet_capacity): grey computed cell per year (Year col only).
-    ws.cell(row=cap_row, column=_LABEL_COL, value="Fleet scale").font = bold
-    for yi, _year in enumerate(years):
-        ystart = _year_start_col(yi)
-        for off in range(YEAR_BLOCK_WIDTH):
-            if off == _YEAR_OFFSET:
-                continue
-            ws.cell(row=cap_row, column=ystart + off).fill = grey
-        c = ws.cell(row=cap_row, column=ystart + _YEAR_OFFSET)
-        c.value = _fleet_capacity_formula(ystart, mode_row)
-        c.number_format = _excel_unit_format(_FLEET_CAPACITY)
-        c.fill = grey
-
     # --- presentation --------------------------------------------------------
     ws.freeze_panes = ws.cell(row=_FIRST_DATA_ROW, column=_FIRST_YEAR_COL)
     ws.column_dimensions["A"].width = 26
@@ -562,9 +531,8 @@ def import_workbook(repo, path: str) -> dict:
     -> the agency's annual period; per-mode Fleet Year cells -> fleet_size at that
     mode_id. Then stage -> promote -> roll monthly ridership/revenue up to the
     year -> recompute derived ratios for every touched (agency, period) ->
-    aggregate per-mode fleet into fleet_capacity -> refresh ranks. Grey cells
-    (Q / YTD / Year roll-ups, derived ratios, Fleet scale) are never read; blank
-    cells are skipped. Returns counts plus any warnings.
+    refresh ranks. Grey cells (Q / YTD / Year roll-ups, derived ratios) are never
+    read; blank cells are skipped. Returns counts plus any warnings.
     """
     from decimal import Decimal, InvalidOperation
 
@@ -573,7 +541,6 @@ def import_workbook(repo, path: str) -> dict:
     from .contract import MetricValueRecord, SourceRef
     from .dictionary import load_dictionary
     from .jobs.derived_recompute import recompute_derived
-    from .jobs.fleet_capacity_aggregate import fleet_capacity_aggregate
     from .jobs.rank_refresh import refresh_ranks
     from .jobs.rollup import calendar_rollup_metric, rollup_metric
     from .periods import annual_period, monthly_period
@@ -712,7 +679,7 @@ def import_workbook(repo, path: str) -> dict:
             # --- a metric row -------------------------------------------------
             code = code_of_name.get(label)
             if code is None or code not in METRIC_ROWS:
-                continue  # Fleet scale, separators, unknown rows: skip
+                continue  # separators, unknown rows: skip
             if METRICS[code]["is_derived"]:
                 continue  # derived Year cell is a grey formula -> never imported
 
@@ -780,13 +747,6 @@ def import_workbook(repo, path: str) -> dict:
         res = recompute_derived(repo, agency_slug, pid)
         derived += len(res.ids)
         warnings.extend(res.warnings)
-
-    # Aggregate per-mode fleet sizes into fleet_capacity AFTER per-mode fleet
-    # values exist (promoted above), and BEFORE rank refresh so the new aggregate
-    # is ranked this run.
-    for agency_slug, pid in sorted(agency_periods):
-        fleet = fleet_capacity_aggregate(repo, agency_slug, pid)
-        derived += len(fleet.value_ids)
 
     for pid in periods:
         for code in METRICS:

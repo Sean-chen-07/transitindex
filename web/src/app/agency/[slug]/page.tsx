@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAgencySummary } from "@/server/data/agencies";
 import { getAttribution } from "@/server/data/attribution";
-import { getDetailMetrics } from "@/server/metrics/access";
+import { getDetailMetrics, getFleetComposition } from "@/server/metrics/access";
 import { buildDetailModel } from "@/server/metrics/detail-model";
 import { getSession, isPaid } from "@/server/entitlement";
 import { PendingNotice } from "@/components/common/states";
@@ -45,13 +45,14 @@ export default async function AgencyDetailPage({
   const summary = await getAgencySummary(slug);
   if (!summary) notFound();
 
-  const [attributions, metrics, session, { checkout }] = await Promise.all([
+  const [attributions, metrics, fleetComposition, session, { checkout }] = await Promise.all([
     getAttribution(slug),
     getDetailMetrics(slug),
+    getFleetComposition(slug),
     getSession(),
     searchParams,
   ]);
-  const model = buildDetailModel(metrics);
+  const model = buildDetailModel(metrics, fleetComposition);
   // Presentation only — the download route re-checks the live session + isPaid itself.
   const subscribed = await isPaid(session);
   // Acknowledge a Stripe checkout return. On success the webhook may lag, so a just-paid
@@ -98,7 +99,11 @@ export default async function AgencyDetailPage({
           highlights={
             <>
               <HeroGrid heroes={model.heroes} />
-              <ValueTables ratios={model.ratios} serviceFleet={model.serviceFleet} />
+              <ValueTables
+                ratios={model.ratios}
+                serviceFleet={model.serviceFleet}
+                fleetComposition={model.fleetComposition}
+              />
             </>
           }
           financials={

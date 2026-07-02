@@ -25,19 +25,20 @@ MODES: tuple[str, ...] = (
     "on_demand",
 )
 
-# Per-mode capacity weight for the aggregated `fleet_capacity` metric
-# (Σ capacity_weight × fleet_size(mode)). Mirrors db/seeds/01_modes.sql +
-# db/migrations/015_mode_capacity_weight.sql. Modes absent here (ferry,
-# paratransit, on_demand) keep a NULL weight and are excluded from the aggregation.
-MODE_CAPACITY_WEIGHT: Mapping[str, int] = MappingProxyType(
+# Mode -> display class for the 4-class fleet composition shown on the detail page
+# (metric-set-build-plan.md Phase 6; supersedes the removed weighted `fleet_capacity`
+# metric). Groups the existing per-mode `fleet_size` into four capacity-ordered,
+# plain labelled counts. Modes absent here (ferry, paratransit, on_demand) are
+# excluded from the composition.
+FLEET_CLASS: Mapping[str, str] = MappingProxyType(
     {
-        "bus": 1,
-        "streetcar": 2,
-        "light_rail": 3,
-        "subway": 4,
-        "commuter_rail": 5,
-        "brt": 1,
-        "trolleybus": 1,
+        "bus": "bus",
+        "brt": "bus",
+        "trolleybus": "bus",
+        "light_rail": "light_rail",
+        "streetcar": "light_rail",
+        "subway": "heavy_rail",
+        "commuter_rail": "commuter_rail",
     }
 )
 
@@ -134,7 +135,7 @@ AGENCIES: Mapping[str, Mapping] = MappingProxyType(
     }
 )
 
-# --- 42 metrics (db/seeds/04_metrics.sql) ------------------------------------
+# --- 41 metrics (db/seeds/04_metrics.sql) ------------------------------------
 # code -> unit, unit_type, is_derived, formula (None unless derived),
 # higher_is_better (None = neutral). Insertion order preserved.
 # Ridership is ONE metric; monthly vs annual is the reporting period's
@@ -222,10 +223,6 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         "accessible_fleet_pct": MappingProxyType(
             {"unit": "%", "unit_type": "ratio", "is_derived": False,
              "formula": None, "higher_is_better": True}
-        ),
-        "fleet_capacity": MappingProxyType(
-            {"unit": "count", "unit_type": "count", "is_derived": False,
-             "formula": None, "higher_is_better": None}
         ),
         "capital_expenditure": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": False,

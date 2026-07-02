@@ -351,19 +351,26 @@ metrics:
     display_name: Fleet Size
     plain_meaning: Number of active revenue vehicles in the fleet.
     definition: >-
-      The count of active revenue vehicles the agency operates. A bus is one vehicle; for
-      rail, count individual cars unless the agency reports trainsets (record which).
+      The count of active revenue vehicles the agency operates, per mode. A bus is one
+      vehicle. For RAIL, count TRAINS, not individual cars: one train (however many cars
+      it is made up of) is one unit. Displayed on the detail page grouped into four
+      capacity-ordered classes (metric-set-build-plan.md Phase 6): Bus (bus, BRT,
+      trolleybus) · Light rail (light rail, streetcar) · Heavy rail (subway) · Commuter
+      rail (commuter rail). Ferry, paratransit, and on-demand are excluded from the
+      composition (still recorded as fleet_size, just not shown in it).
     is_not: >-
       NOT total vehicles including non-revenue (supervisor cars, work vehicles), and NOT
-      stored/retired units. For rail, a metro CAR is not the same unit as a bus — do not mix
-      cars, trainsets, and buses into one undifferentiated count without noting the basis.
+      stored/retired units. For rail, do NOT count individual cars — a 6-car train is ONE
+      unit, not six. NOT seated passenger capacity.
     source_tier: annual_report
     period_semantics: "Annual (point-in-time, usually fiscal year-end)."
     includes:
       - "Active revenue vehicles in service"
+      - "For rail: count by TRAIN, not by car"
     excludes:
       - "Non-revenue vehicles (work/supervisor units)"
       - "Stored, retired, or not-yet-commissioned vehicles"
+      - "Individual rail cars counted separately from their train"
     labels_en:
       - "Fleet size"
       - "Revenue vehicles"
@@ -375,44 +382,14 @@ metrics:
       - "Véhicules en service"
     report_location: "Fleet/asset profile section or the capital-assets note."
     confusions:
-      - "A metro CAR vs a bus — different units; note whether rail is counted by car or trainset"
+      - "Rail cars vs trains — count TRAINS (one train = one unit), even if the agency's own report counts cars"
       - "Revenue vehicles vs total including non-revenue"
       - "Active fleet vs total owned including stored/retired"
-
-  fleet_capacity:
-    display_name: Fleet scale
-    plain_meaning: A rail-weighted count of the fleet, so a metro car is not equated with a bus.
-    definition: >-
-      A single fleet-scale figure that weights each mode's fleet_size by a fixed capacity weight
-      (bus=1, streetcar=2, light_rail=3, subway=4, commuter_rail=5; BRT and trolleybus=1) and sums
-      across modes. It corrects raw fleet_size, which would treat a high-capacity metro car and a
-      bus as one unit each. Ferry, paratransit, and on-demand carry no weight and are excluded.
-    is_not: >-
-      NOT seated passenger capacity and NOT a passenger-count: it is a weighted COUNT of revenue
-      vehicles, not seats or design capacity. NOT raw fleet_size (which is unweighted), and NOT a
-      ridership figure.
-    source_tier: annual_report
-    period_semantics: "Annual (point-in-time); derived from the same period's per-mode fleet_size."
-    includes:
-      - "Per-mode fleet_size weighted by the mode's capacity weight (bus=1 … commuter_rail=5)"
-      - "BRT and trolleybus at weight 1"
-    excludes:
-      - "Ferry, paratransit, and on-demand (no capacity weight assigned)"
-      - "Non-revenue vehicles and stored/retired units (inherited from fleet_size)"
-    labels_en:
-      - "Fleet scale"
-      - "Weighted fleet"
-      - "Capacity-weighted fleet"
-    labels_fr:
-      - "Parc pondéré"
-      - "Échelle du parc"
-    report_location: >-
-      Computed by TransitIndex from per-mode fleet_size and the mode capacity weights; no agency
-      reports it directly.
-    confusions:
-      - "Weighted fleet COUNT vs seated passenger capacity (seats) — these are different measures"
-      - "Capacity-weighted fleet vs raw unweighted fleet_size"
-      - "Modes with no weight (ferry, paratransit, on-demand) are excluded, not counted at zero use"
+      - >-
+        Data caveat (2026-07-01): before this change, rail fleet_size guidance said "count
+        cars unless trainsets". Any EXISTING per-mode rail fleet_size value must be
+        re-checked against its source before being trusted as a train count — do not
+        silently reinterpret a stored car-count as a train-count.
 
   fleet_average_age:
     display_name: Fleet Average Age

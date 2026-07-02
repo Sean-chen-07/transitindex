@@ -1,11 +1,25 @@
 import "server-only";
-import { and, eq, asc, isNull } from "drizzle-orm";
+import { and, eq, asc, isNull, isNotNull } from "drizzle-orm";
 import { db } from "@/server/db";
-import { metricValues, metrics, reportingPeriods, metricRanks } from "@/db/schema";
+import { metricValues, metrics, modes, reportingPeriods, metricRanks } from "@/db/schema";
 import { getAgencyBySlug } from "@/server/data/agencies";
 import { getLatestRankedPeriodPerMetric } from "@/server/data/ranks";
 import { FREE_COMPARISON_SET } from "@/server/data/constants";
 import type { RawMetricSeries } from "./transform";
+import type { FleetClassCount } from "./types";
+
+// Mode -> fleet display class (metric-set-build-plan.md Phase 6), mirroring
+// ingest/transitindex_ingest/refdata.py FLEET_CLASS. Ferry, paratransit, and
+// on_demand are excluded from the composition.
+const FLEET_CLASS: Record<string, string> = {
+  bus: "bus",
+  brt: "bus",
+  trolleybus: "bus",
+  light_rail: "light_rail",
+  streetcar: "light_rail",
+  subway: "heavy_rail",
+  commuter_rail: "commuter_rail",
+};
 
 /**
  * THE ONLY module permitted to read the raw value-bearing table (core.metric_values).
@@ -111,4 +125,52 @@ export async function getRawMetricSeries(slug: string): Promise<RawMetricSeries[
     });
   }
   return out;
+}
+
+/**
+ * The latest per-mode `fleet_size` (is_current=true, 'total' scope), grouped into
+ * the 4 display classes (metric-set-build-plan.md Phase 6; supersedes the removed
+ * `fleet_capacity` metric). One row per class present, "latest period per mode"
+ * summed within a class. Not ranked -- no rank lookup here.
+ */
+export async function getFleetComposition(slug: string): Promise<FleetClassCount[]> {
+  const agency = await getAgencyBySlug(slug);
+  if (!agency) return [];
+
+  const rows = await db
+    .select({
+      modeCode: modes.code,
+      value: metricValues.value,
+      endDate: reportingPeriods.endDate,
+    })
+    .from(metricValues)
+    .innerJoin(metrics, eq(metricValues.metricId, metrics.id))
+    .innerJoin(reportingPeriods, eq(metricValues.reportingPeriodId, reportingPeriods.id))
+    .innerJoin(modes, eq(metricValues.modeId, modes.id))
+    .where(
+      and(
+        eq(metricValues.agencyId, agency.id),
+        eq(metricValues.isCurrent, true),
+        eq(metrics.code, "fleet_size"),
+        eq(metricValues.serviceScope, "total"),
+        isNotNull(metricValues.modeId),
+      ),
+    )
+    .orderBy(asc(reportingPeriods.endDate));
+
+  // Latest value per mode: rows are chronological ascending, so the last write
+  // per mode code wins (excludes ferry / paratransit / on_demand -- no FLEET_CLASS).
+  const latestByModeClass = new Map<string, { cls: string; value: number }>();
+  for (const r of rows) {
+    const cls = FLEET_CLASS[r.modeCode];
+    if (!cls) continue;
+    latestByModeClass.set(r.modeCode, { cls, value: Number(r.value) });
+  }
+
+  const byClass = new Map<string, number>();
+  for (const { cls, value } of latestByModeClass.values()) {
+    byClass.set(cls, (byClass.get(cls) ?? 0) + value);
+  }
+
+  return [...byClass.entries()].map(([fleetClass, value]) => ({ fleetClass, value }));
 }
