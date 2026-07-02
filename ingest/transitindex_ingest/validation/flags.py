@@ -148,13 +148,19 @@ def sum_mismatch(
       * total_financial_assets + total_non_financial_assets == total_assets
       * accumulated_surplus == total_assets - total_liabilities
       * net_debt == total_liabilities - total_financial_assets
-      * component identities (addendum #2):
-          cash_and_investments + other_financial_assets == total_financial_assets
-          long_term_debt + other_liabilities == total_liabilities
-          tangible_capital_assets + other_non_financial_assets == total_non_financial_assets
-      * component bounds: cash_and_investments <= total_financial_assets,
-        long_term_debt <= total_liabilities,
-        tangible_capital_assets <= total_non_financial_assets
+
+    Component + residual == total identities (income statement + balance
+    sheet, addendum #2 -- same SumEquation shape as earned_revenue_components /
+    financial_assets_components / liabilities_components /
+    non_financial_assets_components in equations.py):
+      * farebox_revenue + other_revenue == total_revenue_excluding_subsidy
+      * cash_and_investments + other_financial_assets == total_financial_assets
+      * long_term_debt + other_liabilities == total_liabilities
+      * tangible_capital_assets + other_non_financial_assets == total_non_financial_assets
+    Component bounds: farebox_revenue <= total_revenue_excluding_subsidy,
+      cash_and_investments <= total_financial_assets,
+      long_term_debt <= total_liabilities,
+      tangible_capital_assets <= total_non_financial_assets
 
     Each identity's tolerance is relative to its anchor (the total it reconciles
     to). Returns ``[sum_mismatch]`` if any identity fails, else ``[]`` -- the flag
@@ -225,11 +231,13 @@ def sum_mismatch(
         if _off(net_debt, liabilities - financial, liabilities):
             return [SUM_MISMATCH]
 
-    # Balance-sheet component identities (addendum #2) + bounds. Each fires only
-    # when all its terms are present, matching the expense-components behaviour;
-    # a residual solving negative IS the bound violation, so the equality
-    # subsumes the bound where both sides are sourced.
+    # Component + residual == total identities (income statement + balance
+    # sheet, addendum #2) + bounds. Each fires only when all its terms are
+    # present, matching the expense-components behaviour; a residual solving
+    # negative IS the bound violation, so the equality subsumes the bound
+    # where both sides are sourced.
     _component_families = (
+        ("total_revenue_excluding_subsidy", "farebox_revenue", "other_revenue"),
         ("total_financial_assets", "cash_and_investments", "other_financial_assets"),
         ("total_liabilities", "long_term_debt", "other_liabilities"),
         ("total_non_financial_assets", "tangible_capital_assets", "other_non_financial_assets"),

@@ -44,11 +44,11 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 | Total Revenue | All money the organization took in — fares, other revenue, and government subsidy combined. | CAD | Sourced | — | annual_report |
 | Farebox Revenue | Money riders themselves pay in fares. | CAD | Sourced | — | annual_report |
 | Total Expenses | All costs the organization incurred, including amortization. | CAD | Sourced | — | annual_report |
-| Other Revenue | Earned revenue that is not fares and not government subsidy. | CAD | Calculated | farebox_revenue + other_revenue | derived |
+| Other Revenue | Earned revenue that is not fares and not government subsidy. | CAD | Calculated | total_revenue_excluding_subsidy - farebox_revenue | derived |
 | Annual Surplus / (Deficit) | Whether the organization ended the year up (surplus) or down (deficit). | CAD | Calculated | total_revenue - total_expenses | derived |
-| Other Financial Assets | Financial assets other than cash and investments — mainly receivables. | CAD | Calculated | cash_and_investments + other_financial_assets | derived |
-| Other Liabilities | Liabilities other than long-term debt — payables, deferred revenue, employee benefits. | CAD | Calculated | long_term_debt + other_liabilities | derived |
-| Other Non-Financial Assets | Non-financial assets other than tangible capital assets — inventories, prepaids. | CAD | Calculated | tangible_capital_assets + other_non_financial_assets | derived |
+| Other Financial Assets | Financial assets other than cash and investments — mainly receivables. | CAD | Calculated | total_financial_assets - cash_and_investments | derived |
+| Other Liabilities | Liabilities other than long-term debt — payables, deferred revenue, employee benefits. | CAD | Calculated | total_liabilities - long_term_debt | derived |
+| Other Non-Financial Assets | Non-financial assets other than tangible capital assets — inventories, prepaids. | CAD | Calculated | total_non_financial_assets - tangible_capital_assets | derived |
 
 ## Metric specifications
 
@@ -160,7 +160,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 ### Total revenue excluding subsidy (`total_revenue_excluding_subsidy`)
 
-- **Is:** Revenue the agency earns from operations — passenger fares plus ancillary operating income (advertising, charters, fees). The numerator of farebox recovery.
+- **Is:** Revenue the agency earns from operations — passenger fares plus ancillary operating income (advertising, charters, fees). NOT the numerator of farebox recovery or average fare — those use farebox_revenue (fares only) so they don't inflate for capital-heavy agencies.
 - **Is NOT:** NOT total revenue: it EXCLUDES government operating subsidy/funding and capital contributions. NOT fares only when ancillary income exists, and NOT gross of refunds. NOT a component line promoted to the total — it is defined exactly as total_revenue − subsidy (StatCan 23-10-0307), never sourced by picking one revenue line and calling it the whole.
 - **Entity scope:** Company-wide: the whole reporting organization's earned revenue from the audited financial statements — conventional + specialized/paratransit + every business line. Never a transit-segment or conventional-only carve-out. For multi-division agencies (TransLink incl. roads/bridges, Metrolinx incl. GO + UP + PRESTO) use the audited entity total. For a transit division inside a city (Calgary Transit, Edmonton ETS, Hamilton HSR) use the transit division's own schedule, never the municipality-wide total.
 - **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
@@ -737,7 +737,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 - **Entity scope:** Company-wide: it is the residual of two company-wide figures (total_revenue_excluding_subsidy and farebox_revenue), so it inherits the whole-organization scope.
 - **Scale/unit:** A derived whole-dollar CAD figure; inherits the scale of its sourced inputs.
 - **Unit:** CAD (currency)
-- **Formula:** `farebox_revenue + other_revenue`
+- **Formula:** `total_revenue_excluding_subsidy - farebox_revenue`
 - **Period:** Matches its inputs' period (same agency, same period).
 - **Includes:** Advertising, charter, fees, investment income, and other non-fare earned revenue
 - **Excludes:** Passenger fares (farebox_revenue); Government operating subsidy/transfers
@@ -777,7 +777,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 - **Entity scope:** Company-wide: the residual of two company-wide balance-sheet figures, so it is the whole organization's figure.
 - **Scale/unit:** A derived whole-dollar CAD point-in-time figure.
 - **Unit:** CAD (currency)
-- **Formula:** `cash_and_investments + other_financial_assets`
+- **Formula:** `total_financial_assets - cash_and_investments`
 - **Period:** Matches its inputs' period (annual, point-in-time at fiscal year-end).
 - **Includes:** Accounts receivable and other financial assets that are not cash or investments
 - **Excludes:** Cash and investments (cash_and_investments); Non-financial / tangible capital assets
@@ -797,7 +797,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 - **Entity scope:** Company-wide: the residual of two company-wide balance-sheet figures, so it is the whole organization's figure.
 - **Scale/unit:** A derived whole-dollar CAD point-in-time figure.
 - **Unit:** CAD (currency)
-- **Formula:** `long_term_debt + other_liabilities`
+- **Formula:** `total_liabilities - long_term_debt`
 - **Period:** Matches its inputs' period (annual, point-in-time at fiscal year-end).
 - **Includes:** Accounts payable, deferred revenue, employee future benefits, other liabilities
 - **Excludes:** Long-term debt (long_term_debt); Net debt (a derived figure, not a liability line)
@@ -817,7 +817,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 - **Entity scope:** Company-wide: the residual of two company-wide balance-sheet figures, so it is the whole organization's figure.
 - **Scale/unit:** A derived whole-dollar CAD point-in-time figure.
 - **Unit:** CAD (currency)
-- **Formula:** `tangible_capital_assets + other_non_financial_assets`
+- **Formula:** `total_non_financial_assets - tangible_capital_assets`
 - **Period:** Matches its inputs' period (annual, point-in-time at fiscal year-end).
 - **Includes:** Inventories, prepaid expenses, and other non-financial assets
 - **Excludes:** Tangible capital assets (tangible_capital_assets); Financial assets (cash, investments, receivables)

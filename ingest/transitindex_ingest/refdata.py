@@ -298,7 +298,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         # Derived residuals so the statements close (each defined by a SumEquation):
         "other_revenue": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
-             "formula": "farebox_revenue + other_revenue", "higher_is_better": None}
+             "formula": "total_revenue_excluding_subsidy - farebox_revenue", "higher_is_better": None}
         ),
         "annual_surplus_deficit": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
@@ -306,15 +306,15 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         ),
         "other_financial_assets": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
-             "formula": "cash_and_investments + other_financial_assets", "higher_is_better": None}
+             "formula": "total_financial_assets - cash_and_investments", "higher_is_better": None}
         ),
         "other_liabilities": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
-             "formula": "long_term_debt + other_liabilities", "higher_is_better": None}
+             "formula": "total_liabilities - long_term_debt", "higher_is_better": None}
         ),
         "other_non_financial_assets": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
-             "formula": "tangible_capital_assets + other_non_financial_assets",
+             "formula": "total_non_financial_assets - tangible_capital_assets",
              "higher_is_better": None}
         ),
     }

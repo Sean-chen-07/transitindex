@@ -43,9 +43,9 @@ INSERT INTO core.metrics (code, display_name, unit, unit_type, is_derived, formu
   ('total_revenue',                'Total Revenue',                   'CAD', 'currency', false, NULL,                                                 NULL),
   ('farebox_revenue',              'Farebox Revenue',                 'CAD', 'currency', false, NULL,                                                 NULL),
   ('total_expenses',               'Total Expenses',                  'CAD', 'currency', false, NULL,                                                 NULL),
-  ('other_revenue',                'Other Revenue',                   'CAD', 'currency', true,  'farebox_revenue + other_revenue',                    NULL),
+  ('other_revenue',                'Other Revenue',                   'CAD', 'currency', true,  'total_revenue_excluding_subsidy - farebox_revenue',  NULL),
   ('annual_surplus_deficit',       'Annual Surplus / (Deficit)',      'CAD', 'currency', true,  'total_revenue - total_expenses',                     NULL),
-  ('other_financial_assets',       'Other Financial Assets',          'CAD', 'currency', true,  'cash_and_investments + other_financial_assets',      NULL),
-  ('other_liabilities',            'Other Liabilities',               'CAD', 'currency', true,  'long_term_debt + other_liabilities',                 NULL),
-  ('other_non_financial_assets',   'Other Non-Financial Assets',      'CAD', 'currency', true,  'tangible_capital_assets + other_non_financial_assets', NULL)
+  ('other_financial_assets',       'Other Financial Assets',          'CAD', 'currency', true,  'total_financial_assets - cash_and_investments',      NULL),
+  ('other_liabilities',            'Other Liabilities',               'CAD', 'currency', true,  'total_liabilities - long_term_debt',                 NULL),
+  ('other_non_financial_assets',   'Other Non-Financial Assets',      'CAD', 'currency', true,  'total_non_financial_assets - tangible_capital_assets', NULL)
 ON CONFLICT (code) DO NOTHING;

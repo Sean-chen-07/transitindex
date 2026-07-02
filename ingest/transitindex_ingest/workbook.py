@@ -221,7 +221,14 @@ def _derived_year_formula(code: str, year_start: int, year_rows: dict[str, int])
     if isinstance(eq, RatioEquation):
         needed = [eq.numerator, eq.denominator]
     else:
-        needed = [t for _s, t in eq.terms]
+        # `code` may be the equation's `result` (needs every term), or -- for a
+        # component-residual equation (e.g. other_revenue) -- one of the
+        # `terms` itself (needs the result plus every OTHER term), mirroring
+        # equations.py's own `_solve_for` term-isolation logic.
+        if code == eq.result:
+            needed = [t for _s, t in eq.terms]
+        else:
+            needed = [eq.result] + [t for _s, t in eq.terms if t != code]
     if any(c not in year_rows for c in needed):
         return ""
 
@@ -232,13 +239,28 @@ def _derived_year_formula(code: str, year_start: int, year_rows: dict[str, int])
         num, den = ref(eq.numerator), ref(eq.denominator)
         return f'=IF(OR({num}="",{den}="",{den}=0),"",{num}/{den})'
 
-    cells = [ref(t) for _s, t in eq.terms]
+    if code == eq.result:
+        cells = [ref(t) for _s, t in eq.terms]
+        guard = "OR(" + ",".join(f'{c}=""' for c in cells) + ")"
+        parts: list[str] = []
+        for i, (sign, term) in enumerate(eq.terms):
+            op = "-" if sign < 0 else ("+" if i else "")
+            parts.append(f"{op}{ref(term)}")
+        return f'=IF({guard},"",{"".join(parts)})'
+
+    # code is one term (sign s): result = Σ sign_i·term_i
+    #   s·code = result − Σ_{other} sign_i·term_i  ->  code = s·(result − Σ_other)
+    (code_sign,) = [s for s, t in eq.terms if t == code]
+    other_terms = [(s, t) for s, t in eq.terms if t != code]
+    cells = [ref(eq.result)] + [ref(t) for _s, t in other_terms]
     guard = "OR(" + ",".join(f'{c}=""' for c in cells) + ")"
-    parts: list[str] = []
-    for i, (sign, term) in enumerate(eq.terms):
-        op = "-" if sign < 0 else ("+" if i else "")
+    parts: list[str] = [ref(eq.result)]
+    for sign, term in other_terms:
+        op = "-" if sign > 0 else "+"  # subtract the other terms from result
         parts.append(f"{op}{ref(term)}")
-    return f'=IF({guard},"",{"".join(parts)})'
+    rhs = "".join(parts)
+    formula = rhs if code_sign > 0 else f"-({rhs})"
+    return f'=IF({guard},"",{formula})'
 
 
 # --- Export ------------------------------------------------------------------

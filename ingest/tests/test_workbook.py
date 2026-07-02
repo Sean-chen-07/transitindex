@@ -140,6 +140,30 @@ def test_quarter_year_and_derived_cells_are_formulas(repo, tmp_path):
     af = _year_cell(ws, label=NAMES["average_fare"], year=2023)
     assert isinstance(af, str) and af.startswith("=") and "/" in af
 
+    # other_revenue is a component-residual metric (defines a TERM of its
+    # equation, not the result): its Year formula must isolate itself as
+    # total_revenue_excluding_subsidy - farebox_revenue, and must NOT
+    # reference its own row (a circular/self-referential formula).
+    other_rev_row = _row_for(ws, NAMES["other_revenue"])
+    other_rev_cell = f"{workbook._col(ystart + workbook._YEAR_OFFSET)}{other_rev_row}"
+    orv = ws.cell(row=other_rev_row, column=ystart + workbook._YEAR_OFFSET).value
+    assert isinstance(orv, str) and orv.startswith("=")
+    assert other_rev_cell not in orv
+
+
+def test_derived_year_formula_isolates_component_residual():
+    """Direct unit check of the term-isolation fix (not just the ratio case)."""
+    year_rows = {
+        "farebox_revenue": 10,
+        "other_revenue": 11,
+        "total_revenue_excluding_subsidy": 5,
+    }
+    formula = workbook._derived_year_formula("other_revenue", 2024, year_rows)
+    # Must reference the result (row 5) and the OTHER term (row 10), never its
+    # own row (11) -- a self-reference is a circular-formula Excel error.
+    assert "BZM11" not in formula
+    assert "BZM5" in formula and "BZM10" in formula
+
 
 def test_fleet_block_present_with_modes(repo, tmp_path):
     out = str(tmp_path / "wb.xlsx")

@@ -424,6 +424,26 @@ def test_component_bound_silent_when_part_within_total(make_record):
     assert sum_mismatch(cohort) == []
 
 
+def test_earned_revenue_components_fires_when_broken(make_record):
+    # farebox 40 + other 40 = 80, but total_revenue_excluding_subsidy says 100 -> 20% off.
+    cohort = [
+        _bs_record(make_record, "total_revenue_excluding_subsidy", "100"),
+        _bs_record(make_record, "farebox_revenue", "40"),
+        _bs_record(make_record, "other_revenue", "40"),
+    ]
+    assert sum_mismatch(cohort) == [SUM_MISMATCH]
+
+
+def test_earned_revenue_components_silent_when_reconciles(make_record):
+    # farebox 70 + other 30 = 100 == total_revenue_excluding_subsidy.
+    cohort = [
+        _bs_record(make_record, "total_revenue_excluding_subsidy", "100"),
+        _bs_record(make_record, "farebox_revenue", "70"),
+        _bs_record(make_record, "other_revenue", "30"),
+    ]
+    assert sum_mismatch(cohort) == []
+
+
 # --- composers ---------------------------------------------------------------
 
 

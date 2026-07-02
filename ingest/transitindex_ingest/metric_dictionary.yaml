@@ -161,7 +161,9 @@ metrics:
     plain_meaning: Money earned from fares and other operations (excludes subsidy).
     definition: >-
       Revenue the agency earns from operations — passenger fares plus ancillary operating
-      income (advertising, charters, fees). The numerator of farebox recovery.
+      income (advertising, charters, fees). NOT the numerator of farebox recovery or
+      average fare — those use farebox_revenue (fares only) so they don't inflate for
+      capital-heavy agencies.
     is_not: >-
       NOT total revenue: it EXCLUDES government operating subsidy/funding and capital
       contributions. NOT fares only when ancillary income exists, and NOT gross of refunds.

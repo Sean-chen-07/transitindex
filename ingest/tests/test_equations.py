@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from decimal import Decimal
 
 from transitindex_ingest.equations import (
@@ -37,6 +38,19 @@ def test_display_formula_matches_refdata_formula():
     for code, m in METRICS.items():
         if m["is_derived"]:
             assert display_formula(code) == m["formula"]
+
+
+def test_display_formula_never_self_references():
+    """A derived metric's formula caption must never name itself as an operand
+    (a component-residual equation like earned_revenue_components defines a
+    TERM, not the result, so a naive raw-terms render is circular)."""
+    for code, m in METRICS.items():
+        if m["is_derived"]:
+            formula = display_formula(code)
+            assert formula is not None
+            assert not re.search(rf"\b{re.escape(code)}\b", formula), (
+                f"{code}'s formula is self-referential: {formula!r}"
+            )
 
 
 def test_all_metric_operands_exist_in_refdata():

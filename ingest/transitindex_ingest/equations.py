@@ -81,13 +81,33 @@ class SumEquation:
     def operands(self) -> frozenset[str]:
         return frozenset({self.result, *(t for _s, t in self.terms)})
 
-    def display(self) -> str:
+    def _raw_terms(self) -> str:
+        """The terms rendered verbatim (`Σ sign · term`), independent of `defines`."""
         parts: list[str] = []
         for i, (sign, term) in enumerate(self.terms):
             op = "-" if sign < 0 else ("+" if i else "")
             label = _render(term)
             parts.append(f"{op} {label}".strip() if op else label)
         return " ".join(parts)
+
+    def display(self) -> str:
+        # `defines` usually names `result` (result = Σ terms): render the terms
+        # verbatim. When `defines` instead names one of the TERMS (a component
+        # residual, e.g. other_revenue in `total_revenue_excluding_subsidy =
+        # farebox_revenue + other_revenue`), the caption must show that term
+        # ISOLATED -- result minus every other term -- mirroring the same
+        # algebra `_solve_for` uses, or the formula is circular (the defined
+        # metric would appear as its own operand).
+        if self.defines is not None and self.defines != self.result:
+            defined_sign = next(s for s, t in self.terms if t == self.defines)
+            other_terms = [(s, t) for s, t in self.terms if t != self.defines]
+            parts = [_render(self.result)]
+            for sign, term in other_terms:
+                op = "-" if sign > 0 else "+"  # subtract the other terms from result
+                parts.append(f"{op} {_render(term)}")
+            rhs = " ".join(parts)
+            return rhs if defined_sign > 0 else f"-({rhs})"
+        return self._raw_terms()
 
 
 @dataclass(frozen=True)
@@ -281,9 +301,16 @@ def equation_kind(eq: Equation) -> str:
 
 
 def full_display(eq: Equation) -> str:
-    """The full 'lhs = rhs' relation, for the metric_equations display column."""
-    lhs = eq.result if isinstance(eq, SumEquation) else eq.quotient
-    return f"{lhs} = {eq.display()}"
+    """The full 'lhs = rhs' relation, for the metric_equations display column.
+
+    Always shows the equation's raw shape (`result = Σ terms`), NOT the
+    isolated-term caption `display()` uses for a component-residual metric's
+    formula -- this mirrors db/seeds/07_equations.sql's `display` column,
+    which documents the equation itself, not any one operand solved for.
+    """
+    if isinstance(eq, SumEquation):
+        return f"{eq.result} = {eq._raw_terms()}"
+    return f"{eq.quotient} = {eq.display()}"
 
 
 # A reserved derivation code for the cross-period aggregation (annual = sum of the

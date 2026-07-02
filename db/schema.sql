@@ -469,6 +469,8 @@ CREATE TABLE core.metric_values (
     notes text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    cost_basis text DEFAULT 'operating'::text NOT NULL,
+    CONSTRAINT metric_values_cost_basis_check CHECK ((cost_basis = ANY (ARRAY['operating'::text, 'psab_total'::text]))),
     CONSTRAINT metric_values_quality_check CHECK ((quality = ANY (ARRAY['verified'::text, 'preliminary'::text, 'estimated'::text, 'imputed'::text]))),
     CONSTRAINT metric_values_service_scope_check CHECK ((service_scope = ANY (ARRAY['conventional'::text, 'specialized'::text, 'total'::text, 'system_wide'::text])))
 );
@@ -531,8 +533,7 @@ CREATE TABLE core.modes (
     id bigint NOT NULL,
     code text NOT NULL,
     display_name text NOT NULL,
-    description text,
-    capacity_weight smallint
+    description text
 );
 
 
@@ -577,7 +578,9 @@ CREATE TABLE core.pending_values (
     reviewer_notes text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    cost_basis text DEFAULT 'operating'::text NOT NULL,
     CONSTRAINT pending_values_confidence_check CHECK (((confidence >= (0)::numeric) AND (confidence <= (1)::numeric))),
+    CONSTRAINT pending_values_cost_basis_check CHECK ((cost_basis = ANY (ARRAY['operating'::text, 'psab_total'::text]))),
     CONSTRAINT pending_values_extraction_method_check CHECK ((extraction_method = ANY (ARRAY['manual'::text, 'llm_assisted'::text, 'structured_import'::text, 'statcan_passthrough'::text]))),
     CONSTRAINT pending_values_quality_check CHECK ((quality = ANY (ARRAY['verified'::text, 'preliminary'::text, 'estimated'::text, 'imputed'::text]))),
     CONSTRAINT pending_values_review_status_check CHECK ((review_status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'needs_edit'::text]))),
