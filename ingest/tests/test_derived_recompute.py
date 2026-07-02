@@ -43,18 +43,18 @@ def _current(repo, period_id, code, scope="system_wide"):
 def test_recompute_writes_ratios_and_backsolved_subsidy_with_provenance():
     repo = InMemoryRepository()
     pid = _period(repo)
-    rev = _seed(repo, pid, "operating_revenue", "2500")
+    rev = _seed(repo, pid, "total_revenue_excluding_subsidy", "2500")
     _seed(repo, pid, "operating_expenses", "5000")
     rid = _seed(repo, pid, "ridership", "1000")
     _seed(repo, pid, "revenue_service_hours", "200")
 
     res = recompute_derived(repo, "ttc", pid)
 
-    # 6 ratios + back-solved total_operating_subsidy = 7 written.
+    # 6 ratios + back-solved subsidy = 7 written.
     assert len(res.ids) == 7
     assert _current(repo, pid, "average_fare").value == Decimal("2.5")
     assert _current(repo, pid, "subsidy_per_rider").value == Decimal("2.5")
-    assert _current(repo, pid, "total_operating_subsidy").value == Decimal("2500")
+    assert _current(repo, pid, "subsidy").value == Decimal("2500")
 
     # average_fare carries provenance: its equation + the exact input value rows.
     af = _current(repo, pid, "average_fare")
@@ -66,7 +66,7 @@ def test_recompute_writes_ratios_and_backsolved_subsidy_with_provenance():
 def test_sourced_inputs_have_no_derivation():
     repo = InMemoryRepository()
     pid = _period(repo)
-    rev = _seed(repo, pid, "operating_revenue", "2500")
+    rev = _seed(repo, pid, "total_revenue_excluding_subsidy", "2500")
     recompute_derived(repo, "ttc", pid)
     assert repo.get_derivation(rev) is None  # sourced -> not derived
 
@@ -77,7 +77,7 @@ def test_sourced_inputs_have_no_derivation():
 def test_recompute_backsolves_a_sourced_metric():
     repo = InMemoryRepository()
     pid = _period(repo)
-    rev = _seed(repo, pid, "operating_revenue", "2500")
+    rev = _seed(repo, pid, "total_revenue_excluding_subsidy", "2500")
     fb = _seed(repo, pid, "farebox_recovery_ratio", "0.5")  # published ratio
 
     recompute_derived(repo, "ttc", pid)
@@ -95,7 +95,7 @@ def test_recompute_backsolves_a_sourced_metric():
 def test_derived_quality_inherits_weakest_input():
     repo = InMemoryRepository()
     pid = _period(repo)
-    _seed(repo, pid, "operating_revenue", "2500", quality="preliminary")
+    _seed(repo, pid, "total_revenue_excluding_subsidy", "2500", quality="preliminary")
     _seed(repo, pid, "ridership", "1000", quality="verified")
 
     recompute_derived(repo, "ttc", pid)
@@ -116,13 +116,13 @@ def test_weakest_quality_ordering():
 def test_recompute_restates_after_corrected_input():
     repo = InMemoryRepository()
     pid = _period(repo)
-    _seed(repo, pid, "operating_revenue", "2500")
+    _seed(repo, pid, "total_revenue_excluding_subsidy", "2500")
     _seed(repo, pid, "ridership", "1000")
     recompute_derived(repo, "ttc", pid)
     first = _current(repo, pid, "average_fare")
     assert first.value == Decimal("2.5")
 
-    _seed(repo, pid, "operating_revenue", "3000")  # correction supersedes the old revenue
+    _seed(repo, pid, "total_revenue_excluding_subsidy", "3000")  # correction supersedes the old revenue
     recompute_derived(repo, "ttc", pid)
     current = _current(repo, pid, "average_fare")
 
@@ -141,7 +141,7 @@ def test_recompute_restates_after_corrected_input():
 def test_recompute_is_idempotent():
     repo = InMemoryRepository()
     pid = _period(repo)
-    _seed(repo, pid, "operating_revenue", "2500")
+    _seed(repo, pid, "total_revenue_excluding_subsidy", "2500")
     _seed(repo, pid, "ridership", "1000")
     recompute_derived(repo, "ttc", pid)
 
@@ -161,9 +161,9 @@ def test_recompute_is_idempotent():
 def test_scopes_solve_independently():
     repo = InMemoryRepository()
     pid = _period(repo)
-    _seed(repo, pid, "operating_revenue", "2500", scope="total")
+    _seed(repo, pid, "total_revenue_excluding_subsidy", "2500", scope="total")
     _seed(repo, pid, "ridership", "1000", scope="total")
-    _seed(repo, pid, "operating_revenue", "6000", scope="system_wide")
+    _seed(repo, pid, "total_revenue_excluding_subsidy", "6000", scope="system_wide")
     _seed(repo, pid, "ridership", "2000", scope="system_wide")
 
     recompute_derived(repo, "ttc", pid)

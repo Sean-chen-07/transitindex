@@ -19,7 +19,7 @@ export interface StatementRowDef extends SlotDef {
 /** Spec §3.1 — the six directory-card metrics, in order. */
 export const HERO_SLOTS: SlotDef[] = [
   { code: "ridership", label: "Ridership" },
-  { code: "operating_revenue", label: "Operating revenue" },
+  { code: "total_revenue_excluding_subsidy", label: "Total revenue excluding subsidy" },
   { code: "on_time_performance", label: "On-time performance" },
   { code: "cost_per_rider", label: "Cost per rider" },
   { code: "subsidy_per_rider", label: "Subsidy per rider" },
@@ -45,12 +45,12 @@ export const SERVICE_FLEET_ROWS: SlotDef[] = [
 
 /** Spec §4 Statement of Operations, in statement order. Bold = totals, indent = components. */
 export const OPERATIONS_ROWS: StatementRowDef[] = [
-  { code: "operating_revenue", label: "Fare & operating revenue", bold: false, indent: false },
+  { code: "total_revenue_excluding_subsidy", label: "Total revenue excluding subsidy", bold: false, indent: false },
   { code: "labour_cost", label: "Labour", bold: false, indent: true },
   { code: "energy_fuel_cost", label: "Energy & fuel", bold: false, indent: true },
   { code: "materials_services_cost", label: "Materials & services", bold: false, indent: true },
   { code: "operating_expenses", label: "Total operating expenses", bold: true, indent: false },
-  { code: "total_operating_subsidy", label: "Operating subsidy (the gap)", bold: false, indent: false },
+  { code: "subsidy", label: "Subsidy (the gap)", bold: false, indent: false },
   { code: "capital_expenditure", label: "Capital spending", bold: false, indent: false },
 ];
 

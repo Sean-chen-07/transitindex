@@ -5,17 +5,17 @@ Every relationship is one of TWO algebraic shapes so any single unknown is
 exactly solvable:
 
   - SUM    `result = Σ sign_i · term_i`   (e.g. operating_expenses =
-           operating_revenue + total_operating_subsidy; net_debt =
+           total_revenue_excluding_subsidy + subsidy; net_debt =
            total_liabilities − total_financial_assets). Solvable for any one
            missing term.
   - RATIO  `quotient = numerator / denominator`  (e.g. farebox_recovery_ratio =
-           operating_revenue / operating_expenses). Solvable for ANY one of the
+           total_revenue_excluding_subsidy / operating_expenses). Solvable for ANY one of the
            three -- including the denominator, since "farebox + revenue ->
            expenses" (expenses = revenue / farebox) is the flagship goal.
 
 Composites are normalized into named intermediates rather than special-cased:
-`subsidy_per_rider` is the RATIO `total_operating_subsidy / ridership`, and
-`total_operating_subsidy = operating_expenses − operating_revenue` is its own
+`subsidy_per_rider` is the RATIO `subsidy / ridership`, and
+`subsidy = operating_expenses − total_revenue_excluding_subsidy` is its own
 SUM. So a sourced or back-solved subsidy stays mutually consistent.
 
 `solve()` is pure arithmetic over a `{metric_code: Decimal}` map of OBSERVED
@@ -126,7 +126,7 @@ EQUATIONS: tuple[Equation, ...] = (
     SumEquation(
         code="expense_revenue_subsidy",
         result="operating_expenses",
-        terms=((+1, "operating_revenue"), (+1, "total_operating_subsidy")),
+        terms=((+1, "total_revenue_excluding_subsidy"), (+1, "subsidy")),
     ),
     SumEquation(
         code="expense_components",
@@ -138,7 +138,9 @@ EQUATIONS: tuple[Equation, ...] = (
         ),
     ),
     # Derived ratios (each defines its quotient).
-    RatioEquation("average_fare_def", "average_fare", "operating_revenue", "ridership"),
+    RatioEquation(
+        "average_fare_def", "average_fare", "total_revenue_excluding_subsidy", "ridership"
+    ),
     RatioEquation(
         "cost_per_hour_def", "cost_per_hour", "operating_expenses", "revenue_service_hours"
     ),
@@ -146,11 +148,11 @@ EQUATIONS: tuple[Equation, ...] = (
     RatioEquation(
         "farebox_recovery_def",
         "farebox_recovery_ratio",
-        "operating_revenue",
+        "total_revenue_excluding_subsidy",
         "operating_expenses",
     ),
     RatioEquation(
-        "subsidy_per_rider_def", "subsidy_per_rider", "total_operating_subsidy", "ridership"
+        "subsidy_per_rider_def", "subsidy_per_rider", "subsidy", "ridership"
     ),
     RatioEquation(
         "trips_per_revenue_hour_def",

@@ -57,7 +57,7 @@ def loaded_repo() -> InMemoryRepository:
         _record("ridership", "1234567"), source_document_id=doc_id
     )
     repo.insert_pending_value(
-        _record("operating_revenue", "999"), source_document_id=doc_id, flags=["yoy_spike"]
+        _record("total_revenue_excluding_subsidy", "999"), source_document_id=doc_id, flags=["yoy_spike"]
     )
     return repo
 
@@ -78,8 +78,8 @@ def test_list_returns_pending_rows(client):
     rows = client.get("/pending").json()
     assert len(rows) == 2
     codes = {r["metric_code"] for r in rows}
-    assert codes == {"ridership", "operating_revenue"}
-    spike = next(r for r in rows if r["metric_code"] == "operating_revenue")
+    assert codes == {"ridership", "total_revenue_excluding_subsidy"}
+    spike = next(r for r in rows if r["metric_code"] == "total_revenue_excluding_subsidy")
     assert spike["flags"] == ["yoy_spike"]
     assert spike["agency_slug"] == "ttc"
     assert all(r["review_status"] == "pending" for r in rows)

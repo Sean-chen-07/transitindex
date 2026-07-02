@@ -123,7 +123,7 @@ def test_row_to_value_restated_basis_appends_note():
 
 def test_value_dict_round_trip_lossless_all_fields():
     v = ExtractedValue(
-        metric_code="operating_revenue",
+        metric_code="total_revenue_excluding_subsidy",
         value=Decimal("1234.56"),
         unit="CAD",
         period_kind="monthly",

@@ -23,7 +23,7 @@ const METRIC_SLOTS: { label: string; codes: string[] }[] = [
   { label: "On-time", codes: ["on_time_performance"] },
   { label: "Cost / rider", codes: ["cost_per_rider"] },
   { label: "Subsidy / rider", codes: ["subsidy_per_rider"] },
-  { label: "Revenue", codes: ["operating_revenue"] },
+  { label: "Revenue", codes: ["total_revenue_excluding_subsidy"] },
   { label: "Fleet scale", codes: ["fleet_capacity"] },
 ];
 

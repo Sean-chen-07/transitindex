@@ -72,7 +72,7 @@ def _parse_year_header(raw: object) -> Optional[int]:
 
 # The two monthly-native feeds (StatCan 23-10-0307 publishes both): typed
 # month-by-month; their Q/YTD/Year cells are live SUM roll-ups.
-MONTHLY_METRICS: list[str] = ["ridership", "operating_revenue"]
+MONTHLY_METRICS: list[str] = ["ridership", "total_revenue_excluding_subsidy"]
 
 # fleet_size is entered PER MODE in the Fleet block, not as a system-wide row;
 # fleet_capacity is the derived Fleet-scale cell. Both are kept out of the main

@@ -157,7 +157,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         ),
         "average_fare": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
-             "formula": "operating_revenue / ridership", "higher_is_better": None}
+             "formula": "total_revenue_excluding_subsidy / ridership", "higher_is_better": None}
         ),
         "trips_per_revenue_hour": MappingProxyType(
             {"unit": "trips/hr", "unit_type": "ratio", "is_derived": True,
@@ -167,7 +167,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
             {"unit": "%", "unit_type": "ratio", "is_derived": False,
              "formula": None, "higher_is_better": True}
         ),
-        "operating_revenue": MappingProxyType(
+        "total_revenue_excluding_subsidy": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": False,
              "formula": None, "higher_is_better": None}
         ),
@@ -175,7 +175,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": False,
              "formula": None, "higher_is_better": None}
         ),
-        "total_operating_subsidy": MappingProxyType(
+        "subsidy": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": False,
              "formula": None, "higher_is_better": None}
         ),
@@ -193,7 +193,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         ),
         "farebox_recovery_ratio": MappingProxyType(
             {"unit": "%", "unit_type": "ratio", "is_derived": True,
-             "formula": "operating_revenue / operating_expenses", "higher_is_better": None}
+             "formula": "total_revenue_excluding_subsidy / operating_expenses", "higher_is_better": None}
         ),
         "cost_per_rider": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
@@ -205,7 +205,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
         ),
         "subsidy_per_rider": MappingProxyType(
             {"unit": "CAD", "unit_type": "currency", "is_derived": True,
-             "formula": "total_operating_subsidy / ridership",
+             "formula": "subsidy / ridership",
              "higher_is_better": None}
         ),
         "fleet_size": MappingProxyType(
@@ -282,7 +282,7 @@ METRICS: Mapping[str, Mapping] = MappingProxyType(
 # skips any metric not in this set. See docs/planning/metric-set-build-plan.md
 # (Phase 1) and metric-standards-review.md ("Decisions taken").
 RATED_METRICS: frozenset[str] = frozenset({
-    "ridership", "operating_revenue", "on_time_performance",
+    "ridership", "total_revenue_excluding_subsidy", "on_time_performance",
     "cost_per_rider", "subsidy_per_rider",
 })
 

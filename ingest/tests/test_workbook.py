@@ -179,7 +179,7 @@ def test_monthly_round_trip_rolls_up_and_derives_average_fare(repo, tmp_path):
     # Use agency-scale numbers: monthly revenue must clear the currency floor
     # (validation.flags._CURRENCY_FLOOR) or it is flagged and never auto-promoted.
     _fill_year_of_months(ws, metric_code="ridership", year=2023, value=10000)
-    _fill_year_of_months(ws, metric_code="operating_revenue", year=2023, value=25000)
+    _fill_year_of_months(ws, metric_code="total_revenue_excluding_subsidy", year=2023, value=25000)
     wb.save(out)
 
     summary = workbook.import_workbook(repo, out)
@@ -190,7 +190,7 @@ def test_monthly_round_trip_rolls_up_and_derives_average_fare(repo, tmp_path):
 
     ap = annual_period("ttc", 2023)
     assert _current(repo, "ttc", ap, "ridership").value == Decimal("120000")
-    assert _current(repo, "ttc", ap, "operating_revenue").value == Decimal("300000")
+    assert _current(repo, "ttc", ap, "total_revenue_excluding_subsidy").value == Decimal("300000")
     assert _current(repo, "ttc", ap, "average_fare").value == Decimal("2.5")
 
 
@@ -312,7 +312,7 @@ def test_grey_computed_cells_are_not_imported(repo, tmp_path):
     ws = wb["TTC"]
     # Agency-scale numbers so monthly revenue clears the currency floor.
     _fill_year_of_months(ws, metric_code="ridership", year=2023, value=10000)
-    _fill_year_of_months(ws, metric_code="operating_revenue", year=2023, value=25000)
+    _fill_year_of_months(ws, metric_code="total_revenue_excluding_subsidy", year=2023, value=25000)
     # Bogus number typed over the grey ridership Year roll-up cell + derived ratio.
     _set_year_cell(ws, label=NAMES["ridership"], year=2023, value=5)
     _set_year_cell(ws, label=NAMES["average_fare"], year=2023, value=999)

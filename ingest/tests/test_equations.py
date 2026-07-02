@@ -57,14 +57,14 @@ def test_forward_ratios_and_backsolved_subsidy():
     # 4 observed sourced inputs -> subsidy back-solved, then all 6 ratios.
     res = solve(
         {
-            "operating_revenue": Decimal("2500"),
+            "total_revenue_excluding_subsidy": Decimal("2500"),
             "operating_expenses": Decimal("5000"),
             "ridership": Decimal("1000"),
             "revenue_service_hours": Decimal("200"),
         }
     )
     s = res.solved
-    assert s["total_operating_subsidy"].value == Decimal("2500")  # expenses - revenue
+    assert s["subsidy"].value == Decimal("2500")  # expenses - revenue
     assert s["average_fare"].value == Decimal("2.5")  # 2500 / 1000
     assert s["cost_per_hour"].value == Decimal("25")  # 5000 / 200
     assert s["cost_per_rider"].value == Decimal("5")  # 5000 / 1000
@@ -80,7 +80,7 @@ def test_forward_ratios_and_backsolved_subsidy():
 def test_backsolve_expenses_from_farebox_and_revenue():
     res = solve(
         {
-            "operating_revenue": Decimal("2500"),
+            "total_revenue_excluding_subsidy": Decimal("2500"),
             "farebox_recovery_ratio": Decimal("0.5"),
         }
     )
@@ -89,7 +89,7 @@ def test_backsolve_expenses_from_farebox_and_revenue():
     assert exp.origin == "solved"
     assert exp.equation_code == "farebox_recovery_def"
     # provenance names the exact operands consumed
-    assert exp.inputs == ("farebox_recovery_ratio", "operating_revenue")
+    assert exp.inputs == ("farebox_recovery_ratio", "total_revenue_excluding_subsidy")
     assert res.flags == []
 
 
@@ -97,7 +97,7 @@ def test_chaining_to_fixpoint():
     # farebox + revenue -> expenses; expenses + ridership -> cost_per_rider.
     res = solve(
         {
-            "operating_revenue": Decimal("2500"),
+            "total_revenue_excluding_subsidy": Decimal("2500"),
             "farebox_recovery_ratio": Decimal("0.5"),
             "ridership": Decimal("1000"),
         }
@@ -112,7 +112,7 @@ def test_observed_value_is_never_overwritten():
     # expenses is sourced AND derivable; it stays observed, never re-solved.
     res = solve(
         {
-            "operating_revenue": Decimal("2500"),
+            "total_revenue_excluding_subsidy": Decimal("2500"),
             "farebox_recovery_ratio": Decimal("0.5"),
             "operating_expenses": Decimal("5000"),
         }
@@ -128,7 +128,7 @@ def test_backsolve_denominator_ridership_from_fare_and_revenue():
     # average_fare = revenue / ridership; back out ridership = revenue / fare.
     res = solve(
         {
-            "operating_revenue": Decimal("2500"),
+            "total_revenue_excluding_subsidy": Decimal("2500"),
             "average_fare": Decimal("2.5"),
         }
     )
@@ -141,7 +141,7 @@ def test_zero_quotient_denominator_solve_is_skipped():
     # farebox = 0 would make expenses = revenue / 0; must be skipped, not raised.
     res = solve(
         {
-            "operating_revenue": Decimal("2500"),
+            "total_revenue_excluding_subsidy": Decimal("2500"),
             "farebox_recovery_ratio": Decimal("0"),
         }
     )
@@ -151,7 +151,7 @@ def test_zero_quotient_denominator_solve_is_skipped():
 def test_zero_denominator_is_skipped_not_divided():
     res = solve(
         {
-            "operating_revenue": Decimal("2500"),
+            "total_revenue_excluding_subsidy": Decimal("2500"),
             "operating_expenses": Decimal("5000"),
             "ridership": Decimal("0"),
             "revenue_service_hours": Decimal("200"),
@@ -172,8 +172,8 @@ def test_overdetermination_disagreement_writes_nothing_and_flags():
     # expenses solvable two ways that disagree > 2%: 5300 vs 5000.
     res = solve(
         {
-            "operating_revenue": Decimal("2500"),
-            "total_operating_subsidy": Decimal("2800"),  # -> 5300
+            "total_revenue_excluding_subsidy": Decimal("2500"),
+            "subsidy": Decimal("2800"),  # -> 5300
             "labour_cost": Decimal("2000"),
             "energy_fuel_cost": Decimal("1000"),
             "materials_services_cost": Decimal("2000"),  # -> 5000
@@ -187,8 +187,8 @@ def test_overdetermination_agreement_writes_once_deterministically():
     # both paths give 5000; the first equation by sorted code is cited.
     res = solve(
         {
-            "operating_revenue": Decimal("2500"),
-            "total_operating_subsidy": Decimal("2500"),  # -> 5000
+            "total_revenue_excluding_subsidy": Decimal("2500"),
+            "subsidy": Decimal("2500"),  # -> 5000
             "labour_cost": Decimal("2000"),
             "energy_fuel_cost": Decimal("1000"),
             "materials_services_cost": Decimal("2000"),  # -> 5000
@@ -218,7 +218,7 @@ def test_cross_source_disagreement_on_published_vs_computed_ratio():
     res = solve(
         {
             "farebox_recovery_ratio": Decimal("0.6"),
-            "operating_revenue": Decimal("2500"),
+            "total_revenue_excluding_subsidy": Decimal("2500"),
             "operating_expenses": Decimal("5000"),
         }
     )
@@ -230,9 +230,9 @@ def test_no_false_confidence_solved_value_not_cross_checked():
     # it must NOT then 'verify' it (no flag, no green check).
     res = solve(
         {
-            "operating_revenue": Decimal("2500"),
+            "total_revenue_excluding_subsidy": Decimal("2500"),
             "operating_expenses": Decimal("5000"),
         }
     )
-    assert res.solved["total_operating_subsidy"].value == Decimal("2500")
+    assert res.solved["subsidy"].value == Decimal("2500")
     assert res.flags == []

@@ -12,7 +12,7 @@ This runs BEFORE the within-period equation solver for the annual period: once
 the annual ridership/revenue exists, `recompute_derived` can derive average_fare,
 cost_per_rider, etc. for that year.
 
-`ridership` and `operating_revenue` are the two monthly-native feeds (StatCan
+`ridership` and `total_revenue_excluding_subsidy` are the two monthly-native feeds (StatCan
 23-10-0307 publishes both); `rollup_metric` is parameterized by metric so both
 fold up identically. `rollup_ridership` is the thin back-compat wrapper.
 """

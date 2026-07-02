@@ -168,8 +168,8 @@ def test_merge_still_conflicts_beyond_tolerance():
 def test_merge_525_5m_vs_530m_still_conflicts():
     # 525,500,000 vs 530,000,000 -- 0.86% apart, a real scope difference: still conflicts.
     out = ch.merge_values([
-        _ev("operating_revenue", 525500000, 0.9),
-        _ev("operating_revenue", 530000000, 0.85),
+        _ev("total_revenue_excluding_subsidy", 525500000, 0.9),
+        _ev("total_revenue_excluding_subsidy", 530000000, 0.85),
     ])
     assert len(out) == 1
     assert out[0].confidence <= Decimal("0.5")
@@ -408,7 +408,7 @@ def test_extractor_filters_out_of_scope_after_merge(monkeypatch):
 
     rows = [
         {**_ROW, "metric_code": "ridership", "value": "100"},  # total / actual (default)
-        {**_ROW, "metric_code": "operating_revenue", "value": "200", "basis": "restated"},
+        {**_ROW, "metric_code": "total_revenue_excluding_subsidy", "value": "200", "basis": "restated"},
         {**_ROW, "metric_code": "ridership", "value": "130", "basis": "forecast", "period_year": 2027},
         {**_ROW, "metric_code": "accumulated_surplus", "value": "9999", "service_scope": "city_wide"},
     ]
@@ -418,7 +418,7 @@ def test_extractor_filters_out_of_scope_after_merge(monkeypatch):
     assert res.diagnostics["dropped_scope"] == 1   # the city_wide row
     assert res.diagnostics["dropped_basis"] == 1   # the forecast row
     kept = {(v.metric_code, v.basis) for v in res.values}
-    assert kept == {("ridership", "actual"), ("operating_revenue", "restated")}
+    assert kept == {("ridership", "actual"), ("total_revenue_excluding_subsidy", "restated")}
 
 
 def test_doc_aware_intro_lines_for_city_budget_request(monkeypatch):

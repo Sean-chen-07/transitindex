@@ -17,7 +17,7 @@ function modeGroup(modes: string[]): { cls: string; label: string } {
 
 const PEEK_LABELS: Record<string, string> = {
   ridership: "ridership",
-  operating_revenue: "revenue",
+  total_revenue_excluding_subsidy: "revenue",
   farebox_recovery_ratio: "farebox",
   cost_per_rider: "cost/rider",
   revenue_service_hours: "service hrs",
@@ -26,7 +26,7 @@ const PEEK_LABELS: Record<string, string> = {
 
 // Up to two safe-to-show ordinals, marquee metrics first, de-duplicated by label.
 function pickPeek(ranks: AgencyRank[]): AgencyRank[] {
-  const order = ["ridership", "operating_revenue", "farebox_recovery_ratio"];
+  const order = ["ridership", "total_revenue_excluding_subsidy", "farebox_recovery_ratio"];
   const seen = new Set<string>();
   return ranks
     .filter((r) => r.status === "ranked" && r.rank != null)

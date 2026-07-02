@@ -126,7 +126,7 @@ def sum_mismatch(
     are checked (each only when all of its parts are present in the cohort):
 
       * labour_cost + energy_fuel_cost + materials_services_cost == operating_expenses
-      * total_operating_subsidy == operating_expenses - operating_revenue
+      * subsidy == operating_expenses - total_revenue_excluding_subsidy
       * total_financial_assets + total_non_financial_assets == total_assets
       * accumulated_surplus == total_assets - total_liabilities
 
@@ -150,8 +150,8 @@ def sum_mismatch(
                 return [SUM_MISMATCH]
 
         # Identity 2: subsidy == expenses - revenue.
-        subsidy = by_code.get("total_operating_subsidy")
-        revenue = by_code.get("operating_revenue")
+        subsidy = by_code.get("subsidy")
+        revenue = by_code.get("total_revenue_excluding_subsidy")
         if subsidy is not None and revenue is not None:
             expected = expenses.value - revenue.value
             if (subsidy.value - expected).copy_abs() > abs_tol:

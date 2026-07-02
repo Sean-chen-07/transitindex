@@ -121,14 +121,14 @@ describe("yoy (like-for-like, neutral direction)", () => {
 describe("financials grid", () => {
   it("a missing year stays null — never 0", () => {
     const model = buildDetailModel([
-      metric("operating_revenue", [
+      metric("total_revenue_excluding_subsidy", [
         pt("annual_calendar", "2023", "2023-12-31", 900),
         pt("annual_calendar", "2025", "2025-12-31", 1100),
       ]),
       metric("labour_cost", [pt("annual_calendar", "2024", "2024-12-31", 700)]),
     ]);
     expect(model.financials.years.map((y) => y.key)).toEqual([2023, 2024, 2025]);
-    const revenue = model.financials.operations.find((r) => r.code === "operating_revenue");
+    const revenue = model.financials.operations.find((r) => r.code === "total_revenue_excluding_subsidy");
     const labour = model.financials.operations.find((r) => r.code === "labour_cost");
     expect(revenue?.cells).toEqual([900, null, 1100]);
     expect(labour?.cells).toEqual([null, 700, null]);
@@ -148,7 +148,7 @@ describe("financials grid", () => {
 
   it("an absent metric still renders its row, all cells null", () => {
     const model = buildDetailModel([
-      metric("operating_revenue", [pt("annual_calendar", "2024", "2024-12-31", 900)]),
+      metric("total_revenue_excluding_subsidy", [pt("annual_calendar", "2024", "2024-12-31", 900)]),
     ]);
     expect(model.financials.position).toHaveLength(POSITION_ROWS.length);
     const netDebt = model.financials.position.find((r) => r.code === "net_debt");
@@ -159,10 +159,10 @@ describe("financials grid", () => {
 
 describe("placement (the spec's 32-metric map)", () => {
   // Hard-coded from docs/design/detail-view-metrics.md §2 — 32 unique codes,
-  // 33 placements (operating_revenue is the one deliberate repeat).
+  // 33 placements (total_revenue_excluding_subsidy is the one deliberate repeat).
   const SPEC_CODES = [
     "ridership",
-    "operating_revenue",
+    "total_revenue_excluding_subsidy",
     "on_time_performance",
     "cost_per_rider",
     "subsidy_per_rider",
@@ -180,7 +180,7 @@ describe("placement (the spec's 32-metric map)", () => {
     "energy_fuel_cost",
     "materials_services_cost",
     "operating_expenses",
-    "total_operating_subsidy",
+    "subsidy",
     "capital_expenditure",
     "cash_and_investments",
     "total_financial_assets",
@@ -209,8 +209,8 @@ describe("placement (the spec's 32-metric map)", () => {
     expect(new Set(placed)).toEqual(new Set(SPEC_CODES));
   });
 
-  it("operating_revenue appears in BOTH heroes and operations", () => {
-    expect(HERO_SLOTS.some((s) => s.code === "operating_revenue")).toBe(true);
-    expect(OPERATIONS_ROWS.some((r) => r.code === "operating_revenue")).toBe(true);
+  it("total_revenue_excluding_subsidy appears in BOTH heroes and operations", () => {
+    expect(HERO_SLOTS.some((s) => s.code === "total_revenue_excluding_subsidy")).toBe(true);
+    expect(OPERATIONS_ROWS.some((r) => r.code === "total_revenue_excluding_subsidy")).toBe(true);
   });
 });

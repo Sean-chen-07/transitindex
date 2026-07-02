@@ -152,10 +152,10 @@ def _expense_cohort(make_record, labour, energy, materials, expenses,
         make_record(metric_code="operating_expenses", value=Decimal(expenses), **common),
     ]
     if revenue is not None:
-        rows.append(make_record(metric_code="operating_revenue", value=Decimal(revenue), **common))
+        rows.append(make_record(metric_code="total_revenue_excluding_subsidy", value=Decimal(revenue), **common))
     if subsidy is not None:
         rows.append(
-            make_record(metric_code="total_operating_subsidy", value=Decimal(subsidy), **common)
+            make_record(metric_code="subsidy", value=Decimal(subsidy), **common)
         )
     return rows
 

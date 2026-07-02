@@ -152,8 +152,8 @@ metrics:
       - "On-time window differs by agency and by mode (±1 vs +3 vs +5 minutes)"
       - "Schedule adherence vs headway adherence (frequent service measures headway gaps)"
 
-  operating_revenue:
-    display_name: Operating Revenue
+  total_revenue_excluding_subsidy:
+    display_name: Total revenue excluding subsidy
     plain_meaning: Money earned from fares and other operations (excludes subsidy).
     definition: >-
       Revenue the agency earns from operations — passenger fares plus ancillary operating
@@ -219,8 +219,8 @@ metrics:
       - "Operating vs total expenses that fold in capital"
       - "Amortization included (PSAB) vs excluded (CUTA operating basis) — changes farebox recovery"
 
-  total_operating_subsidy:
-    display_name: Total Operating Subsidy
+  subsidy:
+    display_name: Subsidy
     plain_meaning: Government funding covering the gap between operating cost and revenue.
     definition: >-
       Total government operating funding that covers the shortfall between operating expenses

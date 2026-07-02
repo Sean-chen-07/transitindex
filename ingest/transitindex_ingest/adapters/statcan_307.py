@@ -9,7 +9,7 @@ yields one `MetricValueRecord` per (system, measure, month):
     dimension.) A name that is not in the map is SKIPPED (collected in
     `.skipped`) rather than crashing -- it usually means a system we do not
     track, or a renamed agency that needs the map updated.
-  * the measure label -> metric_code (ridership / operating_revenue).
+  * the measure label -> metric_code (ridership / total_revenue_excluding_subsidy).
     NB: 23-10-0307 trips are a MONTHLY count, so they map to `ridership` at a
     MONTHLY period; the annual ridership figure comes from a month->year rollup
     (or a true annual source). Period granularity is the dimension, not the code.
@@ -42,7 +42,7 @@ STATCAN_307_URL = "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2310030
 #: ingest are listed; any other measure row is ignored.
 _MEASURE_TO_METRIC: dict[str, str] = {
     "Total passenger trips": "ridership",
-    "Total revenue, excluding subsidies": "operating_revenue",
+    "Total revenue, excluding subsidies": "total_revenue_excluding_subsidy",
 }
 
 #: SCALAR_FACTOR label -> multiplier applied to VALUE.
@@ -91,7 +91,7 @@ class StatCan23100307Adapter:
 
             period = self._period(ref_date)
             value = Decimal(raw_value) * self._scalar(row.get("SCALAR_FACTOR"))
-            currency = "CAD" if metric_code == "operating_revenue" else None
+            currency = "CAD" if metric_code == "total_revenue_excluding_subsidy" else None
             quality = "preliminary" if _is_preliminary(row.get("STATUS")) else "verified"
 
             records.append(
@@ -104,7 +104,7 @@ class StatCan23100307Adapter:
                     period_label=period.label,
                     service_scope="total",
                     value=value,
-                    unit="CAD" if metric_code == "operating_revenue" else "count",
+                    unit="CAD" if metric_code == "total_revenue_excluding_subsidy" else "count",
                     quality=quality,
                     currency=currency,
                     # Only rated hero metrics carry ranks (both feed metrics are rated).

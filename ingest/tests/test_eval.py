@@ -63,7 +63,7 @@ def _mostly_correct_scenario():
     """
     return [
         _ev("ridership", "256900000", "count", "0.97"),
-        _ev("operating_revenue", "1310000000", "CAD", "0.95"),
+        _ev("total_revenue_excluding_subsidy", "1310000000", "CAD", "0.95"),
         _ev("operating_expenses", "2240000000", "CAD", "0.95"),
         _ev("revenue_service_hours", "9850000", "hours", "0.92"),
         _ev("fleet_size", "2510", "count", "0.93"),
@@ -133,7 +133,7 @@ def test_regression_unflagged_wrong_value_is_penalized():
         GOLD,
         [
             ExtractedAssessment("ridership", Decimal("999999999")),  # clean + wrong
-            ExtractedAssessment("operating_revenue", Decimal("1310000000")),  # clean + right
+            ExtractedAssessment("total_revenue_excluding_subsidy", Decimal("1310000000")),  # clean + right
         ],
     )
     assert report.precision == 0.5  # one of two clean values is wrong
@@ -178,16 +178,16 @@ def _validator(priors=None):
 
 def test_thousandfold_value_vs_prior_year_earns_yoy_spike():
     """The in-thousands mistake: a figure 1000x last year's comes back flagged."""
-    scenario = [_ev("operating_revenue", "1310000000000", "CAD", "0.95")]  # 1000x
+    scenario = [_ev("total_revenue_excluding_subsidy", "1310000000000", "CAD", "0.95")]  # 1000x
     report = run_eval_through_pipeline(
         GOLD,
         scenario,
         "ttc",
         PAGES,
         source_ref_meta=META,
-        validator=_validator(priors={"operating_revenue": Decimal("1310000000")}),
+        validator=_validator(priors={"total_revenue_excluding_subsidy": Decimal("1310000000")}),
     )
-    rev = next(r for r in report.rows if r.metric_code == "operating_revenue")
+    rev = next(r for r in report.rows if r.metric_code == "total_revenue_excluding_subsidy")
     assert rev.flagged and "yoy_spike" in rev.flags
 
 

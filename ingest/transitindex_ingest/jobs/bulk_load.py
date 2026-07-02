@@ -107,7 +107,7 @@ def bulk_load(
                   and the adapter already emits quality='verified').
     feed_code   : source feed code for the feed_run record.
     rank_metric_codes : metrics to refresh ranks for (e.g. ['ridership',
-                  'operating_revenue'] for StatCan; ['ridership'] for Hamilton).
+                  'total_revenue_excluding_subsidy'] for StatCan; ['ridership'] for Hamilton).
     agency_slugs: slugs whose data this feed owns (for verification + reset).
     validator   : optional flag computer; None uses the project default (or no-op).
     reset       : if True, delete THIS feed's own rows before staging — scoped to
@@ -281,7 +281,7 @@ def load_statcan(
     reset: bool = False,
     confirm: bool = False,
 ) -> BulkLoadResult:
-    """Load StatCan 23-10-0307 (12 agencies, ridership + operating_revenue, monthly)."""
+    """Load StatCan 23-10-0307 (12 agencies, ridership + total_revenue_excluding_subsidy, monthly)."""
     from ..adapters.statcan_307 import StatCan23100307Adapter
     from ..refdata import STATCAN_AGENCY_MAP
 
@@ -296,7 +296,7 @@ def load_statcan(
         records,
         tier=0,
         feed_code="statcan_307",
-        rank_metric_codes=["ridership", "operating_revenue"],
+        rank_metric_codes=["ridership", "total_revenue_excluding_subsidy"],
         agency_slugs=agency_slugs,
         reset=reset,
         confirm=confirm,

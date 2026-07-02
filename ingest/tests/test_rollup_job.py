@@ -81,12 +81,12 @@ def test_rollup_then_recompute_derives_annual_ratios():
         _seed_month(repo, "ttc", 2024, m, "100")  # annual ridership -> 1200
     rollup_ridership(repo, "ttc", 2024)
 
-    # Add annual operating_revenue at the same annual period + scope.
+    # Add annual total_revenue_excluding_subsidy at the same annual period + scope.
     ap = annual_period("ttc", 2024)
     annual_pid = repo.get_or_create_reporting_period(ap.period_type, ap.start, ap.end, ap.label)
     repo.insert_metric_value(
         agency_id=repo.agency_id("ttc"),
-        metric_id=repo.metric_id("operating_revenue"),
+        metric_id=repo.metric_id("total_revenue_excluding_subsidy"),
         reporting_period_id=annual_pid,
         mode_id=None,
         service_scope="total",
