@@ -38,8 +38,8 @@ and be verified on its own.
   longer needed — dropped.
 - **Add:** `amortization`, `other_operating_expenses`, `annual_surplus_deficit`, `total_revenue`,
   `total_expenses`, `farebox_revenue` (promote to core), `other_revenue` (broad non-fare/
-  non-subsidy residual), `asset_consumption_ratio` (+ its two inputs — see Phase 4). Definition:
-  `total_revenue_excluding_subsidy = total_revenue − subsidy`.
+  non-subsidy residual). ~~`asset_consumption_ratio` + its two inputs~~ — deferred 2026-07-01
+  (addendum #3). Definition: `total_revenue_excluding_subsidy = total_revenue − subsidy`.
 - **Drop:** `fleet_capacity` + `MODE_CAPACITY_WEIGHT`; replace with a 4-class fleet composition.
 - **Naming — codes match the statement line (2026-06-14, user).** Revenue metrics are *renamed* to
   read like their displayed lines: `passenger_fare_revenue` → **`farebox_revenue`**;
@@ -52,8 +52,8 @@ and be verified on its own.
 **Still open (does not block the rest):**
 - **OTP rank badge** — keep the rank with a "definitions vary" footnote, *or* drop just OTP's badge
   (rated set → 4). Phase 1 keeps OTP rated; the badge/footnote is a web-only toggle (Phase 7).
-- ~~**`asset_consumption_ratio`** needs two new sourced inputs~~ — **resolved 2026-07-01: adopt**
-  (addendum #3 below).
+- ~~**`asset_consumption_ratio`** needs two new sourced inputs~~ — **resolved 2026-07-01: DEFER**
+  (addendum #3 below — the inputs are too rarely reported to be worth tracking).
 
 ---
 
@@ -89,10 +89,12 @@ These extend the 2026-06-14 decisions; where they touch a phase, the delta is li
    solving negative IS the bound violation — flag it), but keep the bounds as cheap standalone
    checks where both sides are sourced.
 
-3. **Amortization family adopted in full** (the "depreciation" decision): `amortization`,
-   `accumulated_amortization`, `gross_tangible_capital_assets`, and `asset_consumption_ratio` all
-   ship. The Phase-4 decision gate is resolved: every audited TCA note carries gross cost and
-   accumulated amortization, so the inputs are sourceable.
+3. **Amortization only — the rest of the family is deferred** (the "depreciation" decision,
+   trimmed 2026-07-01, user): only `amortization` (the annual expense line, printed on every
+   statement of operations) ships. `accumulated_amortization`, `gross_tangible_capital_assets`,
+   and `asset_consumption_ratio` are **deferred**: they live in the TCA note detail that many
+   agencies don't report cleanly, and there is no point building detail that data will rarely
+   hit. The Phase-4 decision gate is resolved: DEFER (documented, not silently dropped).
 
 4. **Subsidy stays ONE line; a component is never the total.** Keep `subsidy` as the single
    combined government **operating** funding line (the fed/prov/municipal split was already
@@ -102,8 +104,10 @@ These extend the 2026-06-14 decisions; where they touch a phase, the delta is li
    only from a line that is the combined total (or leave it for the identity to solve); **never
    promote one level or one program to the total.**
 
-5. **Extraction-grade definition pass over every metric.** Every `metric_dictionary.yaml` entry is
-   tightened so the LLM extractor makes the fewest possible mistakes. Each entry must state:
+5. **Extraction-grade definition pass over every metric — but keep it lean (2026-07-01, user).**
+   Every `metric_dictionary.yaml` entry is tightened so the LLM extractor makes the fewest
+   possible mistakes — clarity about what a number IS, not more numbers to hunt for. Do not add
+   metrics or sub-breakdowns whose data rarely appears in real reports. Each entry must state:
    (a) the **entity scope** line from #1 (financial metrics);
    (b) an explicit **component-vs-total** confusion (the federal-subsidy mistake, generalized:
        `long_term_debt` vs `total_liabilities`, `cash_and_investments` vs `total_financial_assets`,
@@ -118,9 +122,9 @@ These extend the 2026-06-14 decisions; where they touch a phase, the delta is li
    always updated when the metric set changes).
 
 **Phase deltas from this addendum:**
-- **Phase 4** gains the three balance-sheet residuals (table updated in place below) and the
-  asset-consumption gate is resolved to **adopt**. Final set: 32 − 1 (`fleet_capacity`)
-  + 13 additions = **44 metrics**.
+- **Phase 4** gains the three balance-sheet residuals (table updated in place below); the
+  asset-consumption gate is resolved to **defer** (its ratio + two inputs do not ship). Final
+  set: 32 − 1 (`fleet_capacity`) + 10 additions = **41 metrics**.
 - **Phase 5** gains three component identities (`financial_assets_components`,
   `liabilities_components`, `non_financial_assets_components`).
 - **Phase 2/7** dictionary work expands to the full definition pass (#1, #4, #5).
@@ -250,9 +254,6 @@ existing DBs (follow migration 014's balance-sheet pattern).
 | `other_revenue` | CAD / currency | **t** | broad non-fare/non-subsidy residual: `total_revenue_excluding_subsidy − farebox_revenue` |
 | `total_expenses` | CAD / currency | f | enterprise lens |
 | `annual_surplus_deficit` | CAD / currency | **t** | `total_revenue − total_expenses`; flow→stock bridge |
-| `asset_consumption_ratio` | % / ratio | **t** | `accumulated_amortization / gross_tangible_capital_assets` |
-| `accumulated_amortization` | CAD / currency | f | **input for the ratio** (adopted 2026-07-01) |
-| `gross_tangible_capital_assets` | CAD / currency | f | **input for the ratio** (adopted 2026-07-01) |
 | `other_financial_assets` | CAD / currency | **t** | residual: `total_financial_assets − cash_and_investments` (addendum #2) |
 | `other_liabilities` | CAD / currency | **t** | residual: `total_liabilities − long_term_debt` (addendum #2) |
 | `other_non_financial_assets` | CAD / currency | **t** | residual: `total_non_financial_assets − tangible_capital_assets` (addendum #2) |
@@ -270,8 +271,6 @@ existing DBs (follow migration 014's balance-sheet pattern).
   subsidy`, so no residual term; when all three are sourced this is a cross-source check, not a plug).
 - **Add** `annual_surplus_deficit_def` SumEquation: `annual_surplus_deficit = total_revenue −
   total_expenses`, `defines="annual_surplus_deficit"`.
-- **Add** `asset_consumption_ratio_def` RatioEquation: `accumulated_amortization /
-  gross_tangible_capital_assets`.
 - **Add the three balance-sheet component equations (addendum #2)**, each `defines=` its residual:
   `financial_assets_components` (`cash_and_investments + other_financial_assets =
   total_financial_assets`), `liabilities_components` (`long_term_debt + other_liabilities =
@@ -282,9 +281,10 @@ existing DBs (follow migration 014's balance-sheet pattern).
   (a reserved derivation code / a separate check), not a member of `EQUATIONS`. Out of scope for the
   solver; add as a documented cross-period validation later.
 
-**Decision gate:** if `accumulated_amortization` + `gross_tangible_capital_assets` are not reliably
-in the audited TCA note for the launch agencies, **defer `asset_consumption_ratio` and its two
-inputs** — ship the other five additions. Note the deferral in the doc (no silent drop).
+**Decision gate — resolved 2026-07-01: DEFERRED.** `asset_consumption_ratio` and its two inputs
+(`accumulated_amortization`, `gross_tangible_capital_assets`) do **not** ship — the user's call:
+the TCA-note detail is too rarely reported for the tracked agencies to be worth building against.
+Ship the other additions. Revisit only if the data proves reliably available.
 
 ---
 
@@ -305,8 +305,8 @@ promised but never implemented.
    total_financial_assets` → `sum_mismatch` (the plan §2 claims it; today it's only in the
    `equations.py` solver cross-check).
 4. **Add component-bounds** (plan §2): `cash_and_investments ≤ total_financial_assets`,
-   `long_term_debt ≤ total_liabilities`, `tangible_capital_assets ≤ total_non_financial_assets`,
-   and (new) `accumulated_amortization ≤ gross_tangible_capital_assets` → `sum_mismatch`.
+   `long_term_debt ≤ total_liabilities`, `tangible_capital_assets ≤ total_non_financial_assets`
+   → `sum_mismatch`.
 5. **Add the three balance-sheet component identities (addendum #2)** to `validate_cohort`:
    `cash_and_investments + other_financial_assets ≈ total_financial_assets`,
    `long_term_debt + other_liabilities ≈ total_liabilities`, `tangible_capital_assets +
