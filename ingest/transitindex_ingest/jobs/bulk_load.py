@@ -336,6 +336,103 @@ def load_hamilton(
     )
 
 
+def load_ntd_monthly(
+    repo: Repository,
+    csv_path: Path,
+    *,
+    since: Optional[str] = "2019-01",
+    reset: bool = False,
+    confirm: bool = False,
+) -> BulkLoadResult:
+    """Load the NTD Complete Monthly Ridership CSV (US Full Reporters;
+    ridership + vehicle_revenue_km + revenue_service_hours, monthly)."""
+    from ..adapters.ntd_monthly import NTDMonthlyAdapter
+    from ..refdata_us import NTD_AGENCY_MAP
+
+    adapter = NTDMonthlyAdapter()
+    records = adapter.parse(csv_path.read_text(encoding="utf-8-sig"), since=since)
+    if adapter.skipped:
+        print(f"[ntd-monthly] skipped {len(adapter.skipped)} unmapped reporter(s)")
+
+    return bulk_load(
+        repo,
+        records,
+        tier=0,
+        feed_code="ntd_monthly",
+        rank_metric_codes=["ridership", "vehicle_revenue_km", "revenue_service_hours"],
+        agency_slugs=sorted(set(NTD_AGENCY_MAP.values())),
+        reset=reset,
+        confirm=confirm,
+    )
+
+
+def load_ntd_annual(
+    repo: Repository,
+    csv_path: Path,
+    *,
+    reset: bool = False,
+    confirm: bool = False,
+) -> BulkLoadResult:
+    """Load the NTD Annual Data — Metrics CSV (US Full Reporters; annual
+    ridership, farebox_revenue, operating_expenses, VRM->km, VRH)."""
+    from ..adapters.ntd_annual import NTDAnnualAdapter
+    from ..refdata_us import NTD_AGENCY_MAP
+
+    adapter = NTDAnnualAdapter()
+    records = adapter.parse(csv_path.read_text(encoding="utf-8-sig"))
+    if adapter.skipped:
+        print(f"[ntd-annual] skipped {len(adapter.skipped)} unmapped reporter(s)")
+
+    result = bulk_load(
+        repo,
+        records,
+        tier=0,
+        feed_code="ntd_annual",
+        rank_metric_codes=[
+            "ridership",
+            "farebox_revenue",
+            "operating_expenses",
+            "vehicle_revenue_km",
+            "revenue_service_hours",
+        ],
+        agency_slugs=sorted(set(NTD_AGENCY_MAP.values())),
+        reset=reset,
+        confirm=confirm,
+    )
+
+    # The rated cost_per_rider (and the displayed average_fare / cost_per_hour /
+    # farebox_recovery_ratio) only exist as equation-graph output, so solve each
+    # touched (agency, period) after promotion, then rank the derived hero metric.
+    if result.ok and records:
+        from .derived_recompute import recompute_derived
+
+        pairs = sorted(
+            {
+                (
+                    r.agency_slug,
+                    (r.period_type, r.period_start, r.period_end, r.period_label),
+                )
+                for r in records
+            }
+        )
+        period_ids: set[int] = set()
+        warning_count = 0
+        for slug, (ptype, pstart, pend, plabel) in pairs:
+            pid = repo.get_or_create_reporting_period(ptype, pstart, pend, plabel)
+            period_ids.add(pid)
+            derived = recompute_derived(repo, slug, pid)
+            warning_count += len(derived.warnings)
+        cohorts = bulk_refresh_ranks(repo, ["cost_per_rider"], sorted(period_ids))
+        print(
+            f"[ntd-annual] derived: {len(pairs)} agency-period(s) solved "
+            f"({warning_count} warning(s)); cost_per_rider ranks: {cohorts} cohort(s)",
+            flush=True,
+        )
+        result.ranks_cohorts += cohorts
+
+    return result
+
+
 # --- helpers -----------------------------------------------------------------
 
 

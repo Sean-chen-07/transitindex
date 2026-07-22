@@ -36,6 +36,7 @@ export const agencies = core.table("agencies", {
   primaryModes: text("primary_modes").array(),
   fiscalYearEndMonth: smallint("fiscal_year_end_month").notNull(),
   currency: text("currency").notNull(),
+  ntdId: text("ntd_id"),
   parentAgencyId: bigint("parent_agency_id", { mode: "number" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),

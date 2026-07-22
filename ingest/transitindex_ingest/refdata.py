@@ -7,8 +7,17 @@ Keep in sync with the SQL seeds if those change.
 
 from __future__ import annotations
 
+from decimal import Decimal
 from types import MappingProxyType
 from typing import Mapping
+
+from .refdata_us import US_AGENCIES
+
+# Fixed CAD -> USD conversion applied ONLY when computing cross-country ranks on
+# currency-denominated metrics (rank_refresh). Stored and displayed values are
+# never converted — they stay in the agency's own currency. Hardcoded by
+# decision (2026-07-22); update here if the assumed rate changes.
+CAD_TO_USD: Decimal = Decimal("0.7")
 
 # --- 10 modes (db/seeds/01_modes.sql), insertion order preserved -------------
 
@@ -134,6 +143,12 @@ AGENCIES: Mapping[str, Mapping] = MappingProxyType(
         ),
     }
 )
+
+# Canadian tracked agencies + generated US agencies (refdata_us.py) in one map.
+# Canadian entries carry no "currency"/"country" keys (implicitly CAD/CA); use
+# .get("currency", "CAD") when reading. A PLAIN dict (not MappingProxyType) so
+# tests can monkeypatch entries; production code must never mutate it.
+ALL_AGENCIES: dict[str, Mapping] = {**AGENCIES, **US_AGENCIES}
 
 # --- 41 metrics (db/seeds/04_metrics.sql) ------------------------------------
 # code -> unit, unit_type, is_derived, formula (None unless derived),
@@ -340,7 +355,7 @@ NON_RANKABLE_METRICS: frozenset[str] = frozenset({
     "long_term_debt", "cash_and_investments", "net_debt",
 })
 
-# --- 9 source feeds (db/seeds/05_source_feeds.sql) ---------------------------
+# --- 12 source feeds (db/seeds/05_source_feeds.sql) --------------------------
 # code -> tier, expected_cadence, enabled. Insertion order preserved.
 
 SOURCE_FEEDS: Mapping[str, Mapping] = MappingProxyType(
@@ -374,6 +389,12 @@ SOURCE_FEEDS: Mapping[str, Mapping] = MappingProxyType(
         ),
         "hamilton_open_data": MappingProxyType(
             {"tier": 1, "expected_cadence": "monthly", "enabled": True}
+        ),
+        "ntd_monthly": MappingProxyType(
+            {"tier": 0, "expected_cadence": "monthly", "enabled": True}
+        ),
+        "ntd_annual": MappingProxyType(
+            {"tier": 0, "expected_cadence": "annual", "enabled": True}
         ),
     }
 )

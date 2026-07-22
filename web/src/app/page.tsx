@@ -21,7 +21,7 @@ export default async function HomePage() {
     <main>
       <section className="mb-10 text-center">
         <h1 className="text-balance text-3xl font-extrabold leading-tight text-ink sm:text-4xl">
-          Every Canadian transit agency, ranked on the fundamentals.
+          Every Canadian and U.S. transit agency, ranked on the fundamentals.
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-ink-2">
           Search an agency to see where it ranks — every rank and every number is free to

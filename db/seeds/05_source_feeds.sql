@@ -10,5 +10,7 @@ INSERT INTO core.source_feeds (code, display_name, tier, expected_cadence, enabl
   ('oc_transpo_kpi',     'OC Transpo KPI scrape',             2, 'monthly',   false),
   ('metrolinx_ops',      'Metrolinx Operations Report',       2, 'quarterly', false),
   ('annual_report_pdfs', 'Annual report PDFs (all agencies)', 2, 'annual',    false),
-  ('hamilton_open_data', 'Hamilton HSR Open Data (ArcGIS)',   1, 'monthly',   true)
+  ('hamilton_open_data', 'Hamilton HSR Open Data (ArcGIS)',   1, 'monthly',   true),
+  ('ntd_monthly',        'FTA NTD Complete Monthly Ridership (Socrata 8bui-9xvu)', 0, 'monthly', true),
+  ('ntd_annual',         'FTA NTD Annual Data - Metrics (Socrata ekg5-frzt)',      0, 'annual',  true)
 ON CONFLICT (code) DO NOTHING;

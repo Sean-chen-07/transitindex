@@ -15,7 +15,7 @@ from decimal import Decimal
 from typing import Mapping, Optional
 
 from .contract import PeriodType
-from .refdata import AGENCIES
+from .refdata import ALL_AGENCIES
 
 _MONTH_ABBR = (
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -51,7 +51,7 @@ def annual_period(agency_slug: str, year: int) -> Period:
     fiscal_year_end_month (annual_fiscal, label 'FY2024-25'). `year` is the
     calendar year in which the fiscal year starts.
     """
-    agency = AGENCIES.get(agency_slug)
+    agency = ALL_AGENCIES.get(agency_slug)
     if agency is None:
         raise ValueError(f"unknown agency_slug: {agency_slug!r}")
     fy_end_month = agency["fiscal_year_end_month"]
@@ -86,7 +86,7 @@ def annual_period_from_end_year(agency_slug: str, end_year: int) -> Period:
     `annual_period` itself keeps its START-year contract (relied on by the
     workbook and rollup jobs); this helper just translates an end-year into it.
     """
-    agency = AGENCIES.get(agency_slug)
+    agency = ALL_AGENCIES.get(agency_slug)
     if agency is None:
         raise ValueError(f"unknown agency_slug: {agency_slug!r}")
     fy_end_month = agency["fiscal_year_end_month"]
@@ -119,7 +119,7 @@ def fiscal_year_months(agency_slug: str, year: int) -> tuple[tuple[int, int], ..
     Fiscal agencies (e.g. Metrolinx, BC Transit end in March) return the twelve
     months of their fiscal year -- e.g. Apr `year` .. Mar `year + 1`.
     """
-    agency = AGENCIES.get(agency_slug)
+    agency = ALL_AGENCIES.get(agency_slug)
     if agency is None:
         raise ValueError(f"unknown agency_slug: {agency_slug!r}")
     fy_end_month = agency["fiscal_year_end_month"]

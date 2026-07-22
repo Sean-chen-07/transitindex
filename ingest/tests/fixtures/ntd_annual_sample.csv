@@ -1,0 +1,6 @@
+ntd_id,agency,report_year,mode,type_of_service,fare_revenues_earned,total_operating_expenses,unlinked_passenger_trips,vehicle_revenue_miles,vehicle_revenue_hours
+99901,Test Metro,2023,MB,DO,1000000,5000000,2000000,1000000,80000
+99901,Test Metro,2023,LR,DO,500000,2500000,1000000,,20000
+99901,Test Metro,2024,MB,DO,1100000,5200000,2100000,1050000,82000
+99902,Test City Transit,2023,MB,DO,200000,900000,400000,300000,25000
+99999,Unmapped Transit,2023,MB,DO,1,1,1,1,1

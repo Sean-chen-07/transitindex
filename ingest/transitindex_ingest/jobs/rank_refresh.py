@@ -11,15 +11,21 @@ True ranks highest-first, False ranks lowest-first, None (neutral) still ranks
 highest-first but the direction is informational. An agency with no current
 value for the period is simply absent from the ranking.
 
+Currency metrics rank on a USD basis: a CAD agency's value is multiplied by the
+fixed refdata.CAD_TO_USD rate BEFORE sorting so US and Canadian agencies rank in
+one comparable pool. The conversion exists only inside this job -- stored and
+displayed values are never converted.
+
 Pure stdlib.
 """
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Optional
 
 from ..db.models import BulkMetricRankRow, MetricRankRow
-from ..refdata import AGENCIES, METRICS, RATED_METRICS
+from ..refdata import ALL_AGENCIES, CAD_TO_USD, METRICS, RATED_METRICS
 
 
 def compute_ranks(values, higher_is_better: Optional[bool]):
@@ -92,6 +98,7 @@ def refresh_ranks(
         for v in repo.list_current_values_for_metric_period(metric_id, period_id)
         if v.comparable_flag and v.service_scope == service_scope
     ]
+    values = _to_rank_basis(repo, metric_code, values)
 
     # 'all': one ranking across every included agency.
     all_rows = [
@@ -155,7 +162,7 @@ def bulk_refresh_ranks(
         direction = _direction(higher_is_better)
 
         for period_id in period_ids:
-            values = cohort[(mid, period_id)]
+            values = _to_rank_basis(repo, code, cohort[(mid, period_id)])
 
             for agency_id, rank, denom in compute_ranks(values, higher_is_better):
                 all_rank_rows.append(BulkMetricRankRow(
@@ -187,10 +194,35 @@ def bulk_refresh_ranks(
     return cohort_count
 
 
+def _to_rank_basis(repo, metric_code: str, values):
+    """Convert a currency cohort to the USD rank basis (CAD x CAD_TO_USD).
+
+    Non-currency metrics pass through untouched. Currency values from CAD
+    agencies are wrapped with a converted `.value` for sorting only; the wrapper
+    keeps `.agency_id` so downstream grouping still works. An agency absent from
+    ALL_AGENCIES (a census agency outside the tracked set) defaults to CAD.
+    """
+    if METRICS[metric_code]["unit_type"] != "currency" or not values:
+        return values
+    currency_by_id = {
+        repo.agency_id(slug): meta.get("currency", "CAD")
+        for slug, meta in ALL_AGENCIES.items()
+    }
+    return [
+        SimpleNamespace(
+            agency_id=v.agency_id,
+            value=v.value * CAD_TO_USD
+            if currency_by_id.get(v.agency_id, "CAD") == "CAD"
+            else v.value,
+        )
+        for v in values
+    ]
+
+
 def _group_by_subdivision(repo, values):
-    """Group `values` by their agency's subdivision (province) code."""
+    """Group `values` by their agency's subdivision (province/state) code."""
     agency_subdivision = {
-        repo.agency_id(slug): meta["subdivision"] for slug, meta in AGENCIES.items()
+        repo.agency_id(slug): meta["subdivision"] for slug, meta in ALL_AGENCIES.items()
     }
     groups: dict[str, list] = {}
     for v in values:

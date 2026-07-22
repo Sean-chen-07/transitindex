@@ -47,6 +47,8 @@ export interface AgencySummary {
   legalName: string;
   subdivision: string;
   provinceName: string;
+  /** The agency's reporting currency ("CAD" | "USD") — displayed values are never converted. */
+  currency: string;
   primaryModes: string[];
   modes: { code: string; displayName: string }[];
 }

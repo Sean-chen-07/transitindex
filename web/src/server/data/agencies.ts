@@ -104,6 +104,7 @@ export async function getAgencyBySlug(slug: string) {
       shortName: agencies.shortName,
       legalName: agencies.legalName,
       subdivision: agencies.subdivision,
+      currency: agencies.currency,
       primaryModes: agencies.primaryModes,
     })
     .from(agencies)
@@ -131,6 +132,7 @@ export async function getAgencySummary(slug: string): Promise<AgencySummary | nu
     legalName: agency.legalName,
     subdivision: agency.subdivision,
     provinceName: provinceName(agency.subdivision),
+    currency: agency.currency,
     primaryModes: agency.primaryModes ?? [],
     modes: modeRows,
   };

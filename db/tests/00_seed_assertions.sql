@@ -11,7 +11,7 @@ BEGIN
   IF (SELECT count(*) FROM core.agencies)     <  10 THEN RAISE EXCEPTION 'expected >= 10 agencies, got %',  (SELECT count(*) FROM core.agencies);     END IF;
   IF (SELECT count(*) FROM core.modes)        <> 10 THEN RAISE EXCEPTION 'expected 10 modes, got %',        (SELECT count(*) FROM core.modes);        END IF;
   IF (SELECT count(*) FROM core.metrics)      <> 41 THEN RAISE EXCEPTION 'expected 41 metrics, got %',      (SELECT count(*) FROM core.metrics);      END IF;
-  IF (SELECT count(*) FROM core.source_feeds) <> 10 THEN RAISE EXCEPTION 'expected 10 source_feeds, got %', (SELECT count(*) FROM core.source_feeds); END IF;
+  IF (SELECT count(*) FROM core.source_feeds) <> 12 THEN RAISE EXCEPTION 'expected 12 source_feeds, got %', (SELECT count(*) FROM core.source_feeds); END IF;
 
   -- derived <-> formula presence (#8)
   IF (SELECT count(*) FROM core.metrics WHERE is_derived)                          <> 14

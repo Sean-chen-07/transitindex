@@ -30,7 +30,7 @@ export async function generateMetadata({
   if (!summary) return { title: "Agency not found" };
   return {
     title: `${summary.shortName ?? summary.legalName} — transit fundamentals`,
-    description: `${summary.legalName} (${summary.provinceName}): ridership, costs, and financial fundamentals for Canadian transit agencies — every number free to view.`,
+    description: `${summary.legalName} (${summary.provinceName}): ridership, costs, and financial fundamentals for Canadian and U.S. transit agencies — every number free to view.`,
   };
 }
 
@@ -79,6 +79,7 @@ export default async function AgencyDetailPage({
           {summary.shortName && summary.shortName !== summary.legalName
             ? `${summary.legalName} · ${summary.provinceName}`
             : summary.provinceName}
+          {` · figures in ${summary.currency}`}
         </p>
         <div className="mt-2 flex flex-wrap gap-1">
           {summary.modes.map((m) => (
@@ -109,6 +110,7 @@ export default async function AgencyDetailPage({
           financials={
             <Financials
               financials={model.financials}
+              currency={summary.currency}
               downloadSlot={
                 <DownloadButton
                   subscribed={subscribed}

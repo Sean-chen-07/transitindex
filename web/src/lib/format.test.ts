@@ -99,6 +99,11 @@ describe("formatMetricValue", () => {
     expect(formatMetricValue(185, "CAD/hr", "CAD")).toBe("$185/hr");
     expect(formatMetricValue(52, "trips/hr", null)).toBe("52");
   });
+  it("USD renders like CAD — the page names the currency, not the value", () => {
+    expect(formatMetricValue(1_420_000_000, "USD", "USD", { compact: true })).toBe("$1.42B");
+    expect(formatMetricValue(4.6, "USD", "USD", { compact: true })).toBe("$4.60");
+    expect(formatMetricValue(185, "USD/hr", "USD")).toBe("$185/hr");
+  });
   it("falls back to number + unit", () => {
     expect(formatMetricValue(12, "widgets", null)).toBe("12 widgets");
   });
@@ -118,6 +123,12 @@ describe("provinceName", () => {
     expect(provinceName("BC")).toBe("British Columbia");
     expect(provinceName("QC")).toBe("Quebec");
     expect(provinceName("AB")).toBe("Alberta");
+  });
+  it("expands US state codes to full names", () => {
+    expect(provinceName("NY")).toBe("New York");
+    expect(provinceName("WA")).toBe("Washington");
+    expect(provinceName("DC")).toBe("District of Columbia");
+    expect(provinceName("PR")).toBe("Puerto Rico");
   });
   it("falls back gracefully", () => {
     expect(provinceName("XX")).toBe("XX");

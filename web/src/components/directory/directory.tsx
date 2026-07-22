@@ -9,7 +9,7 @@ import { provinceName } from "@/lib/format";
 import type { AgencyListItem, AgencyRank } from "@/server/data/types";
 
 /**
- * The free directory: a search hero + ONE unified, table-like list of every Canadian
+ * The free directory: a search hero + ONE unified, table-like list of every Canadian and U.S.
  * agency (no per-province grids — province is a column/search term). Each agency is a
  * full-width row that expands in place to its ranks (wireframes-v5). Search filters the
  * ALREADY-SHIPPED, rank-only payload client-side — `ranksBySlug` carries ordinals only,
@@ -58,7 +58,7 @@ export function Directory({
       ) : (
         <div>
           <p className="mb-3 text-xs text-ink-3">
-            {filtered.length} agencies · ranked vs all Canadian agencies
+            {filtered.length} agencies · ranked vs all Canadian &amp; U.S. agencies
           </p>
           {/* Phones: one compact, dense list. */}
           <div className="divide-y divide-line-2 overflow-hidden rounded-card border border-line bg-card shadow-soft sm:hidden">

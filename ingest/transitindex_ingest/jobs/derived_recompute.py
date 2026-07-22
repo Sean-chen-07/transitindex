@@ -25,7 +25,7 @@ from typing import NamedTuple
 from decimal import Decimal
 
 from ..equations import ATTR_PREFIX, EQUATIONS, solve
-from ..refdata import METRICS, RATED_METRICS
+from ..refdata import ALL_AGENCIES, METRICS, RATED_METRICS
 
 # Derivation equation codes produced by the WITHIN-PERIOD solver. A current value
 # carrying one of these is prior solver output -> excluded from the seed so it is
@@ -73,6 +73,10 @@ def recompute_derived(repo, agency_slug: str, period_id: int) -> RecomputeResult
     over-determination warnings.
     """
     agency_id = repo.agency_id(agency_slug)
+    # Derived dollar values carry the AGENCY's currency (USD for US agencies),
+    # not the metric catalog's CAD default unit. Census agencies outside the
+    # tracked refdata set default to CAD (they are all Canadian).
+    agency_currency = ALL_AGENCIES.get(agency_slug, {}).get("currency", "CAD")
     code_by_mid = {repo.metric_id(code): code for code in METRICS}
     rows = repo.list_current_values_for_agency_period(agency_id, period_id)
 
@@ -150,6 +154,7 @@ def recompute_derived(repo, agency_slug: str, period_id: int) -> RecomputeResult
             code_tainted = any(c in tainted for c in sv.inputs)
             if code_tainted:
                 tainted.add(code)
+            is_currency = meta["unit_type"] == "currency"
             vid = repo.insert_derived_value(
                 agency_id=agency_id,
                 metric_id=repo.metric_id(code),
@@ -157,11 +162,15 @@ def recompute_derived(repo, agency_slug: str, period_id: int) -> RecomputeResult
                 mode_id=mode_id,
                 service_scope=scope,
                 value=sv.value,
-                unit=meta["unit"],
+                # Catalog units are CAD-denominated ("CAD", "CAD/hr"); swap in
+                # the agency's currency for its derived dollar values.
+                unit=meta["unit"].replace("CAD", agency_currency)
+                if is_currency
+                else meta["unit"],
                 quality=quality,
                 equation_code=sv.equation_code,
                 input_value_ids=input_ids,
-                currency="CAD" if meta["unit_type"] == "currency" else None,
+                currency=agency_currency if is_currency else None,
                 # Only the five rated hero metrics carry ranks; a value derived from
                 # an un-normalized psab_total expense is never comparable (rule b).
                 comparable_flag=(code in RATED_METRICS) and not code_tainted,
