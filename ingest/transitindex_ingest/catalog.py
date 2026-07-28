@@ -54,6 +54,10 @@ _PREFIX_RULES: list[tuple[str, tuple[str, str, str]]] = [
     ("oc-transpo",                ("oc-transpo",         "financial_statement", "C")),
     ("edmonton-ets-service-plan", ("edmonton-ets",       "service_plan",        "T")),
     ("edmonton-ets",              ("edmonton-ets",       "financial_statement", "C")),
+    # STM authors its own reports [T]: stm-activity-<year> is the activity/annual
+    # report; the shorter 'stm' is its audited "Rapport financier annuel".
+    ("stm-activity",              ("stm",                "annual_report",       "T")),
+    ("stm",                       ("stm",                "financial_statement", "T")),
     ("miway-business-plan",       ("miway",              "business_plan",       "T")),
     ("miway",                     ("miway",              "financial_statement", "C")),
 ]

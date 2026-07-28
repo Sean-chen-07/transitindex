@@ -160,6 +160,8 @@ Every source referenced in the matrix below is defined here with license and acc
 | `subsidy_per_rider` | **CALC** | — | CALC | Subsidy from Québec government + island of Montréal. STM-AR. |
 | `fleet_size` | **STM-AR** | — | 2 | |
 
+⚠ Sourcing (STM-AR): recent reports are served as interactive web pages with bot protection — a naive HTTP GET returns HTML, not a PDF. Fetch the direct PDF asset URLs (`stm.info/sites/default/files/...`) or use a real headless browser. Reports are French: "Rapport financier annuel" = the audited financials (**the extraction source**); "Rapport annuel / d'activité" = the activity report. File-naming convention (catalog.py): `stm-<year>.pdf` = financial report, `stm-activity-<year>.pdf` = activity report; both are STM-authored [T].
+
 ---
 
 ### 3. TransLink (Metro Vancouver)
@@ -265,6 +267,8 @@ Every source referenced in the matrix below is defined here with license and acc
 | `cost_per_rider` | **CALC** | — | CALC | |
 | `subsidy_per_rider` | **CALC** | — | CALC | |
 | `fleet_size` | **MIS-AR** | — | 2 | |
+
+⚠ Sourcing (MIS-AR): the good document is the **City of Mississauga "Financial and Sustainability Report"** on mississauga.ca (behind numeric, unguessable paths — navigate the city finance reports page to find it). MiWay's own "Report to the Community" is glossy and **lacks audited financials** — do not use it as the extraction source.
 
 ---
 

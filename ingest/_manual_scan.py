@@ -134,6 +134,22 @@ def cmd_prep(ids: list[int]) -> int:
     )
     ok = [m for m in manifest if not m.get("error")]
     print(f"\nprepped {len(ok)}/{len(manifest)} docs -> _manual/manifest.json")
+
+    # Blind-spot guard: a launch agency with ZERO catalog documents is invisible
+    # to extraction agents (they only see the manifest built from catalog rows).
+    # Compare the full catalog (all statuses) against the seeded launch agencies
+    # and make any gap LOUD -- warn on stderr and write missing_agencies.json.
+    with_docs = {slug_by_id.get(d.agency_id) for d in repo.list_documents()}
+    missing = sorted(slug for slug in slug_by_id.values() if slug not in with_docs)
+    (_MANUAL / "missing_agencies.json").write_text(
+        json.dumps(missing, indent=2), encoding="utf-8"
+    )
+    if missing:
+        print(
+            f"WARNING: agencies with ZERO catalog documents: {', '.join(missing)} "
+            f"(extraction agents cannot see these -- source PDFs first)",
+            file=sys.stderr,
+        )
     return 0
 
 

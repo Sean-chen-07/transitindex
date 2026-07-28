@@ -1,0 +1,191 @@
+{
+  "agency": "burlington-transit",
+  "live": [
+    {
+      "metric": "accumulated_surplus",
+      "period": "2023",
+      "year": 2023,
+      "value": "1208645000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "accumulated_surplus",
+      "period": "2024",
+      "year": 2024,
+      "value": "1244973000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "cash_and_investments",
+      "period": "2023",
+      "year": 2023,
+      "value": "364293",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "cash_and_investments",
+      "period": "2024",
+      "year": 2024,
+      "value": "350396",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "labour_cost",
+      "period": "2023",
+      "year": 2023,
+      "value": "19570000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "labour_cost",
+      "period": "2024",
+      "year": 2024,
+      "value": "21208000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "long_term_debt",
+      "period": "2023",
+      "year": 2023,
+      "value": "114403000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "long_term_debt",
+      "period": "2024",
+      "year": 2024,
+      "value": "114966000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_expenses",
+      "period": "2023",
+      "year": 2023,
+      "value": "31638000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_expenses",
+      "period": "2024",
+      "year": 2024,
+      "value": "71822000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "2023",
+      "year": 2023,
+      "value": "30977000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "2024",
+      "year": 2024,
+      "value": "41084000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "tangible_capital_assets",
+      "period": "2023",
+      "year": 2023,
+      "value": "974776000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "tangible_capital_assets",
+      "period": "2024",
+      "year": 2024,
+      "value": "1030678000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_financial_assets",
+      "period": "2023",
+      "year": 2023,
+      "value": "549448000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_financial_assets",
+      "period": "2024",
+      "year": 2024,
+      "value": "555535000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_liabilities",
+      "period": "2023",
+      "year": 2023,
+      "value": "321564000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_liabilities",
+      "period": "2024",
+      "year": 2024,
+      "value": "346694000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_non_financial_assets",
+      "period": "2023",
+      "year": 2023,
+      "value": "980761000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_non_financial_assets",
+      "period": "2024",
+      "year": 2024,
+      "value": "1036132000",
+      "unit": "CAD",
+      "scope": "total"
+    }
+  ],
+  "pending": [
+    {
+      "id": 3432,
+      "metric": "materials_services_cost",
+      "period": "2023",
+      "year": 2023,
+      "value": "515000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.75",
+      "flags": [],
+      "page": 24
+    },
+    {
+      "id": 3431,
+      "metric": "materials_services_cost",
+      "period": "2024",
+      "year": 2024,
+      "value": "7285000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.75",
+      "flags": [],
+      "page": 23
+    }
+  ]
+}

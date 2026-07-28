@@ -1,0 +1,391 @@
+{
+  "agency": "oc-transpo",
+  "live": [
+    {
+      "metric": "labour_cost",
+      "period": "2019",
+      "year": 2019,
+      "value": "352013000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "labour_cost",
+      "period": "2020",
+      "year": 2020,
+      "value": "327175000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "labour_cost",
+      "period": "2021",
+      "year": 2021,
+      "value": "336727000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "labour_cost",
+      "period": "2022",
+      "year": 2022,
+      "value": "335178000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "labour_cost",
+      "period": "2023",
+      "year": 2023,
+      "value": "368756000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "labour_cost",
+      "period": "2024",
+      "year": 2024,
+      "value": "383653000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_expenses",
+      "period": "2019",
+      "year": 2019,
+      "value": "697815000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_expenses",
+      "period": "2020",
+      "year": 2020,
+      "value": "737369000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_expenses",
+      "period": "2021",
+      "year": 2021,
+      "value": "719757000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_expenses",
+      "period": "2022",
+      "year": 2022,
+      "value": "765326000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_expenses",
+      "period": "2023",
+      "year": 2023,
+      "value": "781055000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_expenses",
+      "period": "2024",
+      "year": 2024,
+      "value": "802882000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "2022",
+      "year": 2022,
+      "value": "108412000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "2023",
+      "year": 2023,
+      "value": "136430000",
+      "unit": "CAD",
+      "scope": "total"
+    }
+  ],
+  "pending": [
+    {
+      "id": 3999,
+      "metric": "long_term_debt",
+      "period": "2023",
+      "year": 2023,
+      "value": "1645694000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.6",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 134
+    },
+    {
+      "id": 3998,
+      "metric": "long_term_debt",
+      "period": "2024",
+      "year": 2024,
+      "value": "1745239000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.6",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 134
+    },
+    {
+      "id": 3965,
+      "metric": "materials_services_cost",
+      "period": "2019",
+      "year": 2019,
+      "value": "99940000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.43",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 51
+    },
+    {
+      "id": 3964,
+      "metric": "materials_services_cost",
+      "period": "2020",
+      "year": 2020,
+      "value": "107914000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.45",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 49
+    },
+    {
+      "id": 3973,
+      "metric": "materials_services_cost",
+      "period": "2020",
+      "year": 2020,
+      "value": "107914000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.45",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 50
+    },
+    {
+      "id": 3972,
+      "metric": "materials_services_cost",
+      "period": "2021",
+      "year": 2021,
+      "value": "112597000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.45",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 48
+    },
+    {
+      "id": 3981,
+      "metric": "materials_services_cost",
+      "period": "2021",
+      "year": 2021,
+      "value": "84870000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.63",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 54
+    },
+    {
+      "id": 3989,
+      "metric": "materials_services_cost",
+      "period": "2022",
+      "year": 2022,
+      "value": "119374000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.55",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 59
+    },
+    {
+      "id": 3977,
+      "metric": "materials_services_cost",
+      "period": "2022",
+      "year": 2022,
+      "value": "89459000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.65",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 52
+    },
+    {
+      "id": 3995,
+      "metric": "materials_services_cost",
+      "period": "2023",
+      "year": 2023,
+      "value": "125223000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.55",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 94
+    },
+    {
+      "id": 3985,
+      "metric": "materials_services_cost",
+      "period": "2023",
+      "year": 2023,
+      "value": "125223000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.6",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 57
+    },
+    {
+      "id": 3994,
+      "metric": "materials_services_cost",
+      "period": "2024",
+      "year": 2024,
+      "value": "131849000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.55",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 92
+    },
+    {
+      "id": 3963,
+      "metric": "operating_revenue",
+      "period": "2019",
+      "year": 2019,
+      "value": "190470000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.6",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 51
+    },
+    {
+      "id": 3971,
+      "metric": "operating_revenue",
+      "period": "2020",
+      "year": 2020,
+      "value": "88068000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.7",
+      "flags": [],
+      "page": 50
+    },
+    {
+      "id": 3962,
+      "metric": "operating_revenue",
+      "period": "2020",
+      "year": 2020,
+      "value": "88068000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.62",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 49
+    },
+    {
+      "id": 3970,
+      "metric": "operating_revenue",
+      "period": "2021",
+      "year": 2021,
+      "value": "64241000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.7",
+      "flags": [],
+      "page": 48
+    },
+    {
+      "id": 3979,
+      "metric": "operating_revenue",
+      "period": "2021",
+      "year": 2021,
+      "value": "64241000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.7",
+      "flags": [],
+      "page": 54
+    },
+    {
+      "id": 3975,
+      "metric": "operating_revenue",
+      "period": "2022",
+      "year": 2022,
+      "value": "108412000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.72",
+      "flags": [],
+      "page": 52
+    },
+    {
+      "id": 3997,
+      "metric": "operating_revenue",
+      "period": "2023",
+      "year": 2023,
+      "value": "136430000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.55",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 94
+    },
+    {
+      "id": 3996,
+      "metric": "operating_revenue",
+      "period": "2024",
+      "year": 2024,
+      "value": "147642000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.55",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 92
+    }
+  ]
+}
