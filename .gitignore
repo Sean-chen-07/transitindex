@@ -47,3 +47,4 @@ pdfs/
 .DS_Store
 Thumbs.db
 .gstack/
+load_*_result.json
