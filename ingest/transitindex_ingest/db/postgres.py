@@ -821,11 +821,14 @@ class PostgresRepository:
                     if r[12] is not None:  # source_document_id
                         source_link_rows.append((new_mv_id, r[12], r[13], r[14], r[15], r[16]))
 
-            # (7) Bulk INSERT provenance links.
-            if source_link_rows:
-                ph = ",".join(["(%s,%s,%s,%s,%s,%s)"] * len(source_link_rows))
+            # (7) Bulk INSERT provenance links (batched: one statement per
+            # _BULK_BATCH rows — the wire protocol caps a statement at 65535
+            # parameters).
+            for i in range(0, len(source_link_rows), self._BULK_BATCH):
+                batch_links = source_link_rows[i : i + self._BULK_BATCH]
+                ph = ",".join(["(%s,%s,%s,%s,%s,%s)"] * len(batch_links))
                 params = []
-                for row in source_link_rows:
+                for row in batch_links:
                     params.extend(row)
                 self._conn.execute(
                     "INSERT INTO core.metric_value_sources "
