@@ -1,10 +1,9 @@
 # TransitIndex — Agency Detail View: Metrics & Presentation Spec
 
-> **Status:** Design agreed 2026-06-09 (user-driven session). **Not built yet** — the live
-> detail page is still the old Snapshot/Trends switch (`web/src/app/agency/[slug]/page.tsx`).
-> **Supersedes** the 5-tab dense-spreadsheet detail design in [DESIGN.md](DESIGN.md) Component #3
-> and the standalone "Financial Position" 5th tab in
-> [balance-sheet-and-frequency-plan.md §5](../planning/balance-sheet-and-frequency-plan.md).
+> **Status:** Design agreed 2026-06-09; **SHIPPED 2026-06-10** (`web/src/components/detail/` +
+> `web/src/server/metrics/detail-model.ts`). **Supersedes** the 5-tab dense-spreadsheet detail
+> design in [DESIGN.md](DESIGN.md) Component #3 and the standalone "Financial Position" 5th tab
+> of the retired balance-sheet-and-frequency plan (git history).
 >
 > **What this doc is.** The single source of truth for *which* of the 32 metrics appear on the
 > agency detail page, *where* each one lives, *how* it is displayed, and *how its history over
@@ -225,21 +224,17 @@ Earlier years surface in three layers, lightest to heaviest — the same data, s
 **This decision inverts the shipped model** (free = ranks, paid = the raw numbers — the $20/yr demand
 test) and is the "Everything-paid vs free-public" open decision in [TODOS.md](../../TODOS.md), now
 answered toward **free-public**. It therefore supersedes the free/paid split in
-[transitindex-mvp.md](../planning/transitindex-mvp.md), [M1-WEB-PLAN.md](../planning/M1-WEB-PLAN.md),
-[phase-plan.md](../planning/phase-plan.md), and the paywall framing in [DESIGN.md](DESIGN.md) (thesis +
-Components #2/#5) — each now carries a dated superseding pointer here.
+[transitindex-mvp.md](../planning/transitindex-mvp.md), the retired M1-WEB-PLAN / phase-plan docs
+(git history), and the paywall framing in [DESIGN.md](DESIGN.md) (thesis + Components #2/#5).
 
-**Code consequence (build task, not done).** The server choke point in `web/src/server/metrics/`
-currently strips raw values from unauthenticated responses. Viewing-free means the detail numbers ship to
-everyone, and the subscription gate moves to a new **per-agency download** action. Until that lands, the
-live site still gates numbers — the docs lead the code here. Tracked in [TODOS.md](../../TODOS.md).
+**Code consequence — SHIPPED 2026-06-10.** Viewing is un-gated for everyone; the subscription now
+gates the per-agency financials CSV at `/api/agency/[slug]/download`.
 
 ---
 
 ## 7. Charts
 
-- **Library: Recharts** — already an anticipated dependency ([M1-WEB-PLAN.md](../planning/M1-WEB-PLAN.md)
-  `web/package.json` deps note). Gives hover tooltips and smooth lines with little code.
+- **Library: Recharts** — gives hover tooltips and smooth lines with little code.
 - **Line** for the 3 monthly metrics; **bar** for sparse annual series (≤4 points).
 - **Accessibility:** every chart needs a text alternative (e.g. "+4.1% over 5 years") and the page keeps
   real `<table>` semantics for the Financials grid (WCAG 2.1 AA baseline, [DESIGN.md](DESIGN.md)).
@@ -252,9 +247,8 @@ live site still gates numbers — the docs lead the code here. Tracked in [TODOS
 | Doc | What this spec changes |
 |-----|------------------------|
 | [DESIGN.md](DESIGN.md) | Component #3's **5-tab spreadsheet** → **2 tabs** (Highlights + Financials). The "PAID detail = dense spreadsheet" mood softens: Highlights is friendly charts; only Financials is grid-dense. See the 2026-06-09 status note added there. |
-| [balance-sheet-and-frequency-plan.md §5](../planning/balance-sheet-and-frequency-plan.md) | The standalone **"Financial Position" 5th tab** becomes **Section B of the Financials tab**. The 3-section balance-sheet layout and honest "fiscal year-end snapshot" caption are preserved. |
-| [phase-plan.md](../planning/phase-plan.md) | The Product/UX "PAID spreadsheet (financial-statement tabs)" line is superseded for the detail view by this 2-tab model. |
-| [transitindex-mvp.md](../planning/transitindex-mvp.md) / [M1-WEB-PLAN.md](../planning/M1-WEB-PLAN.md) | **Not yet changed.** The free=ranks / paid=numbers monetization is a separate decision (§6). |
+| balance-sheet-and-frequency plan §5 (retired, git history) | The standalone **"Financial Position" 5th tab** becomes **Section B of the Financials tab**. The 3-section balance-sheet layout and honest "fiscal year-end snapshot" caption are preserved. |
+| [transitindex-mvp.md](../planning/transitindex-mvp.md) | The free=ranks / paid=numbers monetization was superseded toward free-viewing / paid-download (§6). |
 
 ---
 

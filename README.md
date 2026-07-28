@@ -28,8 +28,8 @@ All design, planning, and reference docs live under [`docs/`](docs/). **Start at
 |---|---|
 | **README.md** (this file) | Orientation, invariants, decisions, open questions |
 | **[docs/STATUS.md](docs/STATUS.md)** | **Documentation status tracker** — every design/planning/reference doc + whether it's done, in-progress, or a living reference. Start here. |
-| **[docs/design/](docs/design/)** | Design docs — design system (DESIGN.md), data model, concrete schema, bulk-loader architecture |
-| **[docs/planning/](docs/planning/)** | Plans & specs — phase-plan, M1 web plan, MVP plan, lane-0 spec, backend-restructure + balance-sheet plans |
+| **[docs/design/](docs/design/)** | Design docs — design system (DESIGN.md), data model, detail-view metric spec |
+| **[docs/planning/](docs/planning/)** | Plans — MVP plan + the metric standards review (finished build plans are retired to git history) |
 | **[docs/reference/](docs/reference/)** | Reference — data dictionary, ingest CLI, managing-data how-to, source registry, update-frequency, FOI plan |
 | **[db/README.md](db/README.md)** | How the schema is built, migrated, seeded, and tested (dbmate + psql) |
 | **[ingest/README.md](ingest/README.md)** | The Python ingestion package — layout, tests, wiring a real DB/LLM |
@@ -60,7 +60,7 @@ These are the load-bearing principles. The entire value of the product is trustw
 | Primary target user | **Civically-engaged non-experts** — politicians, city/regional officials, nonprofits & advocacy groups: care about transit but aren't close enough to see the full picture. Implication: core job is *translation*, not just aggregation. | 2026-05-29 |
 | History at launch | **5 years** — spans pre-COVID baseline → COVID crash → recovery without exploding PDF-extraction volume. | 2026-05-29 |
 | Data model layering | **One flat metric layer** — dropped the universal/mode-specific/typology *three-layer* concept as a user-facing structure (it was always one physical table anyway). | 2026-05-29 |
-| Typology | **Dropped (2026-05-30).** Modes + `service_area_population` already carry agency scale (a subway operator is a big one), so a separate category tag was redundant. Paid re-rank now uses province (`subdivision`). See lane-0-foundation-spec.md. | 2026-05-30 |
+| Typology | **Dropped (2026-05-30).** Modes + `service_area_population` already carry agency scale (a subway operator is a big one), so a separate category tag was redundant. Paid re-rank now uses province (`subdivision`). | 2026-05-30 |
 | Update frequency | Pursue **monthly/quarterly where available**, not annual-only. Researched and confirmed feasible — see update-frequency.md. | 2026-05-29 |
 | Project location | `C:\Users\chenc\projects\transitindex\` — dedicated folder, isolated from rest of system. | 2026-05-21 |
 | Current focus | Data layer first; UI deferred. | 2026-05-29 |
@@ -68,7 +68,7 @@ These are the load-bearing principles. The entire value of the product is trustw
 ## Recommended defaults (proposed, NOT yet confirmed by user)
 
 Use these unless the user decides otherwise:
-- **Stack:** Next.js 15 + TypeScript (web), PostgreSQL 16, Recharts, Python + FastAPI (ingestion). See phase-plan.md.
+- **Stack:** Next.js 15 + TypeScript (web), PostgreSQL 16, Recharts, Python + FastAPI (ingestion).
 - **ORM:** Drizzle (lean, SQL-honest). *Open.*
 - **DB host:** Neon or Supabase Postgres. *Open.*
 - **Restatement display:** show latest + "restated" badge with drill-in. *Open.*

@@ -34,8 +34,8 @@ the free side a terminal; don't make the paid side bubbly.
 --teal    #3F9D92   (+ soft #E1F0ED)  interactive · "Free" · positive
 ```
 **Mode-group accents — color-CODE only, never the sole signal (always paired with a label/icon):**
-Accent derives from each agency's **modes** (typology was dropped 2026-05-30 — see
-lane-0-foundation-spec.md), not a stored category. Provisional grouping reusing the palette:
+Accent derives from each agency's **modes** (typology was dropped 2026-05-30), not a stored
+category. Provisional grouping reusing the palette:
 `--teal` rapid-rail (has subway) · `--blue #7BA7C7` commuter-rail · `--sage #9DBF8E` light-rail ·
 `--yellow #E9B850` bus-only · `--coral` mixed. **Exact mode→color mapping is a design-review
 follow-up** (replaces the old 5-typology palette).
@@ -65,8 +65,8 @@ No purple/violet gradients. No decorative blobs. No icon-in-colored-circle featu
    point-in-time *snapshot* at fiscal year-end, kept separate from the flow-based *Financials*
    tab so each tab's "as of" stays honest. Three plain-language sections: *What the agency owns*
    · *What it owes* · *Net position*. Raw dollars are paid-only and unranked; only
-   `net_debt_per_capita` and `debt_to_assets` carry ranks. See
-   [balance-sheet-and-frequency-plan.md §5](../planning/balance-sheet-and-frequency-plan.md).
+   `net_debt_per_capita` and `debt_to_assets` carry ranks (balance-sheet plan retired to
+   git history; ranked-ratio retirement per metric-standards-review.md).
 4. **Rank display:** ordinal only ("3rd"); comparison set named **once per page**
    ("ranked vs all Canadian agencies"), not "(3 of 10)" on every number. Paid switches
    the set (region / province).
