@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 // Static social-share card (1200x630). Brand colours mirror DESIGN.md tokens.
-export const alt = "TransitIndex — Canadian transit agency fundamentals";
+export const alt = "TransitIndex — Canadian & U.S. transit agency fundamentals";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -59,7 +59,7 @@ export default function OpengraphImage() {
               letterSpacing: "-2px",
             }}
           >
-            Every Canadian transit agency, ranked on the fundamentals.
+            Every Canadian and U.S. transit agency, ranked on the fundamentals.
           </div>
           <div style={{ fontSize: "32px", color: "#5f5b52" }}>
             Every rank and every number, free to view.

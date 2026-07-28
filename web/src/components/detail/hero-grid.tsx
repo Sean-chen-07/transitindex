@@ -249,7 +249,11 @@ export function HeroGrid({ heroes }: { heroes: HeroVM[] }) {
   return (
     <div className="mt-6">
       {/* Comparison set named ONCE per page (DESIGN.md rank-display rule). */}
-      <p className="text-xs text-ink-3">Ranked vs all Canadian transit agencies.</p>
+      <p className="text-xs text-ink-3">
+        Ranked vs all Canadian and U.S. transit agencies. Dollar ranks compare on a USD
+        basis (Canadian figures converted at a fixed 0.70 CAD→USD rate); displayed
+        figures stay in each agency&apos;s own currency.
+      </p>
       {rows.map((row, i) => {
         const openHero = row.find((h) => h.code === open);
         return (

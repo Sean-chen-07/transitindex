@@ -25,10 +25,73 @@ const PROVINCE_NAMES: Record<string, string> = {
   YT: "Yukon",
 };
 
-/** Full province name for the civic audience; falls back to the code, then "Other". */
+const STATE_NAMES: Record<string, string> = {
+  AL: "Alabama",
+  AK: "Alaska",
+  AZ: "Arizona",
+  AR: "Arkansas",
+  CA: "California",
+  CO: "Colorado",
+  CT: "Connecticut",
+  DE: "Delaware",
+  FL: "Florida",
+  GA: "Georgia",
+  HI: "Hawaii",
+  ID: "Idaho",
+  IL: "Illinois",
+  IN: "Indiana",
+  IA: "Iowa",
+  KS: "Kansas",
+  KY: "Kentucky",
+  LA: "Louisiana",
+  ME: "Maine",
+  MD: "Maryland",
+  MA: "Massachusetts",
+  MI: "Michigan",
+  MN: "Minnesota",
+  MS: "Mississippi",
+  MO: "Missouri",
+  MT: "Montana",
+  NE: "Nebraska",
+  NV: "Nevada",
+  NH: "New Hampshire",
+  NJ: "New Jersey",
+  NM: "New Mexico",
+  NY: "New York",
+  NC: "North Carolina",
+  ND: "North Dakota",
+  OH: "Ohio",
+  OK: "Oklahoma",
+  OR: "Oregon",
+  PA: "Pennsylvania",
+  RI: "Rhode Island",
+  SC: "South Carolina",
+  SD: "South Dakota",
+  TN: "Tennessee",
+  TX: "Texas",
+  UT: "Utah",
+  VT: "Vermont",
+  VA: "Virginia",
+  WA: "Washington",
+  WV: "West Virginia",
+  WI: "Wisconsin",
+  WY: "Wyoming",
+  DC: "District of Columbia",
+  PR: "Puerto Rico",
+  VI: "U.S. Virgin Islands",
+  GU: "Guam",
+  AS: "American Samoa",
+  MP: "Northern Mariana Islands",
+};
+
+/**
+ * Full region name (Canadian province/territory or US state) for the civic
+ * audience; falls back to the code, then "Other". The two code sets are
+ * disjoint, so a flat provinces-then-states lookup is unambiguous.
+ */
 export function provinceName(code: string | null | undefined): string {
   if (!code) return "Other";
-  return PROVINCE_NAMES[code] ?? code;
+  return PROVINCE_NAMES[code] ?? STATE_NAMES[code] ?? code;
 }
 
 /** 1 -> "1st", 2 -> "2nd", 3 -> "3rd", 4 -> "4th", 11/12/13 -> "th". */
@@ -115,8 +178,10 @@ function cad(value: number, compact: boolean): string {
 
 /**
  * One display formatter per metric unit (docs/design/detail-view-metrics.md §2 examples).
- * `currency` rides along for the signature contract (only CAD exists today, so the unit
- * alone decides the symbol). Pass { compact: true } for headline / table-cell rendering.
+ * CAD and USD both render "$" — the surrounding page names the agency's currency once
+ * (detail header + financials note), so per-value symbols stay clean. `currency` rides
+ * along for the signature contract (the unit alone decides the rendering).
+ * Pass { compact: true } for headline / table-cell rendering.
  */
 export function formatMetricValue(
   value: number,
@@ -128,6 +193,7 @@ export function formatMetricValue(
   const compact = opts?.compact ?? false;
   switch (unit) {
     case "CAD":
+    case "USD":
       return cad(value, compact);
     case "%":
       return `${plainNumber(value, 1)}%`;
@@ -140,6 +206,7 @@ export function formatMetricValue(
     case "years":
       return `${value.toFixed(1)} yrs`;
     case "CAD/hr":
+    case "USD/hr":
       return `$${plainNumber(value)}/hr`;
     case "trips/hr":
       return plainNumber(value, 1);

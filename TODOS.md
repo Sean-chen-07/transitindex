@@ -178,6 +178,21 @@ Resolutions captured in phase-plan.md "Architecture — eng re-review" + data-mo
 - **Fill the workbook** for annual metrics: run `export-xlsx`, open the .xlsx, enter values from
   agency annual reports (TTC 2023/2024, STM, TransLink, Calgary, Edmonton, MiWay, BC Transit),
   then `import-xlsx`. Priority columns: annual_ridership, operating_expenses, operating_revenue.
+- **Bootstrap the US / NTD seed (2026-07-22 integration — needs a network-enabled machine;
+  data.transportation.gov was egress-blocked in the build sandbox):**
+  1. `python ingest/scripts/fetch_ntd.py --out db/seeds/ntd/` (downloads the two Socrata
+     snapshot CSVs; optional `NTD_APP_TOKEN` env avoids throttling),
+  2. `python ingest/scripts/generate_ntd_agencies.py` (writes `db/seeds/08_agencies_us.sql`
+     + regenerates `ingest/transitindex_ingest/refdata_us.py`; commit both + the snapshots),
+  3. apply migration 022 + seed 08 (dbmate), then
+     `python -m transitindex_ingest ntd-monthly db/seeds/ntd/ntd_monthly.csv` and
+     `python -m transitindex_ingest ntd-annual db/seeds/ntd/ntd_annual.csv`,
+  4. spot-check NYCT / LA Metro / CTA / King County figures against FTA-published numbers,
+     and re-confirm the public-domain terms on the live portal (see source-registry NTD-M row).
+  Follow-ups: NTD funding-sources adapter (`4tmr-gwuu`) so `subsidy`/`subsidy_per_rider` rank
+  for US agencies; fiscal-year-end refinement from the NTD Agency Information dataset
+  (US agencies currently default to December); `ntd_reference` annotations in
+  `metric_dictionary.yaml`.
 
 ## Data expansion — balance sheets + native frequency (2026-05-31)
 Full plan: [balance-sheet-and-frequency-plan.md](docs/planning/balance-sheet-and-frequency-plan.md).
@@ -233,7 +248,10 @@ Build tasks, roughly in order:
   2026-06-04 (PR #7); the watchlist + personal dashboard remain deferred.*
 - **PDF + human-review treadmill** (TTC CEO Report adapter, annual-report adapters,
   OC Transpo scraper, board decks). This is the cost center — do not scale on conviction.
-- **US / NTD ingestion** (schema absorbs it with zero change; no build until CA core validated).
+- ~~**US / NTD ingestion**~~ ✓ **BUILT 2026-07-22** (migration 022, `adapters/ntd_monthly.py` +
+  `ntd_annual.py`, `ntd-monthly`/`ntd-annual` CLI, generated `refdata_us.py` registry, USD rank
+  basis at a fixed 0.70 CAD→USD rate, web US-state/currency display). Remaining: the seed
+  bootstrap + follow-ups tracked under "Next session: to-do for data population".
 - **Bounding-box provenance deep-links** (~2× ingestion cost).
 
 ## Open decisions (from README + design doc)

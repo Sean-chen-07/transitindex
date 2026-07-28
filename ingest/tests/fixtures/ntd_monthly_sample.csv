@@ -1,0 +1,9 @@
+ntd_id,agency,mode,tos,date,upt,vrm,vrh,state,reporter_type
+99901,Test Metro,MB,DO,2024-01-01T00:00:00.000,1000,100,10,WA,Full Reporter
+99901,Test Metro,MB,PT,2024-01-01T00:00:00.000,500,50,5,WA,Full Reporter
+99901,Test Metro,LR,DO,2024-01-01T00:00:00.000,250,25,,WA,Full Reporter
+99901,Test Metro,MB,DO,2024-02-01T00:00:00.000,2000,200,20,WA,Full Reporter
+99902,Test City Transit,MB,DO,2024-01-01T00:00:00.000,300,30,3,TX,Full Reporter
+99902,Test City Transit,MB,DO,2018-12-01T00:00:00.000,111,11,1,TX,Full Reporter
+99999,Unmapped Transit,MB,DO,2024-01-01T00:00:00.000,42,4,1,ZZ,Full Reporter
+99903,Reduced Reporter Transit,MB,DO,2024-01-01T00:00:00.000,77,7,1,OK,Reduced Reporter

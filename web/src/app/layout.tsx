@@ -9,23 +9,23 @@ const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: {
-    default: "TransitIndex — Canadian transit agency fundamentals",
+    default: "TransitIndex — Canadian & U.S. transit agency fundamentals",
     template: "%s · TransitIndex",
   },
   description:
-    "A free directory of Canadian transit agencies ranked on the fundamentals. Every rank and every number is free to view.",
+    "A free directory of Canadian and U.S. transit agencies ranked on the fundamentals. Every rank and every number is free to view.",
   openGraph: {
-    title: "TransitIndex — Canadian transit agency fundamentals",
+    title: "TransitIndex — Canadian & U.S. transit agency fundamentals",
     description:
-      "A free directory of Canadian transit agencies ranked on the fundamentals. Every rank and every number is free to view.",
+      "A free directory of Canadian and U.S. transit agencies ranked on the fundamentals. Every rank and every number is free to view.",
     siteName: "TransitIndex",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "TransitIndex — Canadian transit agency fundamentals",
+    title: "TransitIndex — Canadian & U.S. transit agency fundamentals",
     description:
-      "A free directory of Canadian transit agencies ranked on the fundamentals.",
+      "A free directory of Canadian and U.S. transit agencies ranked on the fundamentals.",
   },
 };
 
@@ -41,7 +41,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             >
               TransitIndex
             </Link>
-            <span className="text-xs text-ink-3">Canadian transit fundamentals</span>
+            <span className="text-xs text-ink-3">Canadian &amp; U.S. transit fundamentals</span>
           </div>
         </header>
         <div className="mx-auto max-w-5xl px-4 py-10">{children}</div>

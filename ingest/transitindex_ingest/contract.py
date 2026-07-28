@@ -40,6 +40,7 @@ License = Literal[
     "ogl_mississauga",
     "ogl_hamilton",
     "public_document",
+    "us_public_domain",
 ]
 DocumentType = Literal[
     "annual_report",

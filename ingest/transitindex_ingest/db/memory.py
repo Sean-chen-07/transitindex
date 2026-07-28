@@ -15,7 +15,7 @@ from decimal import Decimal
 from typing import Optional
 
 from ..contract import MetricValueRecord, SourceRef
-from ..refdata import AGENCIES, METRICS, MODES, SOURCE_FEEDS
+from ..refdata import ALL_AGENCIES, METRICS, MODES, SOURCE_FEEDS
 from .models import (
     Document,
     Metric,
@@ -79,7 +79,7 @@ class InMemoryRepository:
     # --- seeding -------------------------------------------------------------
 
     def _seed(self) -> None:
-        for slug in AGENCIES:
+        for slug in ALL_AGENCIES:
             self._agency_ids[slug] = self._next("agency")
         for code in MODES:
             self._mode_ids[code] = self._next("mode")

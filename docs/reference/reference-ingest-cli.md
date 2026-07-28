@@ -64,6 +64,48 @@ python -m transitindex_ingest hamilton-load <csv> [--reset [--yes]] [--result PA
 > `statcan` and `hamilton` are kept as aliases of the `-load` commands and behave
 > identically.
 
+### `ntd-monthly`
+
+Load the FTA NTD Complete Monthly Ridership CSV (US Full Reporters; monthly
+ridership + vehicle_revenue_km + revenue_service_hours, summed across mode ×
+type-of-service). Download the CSV first with `python ingest/scripts/fetch_ntd.py`.
+
+```
+python -m transitindex_ingest ntd-monthly <csv> [--since YYYY-MM] [--reset [--yes]] [--result PATH]
+```
+
+| Argument | Type | Default | Meaning |
+|---|---|---|---|
+| `csv` | path (required) | — | The Socrata `8bui-9xvu` CSV export (API field names as headers). |
+| `--since` | YYYY-MM | `2019-01` | Drop months before this cutoff (bounds the initial backfill). |
+| `--reset` | flag | off | Delete **only this feed's own** rows first, then reload. Hand-entered and PDF-approved values are left untouched. |
+| `--yes` | flag | off | Confirm `--reset`. Without it, `--reset` prints the blast radius and exits (code 2) without deleting. |
+| `--result` | path | `load_ntd_monthly_result.json` | Where to write the JSON result summary. |
+
+### `ntd-annual`
+
+Load the FTA NTD Annual Data — Metrics CSV (US Full Reporters; annual ridership,
+farebox_revenue, operating_expenses, vehicle_revenue_km, revenue_service_hours).
+After promotion it also solves the equation graph per touched agency-year (so
+cost_per_rider / average_fare / farebox_recovery_ratio materialize) and refreshes
+the cost_per_rider ranks.
+
+```
+python -m transitindex_ingest ntd-annual <csv> [--reset [--yes]] [--result PATH]
+```
+
+| Argument | Type | Default | Meaning |
+|---|---|---|---|
+| `csv` | path (required) | — | The Socrata `ekg5-frzt` CSV export (API field names as headers). |
+| `--reset` | flag | off | Delete **only this feed's own** rows first, then reload. |
+| `--yes` | flag | off | Confirm `--reset`. Without it, `--reset` prints the blast radius and exits (code 2) without deleting. |
+| `--result` | path | `load_ntd_annual_result.json` | Where to write the JSON result summary. |
+
+> Both NTD loaders map reporters via the **generated** `refdata_us.NTD_AGENCY_MAP`.
+> Until `ingest/scripts/generate_ntd_agencies.py` has been run (it needs network
+> access to data.transportation.gov), the map is empty and every row lands in the
+> skip list.
+
 ---
 
 ## Manual data entry (Excel workbook)

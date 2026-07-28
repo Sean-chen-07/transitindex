@@ -737,6 +737,57 @@ def cmd_hamilton_load(args) -> int:
     return 0 if result.ok else 1
 
 
+def cmd_ntd_monthly(args) -> int:
+    """Fast bulk load of the NTD Complete Monthly Ridership CSV."""
+    import json as _json
+    from .jobs.bulk_load import load_ntd_monthly, ResetNotConfirmed
+
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+
+    try:
+        result = load_ntd_monthly(
+            repo,
+            Path(args.csv),
+            since=getattr(args, "since", None),
+            reset=getattr(args, "reset", False),
+            confirm=getattr(args, "yes", False),
+        )
+    except ResetNotConfirmed as exc:
+        print(f"\n{exc}", flush=True)
+        return 2
+
+    result_path = Path(getattr(args, "result", "load_ntd_monthly_result.json"))
+    result_path.write_text(_json.dumps(result.to_dict(), indent=2), encoding="utf-8")
+    print(f"result written to {result_path} (ok={result.ok})", flush=True)
+    return 0 if result.ok else 1
+
+
+def cmd_ntd_annual(args) -> int:
+    """Fast bulk load of the NTD Annual Data — Metrics CSV."""
+    import json as _json
+    from .jobs.bulk_load import load_ntd_annual, ResetNotConfirmed
+
+    repo, ephemeral = _build_repo()
+    _note_ephemeral(ephemeral)
+
+    try:
+        result = load_ntd_annual(
+            repo,
+            Path(args.csv),
+            reset=getattr(args, "reset", False),
+            confirm=getattr(args, "yes", False),
+        )
+    except ResetNotConfirmed as exc:
+        print(f"\n{exc}", flush=True)
+        return 2
+
+    result_path = Path(getattr(args, "result", "load_ntd_annual_result.json"))
+    result_path.write_text(_json.dumps(result.to_dict(), indent=2), encoding="utf-8")
+    print(f"result written to {result_path} (ok={result.ok})", flush=True)
+    return 0 if result.ok else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="transitindex_ingest", description="TransitIndex ingestion pipeline."
@@ -800,6 +851,65 @@ def build_parser() -> argparse.ArgumentParser:
             help="Path to write the JSON result summary.",
         )
         hp.set_defaults(func=cmd_hamilton_load)
+
+    nm = sub.add_parser(
+        "ntd-monthly",
+        help="Fast bulk load of the NTD Complete Monthly Ridership CSV (US Full Reporters).",
+    )
+    nm.add_argument("csv", help="Path to the 8bui-9xvu CSV export (fetch_ntd.py).")
+    nm.add_argument(
+        "--since",
+        default="2019-01",
+        help="Drop months before this YYYY-MM cutoff (default: 2019-01).",
+    )
+    nm.add_argument(
+        "--reset",
+        action="store_true",
+        default=False,
+        help="Delete THIS feed's own NTD rows before loading (forced reload). "
+        "Hand-entered and PDF-approved values are NOT touched. Prints the "
+        "blast radius and needs --yes to proceed.",
+    )
+    nm.add_argument(
+        "--yes",
+        action="store_true",
+        default=False,
+        help="Confirm --reset (required; without it the loader only prints "
+        "what would be deleted and stops).",
+    )
+    nm.add_argument(
+        "--result",
+        default="load_ntd_monthly_result.json",
+        help="Path to write the JSON result summary.",
+    )
+    nm.set_defaults(func=cmd_ntd_monthly)
+
+    na = sub.add_parser(
+        "ntd-annual",
+        help="Fast bulk load of the NTD Annual Data — Metrics CSV (US Full Reporters).",
+    )
+    na.add_argument("csv", help="Path to the ekg5-frzt CSV export (fetch_ntd.py).")
+    na.add_argument(
+        "--reset",
+        action="store_true",
+        default=False,
+        help="Delete THIS feed's own NTD rows before loading (forced reload). "
+        "Hand-entered and PDF-approved values are NOT touched. Prints the "
+        "blast radius and needs --yes to proceed.",
+    )
+    na.add_argument(
+        "--yes",
+        action="store_true",
+        default=False,
+        help="Confirm --reset (required; without it the loader only prints "
+        "what would be deleted and stops).",
+    )
+    na.add_argument(
+        "--result",
+        default="load_ntd_annual_result.json",
+        help="Path to write the JSON result summary.",
+    )
+    na.set_defaults(func=cmd_ntd_annual)
 
     pp = sub.add_parser(
         "pdf", help="Extract metrics from a PDF (annual report/budget) into the review queue."

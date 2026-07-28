@@ -86,17 +86,25 @@ function StatementTable({
 
 export function Financials({
   financials,
+  currency,
   downloadSlot,
 }: {
   financials: FinancialsVM;
+  /** The agency's reporting currency ("CAD" | "USD") — named once for the whole tab. */
+  currency: string;
   downloadSlot: ReactNode;
 }) {
+  const currencyNote =
+    currency === "USD"
+      ? "All figures in US dollars (USD), as published."
+      : "All figures in Canadian dollars (CAD), as published.";
   return (
     <section className="mt-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-ink">Financial statements</h2>
         {downloadSlot}
       </div>
+      <p className="mt-1 text-xs text-ink-3">{currencyNote}</p>
       {financials.years.length === 0 ? (
         <p className="mt-4 rounded-card border border-dashed border-line-2 bg-card-2 p-4 text-sm text-ink-2">
           No financial statements sourced yet.

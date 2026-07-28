@@ -21,7 +21,7 @@ from decimal import Decimal
 from typing import Iterable, Optional
 
 from ..contract import MetricValueRecord
-from ..refdata import METRICS
+from ..refdata import ALL_AGENCIES, METRICS
 
 # Flag vocabulary (mirrors the DOMAIN FACTS / db text[] values).
 YOY_SPIKE = "yoy_spike"
@@ -99,7 +99,13 @@ def unit_mismatch(record: MetricValueRecord) -> Optional[str]:
     if meta is None:
         return None
 
-    if record.unit != meta["unit"]:
+    # Catalog units are CAD-denominated ("CAD", "CAD/hr"); the expected unit for
+    # a currency metric follows the AGENCY's currency (USD for US agencies).
+    expected_unit = meta["unit"]
+    if meta["unit_type"] == "currency":
+        agency_currency = ALL_AGENCIES.get(record.agency_slug, {}).get("currency", "CAD")
+        expected_unit = expected_unit.replace("CAD", agency_currency)
+    if record.unit != expected_unit:
         return UNIT_MISMATCH
 
     unit_type = meta["unit_type"]
