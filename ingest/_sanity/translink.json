@@ -1,0 +1,2080 @@
+{
+  "agency": "translink",
+  "live": [
+    {
+      "metric": "accumulated_surplus",
+      "period": "2018",
+      "year": 2018,
+      "value": "1265785000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "accumulated_surplus",
+      "period": "2019",
+      "year": 2019,
+      "value": "1598990000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "accumulated_surplus",
+      "period": "2020",
+      "year": 2020,
+      "value": "2028547000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "accumulated_surplus",
+      "period": "2021",
+      "year": 2021,
+      "value": "1830062000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "accumulated_surplus",
+      "period": "2022",
+      "year": 2022,
+      "value": "1959668000",
+      "unit": "CAD",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "accumulated_surplus",
+      "period": "2023",
+      "year": 2023,
+      "value": "2432571000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "accumulated_surplus",
+      "period": "2024",
+      "year": 2024,
+      "value": "2733179000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "capital_expenditure",
+      "period": "2018",
+      "year": 2018,
+      "value": "380763000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "capital_expenditure",
+      "period": "2019",
+      "year": 2019,
+      "value": "515285000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "capital_expenditure",
+      "period": "2020",
+      "year": 2020,
+      "value": "422176000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "capital_expenditure",
+      "period": "2021",
+      "year": 2021,
+      "value": "358471000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "capital_expenditure",
+      "period": "2022",
+      "year": 2022,
+      "value": "413490000",
+      "unit": "CAD",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "capital_expenditure",
+      "period": "2023",
+      "year": 2023,
+      "value": "637162000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "capital_expenditure",
+      "period": "2024",
+      "year": 2024,
+      "value": "967506000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "energy_fuel_cost",
+      "period": "2018",
+      "year": 2018,
+      "value": "71706000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "energy_fuel_cost",
+      "period": "2019",
+      "year": 2019,
+      "value": "67755000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "energy_fuel_cost",
+      "period": "2020",
+      "year": 2020,
+      "value": "55906000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "energy_fuel_cost",
+      "period": "2021",
+      "year": 2021,
+      "value": "67217000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "energy_fuel_cost",
+      "period": "2022",
+      "year": 2022,
+      "value": "90000000.0",
+      "unit": "CAD",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "energy_fuel_cost",
+      "period": "2023",
+      "year": 2023,
+      "value": "89420000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "energy_fuel_cost",
+      "period": "2024",
+      "year": 2024,
+      "value": "87185000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "labour_cost",
+      "period": "2018",
+      "year": 2018,
+      "value": "646653000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "labour_cost",
+      "period": "2019",
+      "year": 2019,
+      "value": "699245000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "labour_cost",
+      "period": "2020",
+      "year": 2020,
+      "value": "707922000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "labour_cost",
+      "period": "2021",
+      "year": 2021,
+      "value": "770871000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "labour_cost",
+      "period": "2022",
+      "year": 2022,
+      "value": "795000000.0",
+      "unit": "CAD",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "labour_cost",
+      "period": "2023",
+      "year": 2023,
+      "value": "886891000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "labour_cost",
+      "period": "2024",
+      "year": 2024,
+      "value": "987523000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "long_term_debt",
+      "period": "2021",
+      "year": 2021,
+      "value": "2937864000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "long_term_debt",
+      "period": "2022",
+      "year": 2022,
+      "value": "3141748000",
+      "unit": "CAD",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "long_term_debt",
+      "period": "2023",
+      "year": 2023,
+      "value": "3360119000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "long_term_debt",
+      "period": "2024",
+      "year": 2024,
+      "value": "3593360000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_expenses",
+      "period": "2019",
+      "year": 2019,
+      "value": "1756177000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_expenses",
+      "period": "2020",
+      "year": 2020,
+      "value": "1715352000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_expenses",
+      "period": "2023",
+      "year": 2023,
+      "value": "2153590000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_expenses",
+      "period": "2024",
+      "year": 2024,
+      "value": "2315843000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "2018",
+      "year": 2018,
+      "value": "638015000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "2019",
+      "year": 2019,
+      "value": "685362000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Jan 2023",
+      "year": 2023,
+      "value": "46392700.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Feb 2023",
+      "year": 2023,
+      "value": "46268300.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Mar 2023",
+      "year": 2023,
+      "value": "50792500.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Apr 2023",
+      "year": 2023,
+      "value": "49163600.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "May 2023",
+      "year": 2023,
+      "value": "52669800.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Jun 2023",
+      "year": 2023,
+      "value": "52740400.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Jul 2023",
+      "year": 2023,
+      "value": "54456600.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Aug 2023",
+      "year": 2023,
+      "value": "54624200.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Sep 2023",
+      "year": 2023,
+      "value": "57001600.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Oct 2023",
+      "year": 2023,
+      "value": "56335600.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Nov 2023",
+      "year": 2023,
+      "value": "55611200.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "2023",
+      "year": 2023,
+      "value": "671560000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Dec 2023",
+      "year": 2023,
+      "value": "51719100.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Jan 2024",
+      "year": 2024,
+      "value": "51094100.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Feb 2024",
+      "year": 2024,
+      "value": "52925600.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Mar 2024",
+      "year": 2024,
+      "value": "54353300.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Apr 2024",
+      "year": 2024,
+      "value": "55605900.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "May 2024",
+      "year": 2024,
+      "value": "57090800.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Jun 2024",
+      "year": 2024,
+      "value": "55455600.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Jul 2024",
+      "year": 2024,
+      "value": "58902700.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Aug 2024",
+      "year": 2024,
+      "value": "57565000.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Sep 2024",
+      "year": 2024,
+      "value": "59396400.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Oct 2024",
+      "year": 2024,
+      "value": "60589500.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Nov 2024",
+      "year": 2024,
+      "value": "58498900.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "2024",
+      "year": 2024,
+      "value": "718737000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Dec 2024",
+      "year": 2024,
+      "value": "57044100.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Jan 2025",
+      "year": 2025,
+      "value": "57215300.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Feb 2025",
+      "year": 2025,
+      "value": "54349200.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Mar 2025",
+      "year": 2025,
+      "value": "57653100.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Apr 2025",
+      "year": 2025,
+      "value": "56975100.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "May 2025",
+      "year": 2025,
+      "value": "58383800.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Jun 2025",
+      "year": 2025,
+      "value": "57847700.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Jul 2025",
+      "year": 2025,
+      "value": "61963000.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Aug 2025",
+      "year": 2025,
+      "value": "59137700.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Sep 2025",
+      "year": 2025,
+      "value": "61270800.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Oct 2025",
+      "year": 2025,
+      "value": "61152900.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Nov 2025",
+      "year": 2025,
+      "value": "58193100.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Dec 2025",
+      "year": 2025,
+      "value": "67487800.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Jan 2026",
+      "year": 2026,
+      "value": "56222500.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Feb 2026",
+      "year": 2026,
+      "value": "54747300.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "operating_revenue",
+      "period": "Mar 2026",
+      "year": 2026,
+      "value": "57410600.0",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "revenue_service_hours",
+      "period": "2020",
+      "year": 2020,
+      "value": "6900000.0",
+      "unit": "hours",
+      "scope": "total"
+    },
+    {
+      "metric": "revenue_service_hours",
+      "period": "2021",
+      "year": 2021,
+      "value": "7000000.0",
+      "unit": "hours",
+      "scope": "total"
+    },
+    {
+      "metric": "revenue_service_hours",
+      "period": "2023",
+      "year": 2023,
+      "value": "7100000.0",
+      "unit": "hours",
+      "scope": "conventional"
+    },
+    {
+      "metric": "revenue_service_hours",
+      "period": "2024",
+      "year": 2024,
+      "value": "7200000.0",
+      "unit": "hours",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "2015",
+      "year": 2015,
+      "value": "364300000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "2016",
+      "year": 2016,
+      "value": "386200000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "2016",
+      "year": 2016,
+      "value": "386200000.0",
+      "unit": "count",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "ridership",
+      "period": "2017",
+      "year": 2017,
+      "value": "408200000.0",
+      "unit": "count",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "ridership",
+      "period": "2017",
+      "year": 2017,
+      "value": "408200000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "2018",
+      "year": 2018,
+      "value": "437400000.0",
+      "unit": "count",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "ridership",
+      "period": "2018",
+      "year": 2018,
+      "value": "437400000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "2019",
+      "year": 2019,
+      "value": "452900000.0",
+      "unit": "count",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "ridership",
+      "period": "2019",
+      "year": 2019,
+      "value": "452900000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "2020",
+      "year": 2020,
+      "value": "218800000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "2020",
+      "year": 2020,
+      "value": "218800000.0",
+      "unit": "count",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "ridership",
+      "period": "2021",
+      "year": 2021,
+      "value": "223500000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "2022",
+      "year": 2022,
+      "value": "325900000.0",
+      "unit": "count",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "ridership",
+      "period": "2022",
+      "year": 2022,
+      "value": "965000",
+      "unit": "count",
+      "scope": "specialized"
+    },
+    {
+      "metric": "ridership",
+      "period": "Jan 2023",
+      "year": 2023,
+      "value": "18165500.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Feb 2023",
+      "year": 2023,
+      "value": "16488200.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Mar 2023",
+      "year": 2023,
+      "value": "19534000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Apr 2023",
+      "year": 2023,
+      "value": "17858200.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "May 2023",
+      "year": 2023,
+      "value": "20111100.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Jun 2023",
+      "year": 2023,
+      "value": "19831500.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Jul 2023",
+      "year": 2023,
+      "value": "20021700.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Aug 2023",
+      "year": 2023,
+      "value": "19738400.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Sep 2023",
+      "year": 2023,
+      "value": "20938900.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Oct 2023",
+      "year": 2023,
+      "value": "20824000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Nov 2023",
+      "year": 2023,
+      "value": "20331800.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Dec 2023",
+      "year": 2023,
+      "value": "18148100.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "2023",
+      "year": 2023,
+      "value": "1175900.0",
+      "unit": "count",
+      "scope": "specialized"
+    },
+    {
+      "metric": "ridership",
+      "period": "2023",
+      "year": 2023,
+      "value": "391600000.0",
+      "unit": "count",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "ridership",
+      "period": "2023",
+      "year": 2023,
+      "value": "391600000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Jan 2024",
+      "year": 2024,
+      "value": "17598400.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Feb 2024",
+      "year": 2024,
+      "value": "18964600.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Mar 2024",
+      "year": 2024,
+      "value": "19934600.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Apr 2024",
+      "year": 2024,
+      "value": "20146000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "May 2024",
+      "year": 2024,
+      "value": "21030200.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Jun 2024",
+      "year": 2024,
+      "value": "19952000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Jul 2024",
+      "year": 2024,
+      "value": "21035500.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Aug 2024",
+      "year": 2024,
+      "value": "19917600.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Sep 2024",
+      "year": 2024,
+      "value": "20706700.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Oct 2024",
+      "year": 2024,
+      "value": "21380800.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Nov 2024",
+      "year": 2024,
+      "value": "20005500.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "2024",
+      "year": 2024,
+      "value": "404200000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Dec 2024",
+      "year": 2024,
+      "value": "18692800.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Jan 2025",
+      "year": 2025,
+      "value": "19888300.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Feb 2025",
+      "year": 2025,
+      "value": "17486300.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Mar 2025",
+      "year": 2025,
+      "value": "19934600.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Apr 2025",
+      "year": 2025,
+      "value": "19953300.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "May 2025",
+      "year": 2025,
+      "value": "20287600.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Jun 2025",
+      "year": 2025,
+      "value": "19915800.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Jul 2025",
+      "year": 2025,
+      "value": "20758200.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Aug 2025",
+      "year": 2025,
+      "value": "19238000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Sep 2025",
+      "year": 2025,
+      "value": "20328500.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Oct 2025",
+      "year": 2025,
+      "value": "20666300.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Nov 2025",
+      "year": 2025,
+      "value": "18970900.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Dec 2025",
+      "year": 2025,
+      "value": "17694100.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Jan 2026",
+      "year": 2026,
+      "value": "18752100.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Feb 2026",
+      "year": 2026,
+      "value": "17340000.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "ridership",
+      "period": "Mar 2026",
+      "year": 2026,
+      "value": "19298100.0",
+      "unit": "count",
+      "scope": "total"
+    },
+    {
+      "metric": "tangible_capital_assets",
+      "period": "2018",
+      "year": 2018,
+      "value": "5079162000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "tangible_capital_assets",
+      "period": "2019",
+      "year": 2019,
+      "value": "5381268000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "tangible_capital_assets",
+      "period": "2020",
+      "year": 2020,
+      "value": "5573970000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "tangible_capital_assets",
+      "period": "2021",
+      "year": 2021,
+      "value": "5704158000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "tangible_capital_assets",
+      "period": "2022",
+      "year": 2022,
+      "value": "5765456000",
+      "unit": "CAD",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "tangible_capital_assets",
+      "period": "2023",
+      "year": 2023,
+      "value": "6141887000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "tangible_capital_assets",
+      "period": "2024",
+      "year": 2024,
+      "value": "6840407000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_financial_assets",
+      "period": "2018",
+      "year": 2018,
+      "value": "2088842000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_financial_assets",
+      "period": "2019",
+      "year": 2019,
+      "value": "2129335000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_financial_assets",
+      "period": "2020",
+      "year": 2020,
+      "value": "2631777000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_financial_assets",
+      "period": "2021",
+      "year": 2021,
+      "value": "2294975000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_financial_assets",
+      "period": "2022",
+      "year": 2022,
+      "value": "4751712000",
+      "unit": "CAD",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "total_financial_assets",
+      "period": "2023",
+      "year": 2023,
+      "value": "5498465000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_financial_assets",
+      "period": "2024",
+      "year": 2024,
+      "value": "4942866000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_liabilities",
+      "period": "2018",
+      "year": 2018,
+      "value": "6004669000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_liabilities",
+      "period": "2019",
+      "year": 2019,
+      "value": "6027079000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_liabilities",
+      "period": "2020",
+      "year": 2020,
+      "value": "6293259000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_liabilities",
+      "period": "2021",
+      "year": 2021,
+      "value": "6290272000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_liabilities",
+      "period": "2022",
+      "year": 2022,
+      "value": "8734163000",
+      "unit": "CAD",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "total_liabilities",
+      "period": "2023",
+      "year": 2023,
+      "value": "9418017000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_liabilities",
+      "period": "2024",
+      "year": 2024,
+      "value": "9254789000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_non_financial_assets",
+      "period": "2018",
+      "year": 2018,
+      "value": "5181612000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_non_financial_assets",
+      "period": "2019",
+      "year": 2019,
+      "value": "5496734000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_non_financial_assets",
+      "period": "2020",
+      "year": 2020,
+      "value": "5690029000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_non_financial_assets",
+      "period": "2021",
+      "year": 2021,
+      "value": "5825359000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_non_financial_assets",
+      "period": "2022",
+      "year": 2022,
+      "value": "5942119000",
+      "unit": "CAD",
+      "scope": "system_wide"
+    },
+    {
+      "metric": "total_non_financial_assets",
+      "period": "2023",
+      "year": 2023,
+      "value": "6352123000",
+      "unit": "CAD",
+      "scope": "total"
+    },
+    {
+      "metric": "total_non_financial_assets",
+      "period": "2024",
+      "year": 2024,
+      "value": "7045102000",
+      "unit": "CAD",
+      "scope": "total"
+    }
+  ],
+  "pending": [
+    {
+      "id": 4104,
+      "metric": "capital_expenditure",
+      "period": "2020",
+      "year": 2020,
+      "value": "421289000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.75",
+      "flags": [],
+      "page": 4
+    },
+    {
+      "id": 4088,
+      "metric": "cash_and_investments",
+      "period": "2018",
+      "year": 2018,
+      "value": "517022000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.7",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 59
+    },
+    {
+      "id": 4087,
+      "metric": "cash_and_investments",
+      "period": "2019",
+      "year": 2019,
+      "value": "502060000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.72",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 59
+    },
+    {
+      "id": 4304,
+      "metric": "cash_and_investments",
+      "period": "2019",
+      "year": 2019,
+      "value": "502060000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.7",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 55
+    },
+    {
+      "id": 4303,
+      "metric": "cash_and_investments",
+      "period": "2020",
+      "year": 2020,
+      "value": "397571000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.72",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 55
+    },
+    {
+      "id": 4118,
+      "metric": "cash_and_investments",
+      "period": "2020",
+      "year": 2020,
+      "value": "397571000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.65",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 1
+    },
+    {
+      "id": 4117,
+      "metric": "cash_and_investments",
+      "period": "2021",
+      "year": 2021,
+      "value": "575623000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.7",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 1
+    },
+    {
+      "id": 4136,
+      "metric": "cash_and_investments",
+      "period": "2022",
+      "year": 2022,
+      "value": "622558000",
+      "unit": "CAD",
+      "scope": "system_wide",
+      "confidence": "0.65",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 62
+    },
+    {
+      "id": 4154,
+      "metric": "cash_and_investments",
+      "period": "2023",
+      "year": 2023,
+      "value": "276248000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.6",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 1
+    },
+    {
+      "id": 4181,
+      "metric": "cash_and_investments",
+      "period": "2024",
+      "year": 2024,
+      "value": "436083000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.6",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 1
+    },
+    {
+      "id": 4086,
+      "metric": "long_term_debt",
+      "period": "2018",
+      "year": 2018,
+      "value": "2665085000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.7",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 59
+    },
+    {
+      "id": 4306,
+      "metric": "long_term_debt",
+      "period": "2019",
+      "year": 2019,
+      "value": "2738435000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.75",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 69
+    },
+    {
+      "id": 4085,
+      "metric": "long_term_debt",
+      "period": "2019",
+      "year": 2019,
+      "value": "2738435000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.72",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 59
+    },
+    {
+      "id": 4305,
+      "metric": "long_term_debt",
+      "period": "2020",
+      "year": 2020,
+      "value": "3035241000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.78",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 69
+    },
+    {
+      "id": 4116,
+      "metric": "long_term_debt",
+      "period": "2020",
+      "year": 2020,
+      "value": "3035241000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.75",
+      "flags": [],
+      "page": 1
+    },
+    {
+      "id": 4070,
+      "metric": "materials_services_cost",
+      "period": "2018",
+      "year": 2018,
+      "value": "220349000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.68",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 21
+    },
+    {
+      "id": 4072,
+      "metric": "materials_services_cost",
+      "period": "2018",
+      "year": 2018,
+      "value": "163606000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.68",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 21
+    },
+    {
+      "id": 4071,
+      "metric": "materials_services_cost",
+      "period": "2019",
+      "year": 2019,
+      "value": "175979000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.7",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 21
+    },
+    {
+      "id": 4069,
+      "metric": "materials_services_cost",
+      "period": "2019",
+      "year": 2019,
+      "value": "222489000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.7",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 21
+    },
+    {
+      "id": 4102,
+      "metric": "materials_services_cost",
+      "period": "2021",
+      "year": 2021,
+      "value": "172305000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.55",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 28
+    },
+    {
+      "id": 4101,
+      "metric": "materials_services_cost",
+      "period": "2021",
+      "year": 2021,
+      "value": "223036000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.6",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 28
+    },
+    {
+      "id": 4127,
+      "metric": "materials_services_cost",
+      "period": "2022",
+      "year": 2022,
+      "value": "182100000.0",
+      "unit": "CAD",
+      "scope": "system_wide",
+      "confidence": "0.6",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 55
+    },
+    {
+      "id": 4145,
+      "metric": "materials_services_cost",
+      "period": "2023",
+      "year": 2023,
+      "value": "230105000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.6",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 25
+    },
+    {
+      "id": 4146,
+      "metric": "materials_services_cost",
+      "period": "2023",
+      "year": 2023,
+      "value": "257653000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.55",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 25
+    },
+    {
+      "id": 4167,
+      "metric": "materials_services_cost",
+      "period": "2024",
+      "year": 2024,
+      "value": "240467000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.7",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 40
+    },
+    {
+      "id": 4064,
+      "metric": "operating_expenses",
+      "period": "2018",
+      "year": 2018,
+      "value": "1663733000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.74",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 60
+    },
+    {
+      "id": 4063,
+      "metric": "operating_expenses",
+      "period": "2019",
+      "year": 2019,
+      "value": "1748479000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.75",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 60
+    },
+    {
+      "id": 4096,
+      "metric": "operating_expenses",
+      "period": "2020",
+      "year": 2020,
+      "value": "1715352000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.65",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 14
+    },
+    {
+      "id": 4095,
+      "metric": "operating_expenses",
+      "period": "2021",
+      "year": 2021,
+      "value": "1859136000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.7",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 14
+    },
+    {
+      "id": 4123,
+      "metric": "operating_expenses",
+      "period": "2022",
+      "year": 2022,
+      "value": "2004932000",
+      "unit": "CAD",
+      "scope": "system_wide",
+      "confidence": "0.75",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 63
+    },
+    {
+      "id": 4310,
+      "metric": "operating_revenue",
+      "period": "2019",
+      "year": 2019,
+      "value": "685362000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.66",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 56
+    },
+    {
+      "id": 4094,
+      "metric": "operating_revenue",
+      "period": "2020",
+      "year": 2020,
+      "value": "385934000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.55",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 14
+    },
+    {
+      "id": 4309,
+      "metric": "operating_revenue",
+      "period": "2020",
+      "year": 2020,
+      "value": "385934000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.68",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 56
+    },
+    {
+      "id": 4093,
+      "metric": "operating_revenue",
+      "period": "2021",
+      "year": 2021,
+      "value": "413961000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.6",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 14
+    },
+    {
+      "id": 4122,
+      "metric": "operating_revenue",
+      "period": "2022",
+      "year": 2022,
+      "value": "552624000",
+      "unit": "CAD",
+      "scope": "system_wide",
+      "confidence": "0.78",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 63
+    },
+    {
+      "id": 4141,
+      "metric": "operating_revenue",
+      "period": "2023",
+      "year": 2023,
+      "value": "671560000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.78",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 1
+    },
+    {
+      "id": 4329,
+      "metric": "revenue_service_hours",
+      "period": "2016",
+      "year": 2016,
+      "value": "6300000.0",
+      "unit": "hours",
+      "scope": "conventional",
+      "confidence": "0.68",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 10
+    },
+    {
+      "id": 4328,
+      "metric": "revenue_service_hours",
+      "period": "2017",
+      "year": 2017,
+      "value": "6700000.0",
+      "unit": "hours",
+      "scope": "conventional",
+      "confidence": "0.68",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 10
+    },
+    {
+      "id": 4060,
+      "metric": "revenue_service_hours",
+      "period": "2018",
+      "year": 2018,
+      "value": "6900000.0",
+      "unit": "hours",
+      "scope": "conventional",
+      "confidence": "0.75",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 7
+    },
+    {
+      "id": 4327,
+      "metric": "revenue_service_hours",
+      "period": "2018",
+      "year": 2018,
+      "value": "6900000.0",
+      "unit": "hours",
+      "scope": "conventional",
+      "confidence": "0.68",
+      "flags": [
+        "low_confidence"
+      ],
+      "page": 10
+    },
+    {
+      "id": 4326,
+      "metric": "revenue_service_hours",
+      "period": "2019",
+      "year": 2019,
+      "value": "7000000.0",
+      "unit": "hours",
+      "scope": "conventional",
+      "confidence": "0.72",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 10
+    },
+    {
+      "id": 4059,
+      "metric": "revenue_service_hours",
+      "period": "2019",
+      "year": 2019,
+      "value": "7000000.0",
+      "unit": "hours",
+      "scope": "conventional",
+      "confidence": "0.78",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 7
+    },
+    {
+      "id": 4325,
+      "metric": "revenue_service_hours",
+      "period": "2020",
+      "year": 2020,
+      "value": "6900000.0",
+      "unit": "hours",
+      "scope": "conventional",
+      "confidence": "0.72",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 10
+    },
+    {
+      "id": 4121,
+      "metric": "revenue_service_hours",
+      "period": "2022",
+      "year": 2022,
+      "value": "7000000.0",
+      "unit": "hours",
+      "scope": "system_wide",
+      "confidence": "0.78",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 11
+    },
+    {
+      "id": 4324,
+      "metric": "ridership",
+      "period": "2020",
+      "year": 2020,
+      "value": "698000",
+      "unit": "count",
+      "scope": "specialized",
+      "confidence": "0.75",
+      "flags": [
+        "sum_mismatch"
+      ],
+      "page": 47
+    },
+    {
+      "id": 4138,
+      "metric": "ridership",
+      "period": "2023",
+      "year": 2023,
+      "value": "233200000.0",
+      "unit": "count",
+      "scope": "system_wide",
+      "confidence": "0.4",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 11
+    },
+    {
+      "id": 4132,
+      "metric": "total_assets",
+      "period": "2022",
+      "year": 2022,
+      "value": "10693831000",
+      "unit": "CAD",
+      "scope": "system_wide",
+      "confidence": "0.3",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 62
+    },
+    {
+      "id": 4312,
+      "metric": "total_operating_subsidy",
+      "period": "2019",
+      "year": 2019,
+      "value": "398523000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.48",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 56
+    },
+    {
+      "id": 4311,
+      "metric": "total_operating_subsidy",
+      "period": "2020",
+      "year": 2020,
+      "value": "793771000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.5",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 56
+    },
+    {
+      "id": 4124,
+      "metric": "total_operating_subsidy",
+      "period": "2022",
+      "year": 2022,
+      "value": "427136000",
+      "unit": "CAD",
+      "scope": "system_wide",
+      "confidence": "0.6",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 63
+    },
+    {
+      "id": 4155,
+      "metric": "total_operating_subsidy",
+      "period": "2023",
+      "year": 2023,
+      "value": "715668000",
+      "unit": "CAD",
+      "scope": "total",
+      "confidence": "0.35",
+      "flags": [
+        "sum_mismatch",
+        "low_confidence"
+      ],
+      "page": 1
+    }
+  ]
+}

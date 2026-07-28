@@ -56,6 +56,19 @@ def test_classify_supplements_beat_parent_prefix():
     )
 
 
+def test_classify_stm_own_reports():
+    # STM authors its own reports [T]: plain stm-<year> is the audited financial
+    # report; stm-activity-<year> is the activity/annual report.
+    assert classify_filename("stm-2024.pdf") == catalog.DocSpec(
+        "stm", 2024, "financial_statement", "T"
+    )
+    assert classify_filename("stm-activity-2023.pdf") == catalog.DocSpec(
+        "stm", 2023, "annual_report", "T"
+    )
+    # no year in the name -> not a launch-set file
+    assert classify_filename("stm.pdf") is None
+
+
 def test_classify_community_reports_special_cased():
     assert classify_filename("miway-2024-community-report.pdf") == catalog.DocSpec(
         "miway", 2024, "community_report", "T"
