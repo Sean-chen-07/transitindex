@@ -10,7 +10,5 @@ They are the input to `python ingest/scripts/generate_ntd_agencies.py`, which
 emits `db/seeds/08_agencies_us.sql` and `ingest/transitindex_ingest/refdata_us.py`,
 and they are also what the `ntd-monthly` / `ntd-annual` CLI loaders ingest.
 
-NOT YET DOWNLOADED: the build environment that shipped the NTD integration could
-not reach data.transportation.gov (egress-blocked). Run the fetch + generator
-from a machine with normal network access and commit the results (see TODOS.md,
-"Bootstrap the US / NTD seed").
+Snapshots downloaded + committed 2026-07-28 (monthly since 2019-01, Full
+Reporters; annual all rows). Re-run fetch + generator + loaders to refresh.

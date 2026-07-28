@@ -1,12 +1,12 @@
 # `web/` — TransitIndex web app (Milestone 1)
 
 Next.js 15 (App Router) + TypeScript + Tailwind. A **pure reader** of the Postgres
-schema owned by `db/` (Lane 0): a free, crawlable directory of Canadian transit agencies
-(ranks only) with agency detail pages whose raw numbers are account-gated.
+schema owned by `db/` (Lane 0): a free, crawlable directory of Canadian + US transit
+agencies. Viewing is free; the subscription gates the per-agency financials CSV download.
 
-> Status: free directory + gate boundary, plus **Auth.js sign-in, Stripe billing, and the
-> live paid-entitlement check** (steps 1–9 of `../docs/planning/M1-WEB-PLAN.md`). Auth/billing setup is in
-> [SETUP-AUTH-BILLING.md](SETUP-AUTH-BILLING.md).
+> Status: directory + detail pages + **Auth.js sign-in, Stripe billing, and the live
+> paid-entitlement check** all shipped (M1-WEB-PLAN retired to git history). Auth/billing
+> setup is in [SETUP-AUTH-BILLING.md](SETUP-AUTH-BILLING.md).
 
 ## Run it
 

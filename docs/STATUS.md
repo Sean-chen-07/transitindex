@@ -10,7 +10,7 @@
 > `in-progress` = partially built, real work remaining · `living` = a reference that
 > tracks reality and is maintained, not a build plan.
 >
-> **Last updated:** 2026-07-27
+> **Last updated:** 2026-07-28
 
 ## Design (`docs/design/`)
 
@@ -34,7 +34,7 @@
 | [data-dictionary.md](reference/data-dictionary.md) | living | Plain-language, machine-checked spec for every metric. **Auto-generated** by dictionary.py from metric_dictionary.yaml — do not hand-edit; regenerate via `python -m transitindex_ingest.dictionary`. |
 | [reference-ingest-cli.md](reference/reference-ingest-cli.md) | living | Complete command reference for the ingestion CLI. Matches ingest/.../cli.py exactly (subcommands, args, defaults, env vars). Includes the `ntd-monthly`/`ntd-annual` US loaders (2026-07-22). |
 | [managing-data.md](reference/managing-data.md) | living | No-code how-to for viewing / hand-entering data via export-xlsx/import-xlsx + bulk loaders. Matches the shipped per-agency calendar-year workbook. |
-| [source-registry.md](reference/source-registry.md) | in-progress | Maps each launch agency × metric to its source + license/tier + adapter build order. Metric catalog shipped; FTA NTD rows + adapters BUILT 2026-07-22 (`ntd_monthly.py`/`ntd_annual.py`, migration 022, USD rank basis @ fixed 0.70 CAD→USD); the ~700-agency US seed (`ingest/scripts/generate_ntd_agencies.py`) still needs its first network-enabled run. Agency-source matrix + license tables largely unbuilt. |
+| [source-registry.md](reference/source-registry.md) | in-progress | Maps each launch agency × metric to its source + license/tier + adapter build order. Metric catalog shipped; FTA NTD rows + adapters BUILT 2026-07-22 (`ntd_monthly.py`/`ntd_annual.py`, migration 022, USD rank basis @ fixed 0.70 CAD→USD); first network run completed 2026-07-28 (521 Full Reporter agencies seeded; annual + monthly data loaded to prod). Agency-source matrix + license tables largely unbuilt. |
 | [update-frequency.md](reference/update-frequency.md) | living | Finest update frequency / publication lag / source per agency × metric; three-speed model. Most cadence adapters seeded-but-disabled; carry-forward UI absent. |
 | [foi-sourcing-plan.md](reference/foi-sourcing-plan.md) | in-progress | Data-sourcing strategy + FOI playbook (FOI = fallback), per-agency channel table, request templates. Only request templates landed in code. |
 | [pdf-storage-and-scanning.md](reference/pdf-storage-and-scanning.md) | living | Raw PDFs in Supabase Storage (bucket `annual-reports`) + `core.documents` catalog/scan-queue (migration 016) + `docs-*` CLI + Scan button on the review console. 64 PDFs uploaded + cataloged; cloud is the durable copy. |

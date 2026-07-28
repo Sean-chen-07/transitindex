@@ -178,24 +178,19 @@ Resolutions captured in phase-plan.md "Architecture — eng re-review" + data-mo
 - **Fill the workbook** for annual metrics: run `export-xlsx`, open the .xlsx, enter values from
   agency annual reports (TTC 2023/2024, STM, TransLink, Calgary, Edmonton, MiWay, BC Transit),
   then `import-xlsx`. Priority columns: annual_ridership, operating_expenses, operating_revenue.
-- **Bootstrap the US / NTD seed (2026-07-22 integration — needs a network-enabled machine;
-  data.transportation.gov was egress-blocked in the build sandbox):**
-  1. `python ingest/scripts/fetch_ntd.py --out db/seeds/ntd/` (downloads the two Socrata
-     snapshot CSVs; optional `NTD_APP_TOKEN` env avoids throttling),
-  2. `python ingest/scripts/generate_ntd_agencies.py` (writes `db/seeds/08_agencies_us.sql`
-     + regenerates `ingest/transitindex_ingest/refdata_us.py`; commit both + the snapshots),
-  3. apply migration 022 + seed 08 (dbmate), then
-     `python -m transitindex_ingest ntd-monthly db/seeds/ntd/ntd_monthly.csv` and
-     `python -m transitindex_ingest ntd-annual db/seeds/ntd/ntd_annual.csv`,
-  4. spot-check NYCT / LA Metro / CTA / King County figures against FTA-published numbers,
-     and re-confirm the public-domain terms on the live portal (see source-registry NTD-M row).
+- **US / NTD seed — LOADED 2026-07-28** (fetch + generator + migration 022 + seed 08 + both
+  loaders all ran: 521 Full Reporter agencies; annual = 7,687 values / 3 report years with
+  derived ratios + ranks; monthly = 134,235 values / 89 months, 178 rank cohorts; verify
+  ok=True both). STILL OPEN:
+  - spot-check NYCT / LA Metro / CTA / King County figures against FTA-published numbers,
+    and re-confirm the public-domain terms on the live portal (see source-registry NTD-M row).
   Follow-ups: NTD funding-sources adapter (`4tmr-gwuu`) so `subsidy`/`subsidy_per_rider` rank
   for US agencies; fiscal-year-end refinement from the NTD Agency Information dataset
   (US agencies currently default to December); `ntd_reference` annotations in
   `metric_dictionary.yaml`.
 
 ## Data expansion — balance sheets + native frequency (2026-05-31)
-Full plan: [balance-sheet-and-frequency-plan.md](docs/planning/balance-sheet-and-frequency-plan.md).
+Full plan: balance-sheet-and-frequency-plan.md (retired to git history, 2026-07-27 docs cleanup).
 
 > **Mostly DELIVERED in v0.0.3.0** (the backend restructure folded this in). DONE: `quarterly_period()`;
 > 11 balance-sheet metrics seeded (`refdata.METRICS` + `04_metrics.sql`, parity-tested); `net_debt` /

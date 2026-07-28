@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "feed_code": "ntd_monthly",
+  "records_parsed": 134235,
+  "records_flagged": 0,
+  "staged": 134235,
+  "promoted_inserted": 0,
+  "promoted_superseded": 0,
+  "promoted_skipped": 134235,
+  "ranks_cohorts": 178,
+  "final_current_values": 134235,
+  "duplicate_keys": 0,
+  "steps": [
+    "ids resolved: 89 distinct periods, source_doc_id=916",
+    "validated: 134235 approved, 0 flagged (stay pending)",
+    "staged: 134235 pending rows",
+    "promoted: 0 inserted, 0 superseded, 134235 skipped (identical)",
+    "ranks: 178 cohort(s) refreshed for 89 period(s)",
+    "verify: 134235 current values for 521 agency/agencies, 0 duplicate keys, ok=True"
+  ],
+  "duration_sec": 169.21,
+  "reset_performed": false,
+  "promoted_total": 0
+}
