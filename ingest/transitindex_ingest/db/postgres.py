@@ -884,10 +884,13 @@ class PostgresRepository:
                 "WHERE metric_id = ANY(%s) AND reporting_period_id = ANY(%s)",
                 (metric_ids, period_ids),
             )
-            if rank_rows:
-                ph = ",".join(["(%s,%s,%s,%s,%s,%s,%s)"] * len(rank_rows))
+            # Batched: one statement per _BULK_BATCH rows — the wire protocol
+            # caps a statement at 65535 parameters.
+            for i in range(0, len(rank_rows), self._BULK_BATCH):
+                batch = rank_rows[i : i + self._BULK_BATCH]
+                ph = ",".join(["(%s,%s,%s,%s,%s,%s,%s)"] * len(batch))
                 params: list = []
-                for r in rank_rows:
+                for r in batch:
                     params.extend([
                         r.agency_id, r.metric_id, r.reporting_period_id,
                         r.comparison_set, r.rank, r.denominator, r.direction,
