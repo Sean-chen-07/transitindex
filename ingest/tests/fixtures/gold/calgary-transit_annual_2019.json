@@ -1,0 +1,23 @@
+{
+  "agency_slug": "calgary-transit",
+  "period_year": 2019,
+  "period_kind": "annual",
+  "source_doc_id": 13,
+  "promoted_from": "candidates/calgary-transit_annual_2019_doc13.json",
+  "description": "CONFIRMED gold for Calgary Transit 2019 (catalog doc 13), promoted from candidates/calgary-transit_annual_2019_doc13.json after an offline evidence review (see CANDIDATES_REVIEW.md). Only the ridership row survived: the source is the City of Calgary's consolidated annual report, so every financial row the extractor produced is a CITY-WIDE figure, not a Calgary Transit figure, and would be wrong as agency gold. Those rows stay in candidates/. `should_flag` is false: the promoted row is unambiguous in the source.",
+  "records": [
+    {
+      "metric_code": "ridership",
+      "true_value": "106485000",
+      "unit": "count",
+      "tolerance": "0.005",
+      "should_flag": false,
+      "evidence": {
+        "page": 96,
+        "conf": "0.9",
+        "quote": "Transit passenger trips, annual (000s) 106,485",
+        "note": null
+      }
+    }
+  ]
+}

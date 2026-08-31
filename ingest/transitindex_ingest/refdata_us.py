@@ -12,7 +12,7 @@ from __future__ import annotations
 from types import MappingProxyType
 from typing import Mapping
 
-# slug -> {subdivision (2-letter state), fiscal_year_end_month, currency,
+# slug -> {subdivision (2-letter state), fiscal_year_end_month (NTD fy_end_date),
 #          country, ntd_id, primary_modes}. Same shape as refdata.AGENCIES
 #          plus country/currency/ntd_id.
 US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
@@ -23,12 +23,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus",)}
         ),
         "access-services-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90157",
              "primary_modes": ("paratransit",)}
         ),
         "ada-county-highway-district-dba-achd-commuteride-id": MappingProxyType(
-            {"subdivision": "ID", "fiscal_year_end_month": 12,
+            {"subdivision": "ID", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "00415",
              "primary_modes": ("on_demand",)}
         ),
@@ -38,7 +38,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus",)}
         ),
         "alameda-contra-costa-transit-district-dba-ac-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90014",
              "primary_modes": ("bus", "brt", "paratransit")}
         ),
@@ -48,57 +48,57 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("commuter_rail",)}
         ),
         "altamont-corridor-express-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90182",
              "primary_modes": ("commuter_rail",)}
         ),
         "alternativa-de-transporte-integrado-dba-autoridad-de-transporte-integrado-pr": MappingProxyType(
-            {"subdivision": "PR", "fiscal_year_end_month": 12,
+            {"subdivision": "PR", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40094",
              "primary_modes": ("bus", "subway", "paratransit")}
         ),
         "altoona-metro-transit-dba-amtran-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30011",
              "primary_modes": ("bus", "paratransit")}
         ),
         "ames-transit-agency-dba-cyride-ia": MappingProxyType(
-            {"subdivision": "IA", "fiscal_year_end_month": 12,
+            {"subdivision": "IA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70041",
              "primary_modes": ("bus",)}
         ),
         "anaheim-transportation-network-dba-anaheim-regional-transportation-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90211",
              "primary_modes": ("bus", "paratransit")}
         ),
         "ann-arbor-area-transportation-authority-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "50040",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "anne-arundel-county-md": MappingProxyType(
-            {"subdivision": "MD", "fiscal_year_end_month": 12,
+            {"subdivision": "MD", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30129",
              "primary_modes": ("bus", "paratransit")}
         ),
         "antelope-valley-transit-authority-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90121",
              "primary_modes": ("bus", "paratransit")}
         ),
         "arlington-county-virginia-dba-arlington-transit-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30080",
              "primary_modes": ("bus", "paratransit")}
         ),
         "athens-clarke-county-unified-government-dba-athens-clarke-county-transit-department-ga": MappingProxyType(
-            {"subdivision": "GA", "fiscal_year_end_month": 12,
+            {"subdivision": "GA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40047",
              "primary_modes": ("bus", "paratransit")}
         ),
         "atlanta-region-transit-link-authority-ga": MappingProxyType(
-            {"subdivision": "GA", "fiscal_year_end_month": 12,
+            {"subdivision": "GA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "42000",
              "primary_modes": ("bus", "on_demand")}
         ),
@@ -108,27 +108,27 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "baldwin-county-commission-dba-baldwin-regional-area-transit-system-al": MappingProxyType(
-            {"subdivision": "AL", "fiscal_year_end_month": 12,
+            {"subdivision": "AL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40928",
              "primary_modes": ("paratransit",)}
         ),
         "bay-area-transportation-authority-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "50413",
              "primary_modes": ("bus", "paratransit")}
         ),
         "bay-county-transportation-planning-organization-dba-bayway-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40185",
              "primary_modes": ("bus", "paratransit")}
         ),
         "bay-metropolitan-transit-authority-dba-bay-metro-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "50029",
              "primary_modes": ("bus", "paratransit")}
         ),
         "beaver-county-transit-authority-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30023",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -138,22 +138,22 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "berkshire-regional-transit-authority-ma": MappingProxyType(
-            {"subdivision": "MA", "fiscal_year_end_month": 12,
+            {"subdivision": "MA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10007",
              "primary_modes": ("bus", "paratransit")}
         ),
         "bi-state-development-agency-of-the-missouri-illinois-metropolitan-district-dba-st-louis-metro-mo": MappingProxyType(
-            {"subdivision": "MO", "fiscal_year_end_month": 12,
+            {"subdivision": "MO", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70006",
              "primary_modes": ("bus", "light_rail", "paratransit")}
         ),
         "birmingham-jefferson-county-transit-authority-al": MappingProxyType(
-            {"subdivision": "AL", "fiscal_year_end_month": 12,
+            {"subdivision": "AL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40042",
              "primary_modes": ("bus", "brt", "paratransit")}
         ),
         "bloomington-normal-public-transit-system-dba-connect-transit-il": MappingProxyType(
-            {"subdivision": "IL", "fiscal_year_end_month": 12,
+            {"subdivision": "IL", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50047",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -163,37 +163,37 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "blue-water-area-transportation-commission-dba-blue-water-area-transit-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "50148",
              "primary_modes": ("bus", "paratransit")}
         ),
         "board-of-county-commissioners-of-st-lucie-county-dba-area-regional-transit-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "41199",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "board-of-county-commissioners-palm-beach-county-dba-palm-tran-inc-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40037",
              "primary_modes": ("bus", "paratransit")}
         ),
         "borough-of-pottstown-dba-pottstown-area-rapid-transit-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30077",
              "primary_modes": ("bus", "paratransit")}
         ),
         "brazos-transit-district-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60059",
              "primary_modes": ("bus", "paratransit")}
         ),
         "brevard-board-of-county-commissioners-dba-space-coast-area-transit-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40063",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "brockton-area-transit-authority-ma": MappingProxyType(
-            {"subdivision": "MA", "fiscal_year_end_month": 12,
+            {"subdivision": "MA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10004",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -203,12 +203,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "broward-county-board-of-county-commissioners-dba-broward-county-transit-division-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40029",
              "primary_modes": ("bus", "paratransit")}
         ),
         "buncombe-county-dba-mountain-mobility-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40224",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -218,7 +218,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "butte-county-association-of-governments-dba-butte-regional-transit-b-line-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90208",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -228,27 +228,27 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "california-vanpool-authority-dba-calvans-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90230",
              "primary_modes": ("on_demand",)}
         ),
         "cambria-county-transit-authority-dba-camtran-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30012",
              "primary_modes": ("bus", "streetcar", "paratransit")}
         ),
         "cape-ann-transportation-authority-dba-cata-ma": MappingProxyType(
-            {"subdivision": "MA", "fiscal_year_end_month": 12,
+            {"subdivision": "MA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10053",
              "primary_modes": ("bus", "paratransit")}
         ),
         "cape-cod-regional-transit-authority-ma": MappingProxyType(
-            {"subdivision": "MA", "fiscal_year_end_month": 12,
+            {"subdivision": "MA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10105",
              "primary_modes": ("bus", "paratransit")}
         ),
         "cape-fear-public-transportation-authority-dba-wave-transit-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40006",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -263,47 +263,47 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "capital-area-transportation-authority-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "50036",
              "primary_modes": ("bus", "paratransit")}
         ),
         "capital-district-transportation-authority-ny": MappingProxyType(
-            {"subdivision": "NY", "fiscal_year_end_month": 12,
+            {"subdivision": "NY", "fiscal_year_end_month": 3,
              "currency": "USD", "country": "US", "ntd_id": "20002",
              "primary_modes": ("bus", "paratransit")}
         ),
         "capital-metropolitan-transportation-authority-dba-capital-metro-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60048",
              "primary_modes": ("bus", "commuter_rail", "paratransit", "on_demand")}
         ),
         "casco-bay-island-transit-district-dba-casco-bay-lines-me": MappingProxyType(
-            {"subdivision": "ME", "fiscal_year_end_month": 12,
+            {"subdivision": "ME", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "10088",
              "primary_modes": ("ferry",)}
         ),
         "central-arkansas-development-council-dba-south-central-arkansas-transit-ar": MappingProxyType(
-            {"subdivision": "AR", "fiscal_year_end_month": 12,
+            {"subdivision": "AR", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "60246",
              "primary_modes": ("paratransit",)}
         ),
         "central-contra-costa-transit-authority-dba-county-connection-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90078",
              "primary_modes": ("bus", "paratransit")}
         ),
         "central-county-transportation-authority-dba-metro-transit-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "50035",
              "primary_modes": ("bus", "paratransit")}
         ),
         "central-florida-commuter-rail-dba-sunrail-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40232",
              "primary_modes": ("commuter_rail",)}
         ),
         "central-florida-regional-transportation-authority-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40035",
              "primary_modes": ("bus", "brt", "paratransit", "on_demand")}
         ),
@@ -313,12 +313,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "on_demand")}
         ),
         "central-midlands-regional-transportation-authority-dba-the-comet-sc": MappingProxyType(
-            {"subdivision": "SC", "fiscal_year_end_month": 12,
+            {"subdivision": "SC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40141",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "central-new-york-regional-transportation-authority-dba-new-york-regional-transportation-authority-ny": MappingProxyType(
-            {"subdivision": "NY", "fiscal_year_end_month": 12,
+            {"subdivision": "NY", "fiscal_year_end_month": 3,
              "currency": "USD", "country": "US", "ntd_id": "20018",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -328,12 +328,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "central-oklahoma-transportation-and-parking-authority-dba-embark-ok": MappingProxyType(
-            {"subdivision": "OK", "fiscal_year_end_month": 12,
+            {"subdivision": "OK", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "60017",
              "primary_modes": ("bus", "streetcar", "brt", "ferry", "paratransit")}
         ),
         "central-oregon-intergovernmental-council-dba-cascades-east-transit-or": MappingProxyType(
-            {"subdivision": "OR", "fiscal_year_end_month": 12,
+            {"subdivision": "OR", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "00057",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
@@ -343,32 +343,32 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "light_rail", "commuter_rail", "streetcar")}
         ),
         "centre-area-transportation-authority-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30054",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "champaign-urbana-mass-transit-district-il": MappingProxyType(
-            {"subdivision": "IL", "fiscal_year_end_month": 12,
+            {"subdivision": "IL", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50060",
              "primary_modes": ("bus", "paratransit")}
         ),
         "charleston-area-regional-transportation-authority-sc": MappingProxyType(
-            {"subdivision": "SC", "fiscal_year_end_month": 12,
+            {"subdivision": "SC", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40110",
              "primary_modes": ("bus", "paratransit")}
         ),
         "charlotte-county-government-dba-charlotte-county-transit-division-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40129",
              "primary_modes": ("paratransit",)}
         ),
         "chatham-area-transit-authority-ga": MappingProxyType(
-            {"subdivision": "GA", "fiscal_year_end_month": 12,
+            {"subdivision": "GA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40025",
              "primary_modes": ("bus", "ferry", "paratransit")}
         ),
         "chattanooga-area-regional-transportation-authority-tn": MappingProxyType(
-            {"subdivision": "TN", "fiscal_year_end_month": 12,
+            {"subdivision": "TN", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40001",
              "primary_modes": ("bus", "streetcar", "paratransit")}
         ),
@@ -388,27 +388,27 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("ferry",)}
         ),
         "city-and-county-of-honolulu-hi": MappingProxyType(
-            {"subdivision": "HI", "fiscal_year_end_month": 12,
+            {"subdivision": "HI", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90002",
              "primary_modes": ("bus", "subway", "paratransit")}
         ),
         "city-and-county-of-san-francisco-dba-san-francisco-municipal-transportation-agency-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90015",
              "primary_modes": ("bus", "light_rail", "streetcar", "trolleybus", "paratransit")}
         ),
         "city-of-albany-dba-albany-transit-system-ga": MappingProxyType(
-            {"subdivision": "GA", "fiscal_year_end_month": 12,
+            {"subdivision": "GA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40021",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-albuquerque-dba-abqride-nm": MappingProxyType(
-            {"subdivision": "NM", "fiscal_year_end_month": 12,
+            {"subdivision": "NM", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "60019",
              "primary_modes": ("bus", "brt", "paratransit")}
         ),
         "city-of-alexandria-dba-dash-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30071",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -418,52 +418,52 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-arlington-dba-arlington-transportation-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60041",
              "primary_modes": ("paratransit",)}
         ),
         "city-of-asheville-dba-art-asheville-rides-transit-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40005",
              "primary_modes": ("bus",)}
         ),
         "city-of-baltimore-dba-charm-city-circulator-md": MappingProxyType(
-            {"subdivision": "MD", "fiscal_year_end_month": 12,
+            {"subdivision": "MD", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30201",
              "primary_modes": ("bus", "ferry")}
         ),
         "city-of-beaumont-dba-beaumont-municipal-transit-system-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60016",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-billings-dba-billings-metropolitan-transit-system-mt": MappingProxyType(
-            {"subdivision": "MT", "fiscal_year_end_month": 12,
+            {"subdivision": "MT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "80004",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-brownsville-dba-brownsville-metro-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60014",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-cedar-rapids-dba-cedar-rapids-transit-ia": MappingProxyType(
-            {"subdivision": "IA", "fiscal_year_end_month": 12,
+            {"subdivision": "IA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70008",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-charlotte-north-carolina-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40008",
              "primary_modes": ("bus", "light_rail", "streetcar", "paratransit", "on_demand")}
         ),
         "city-of-cincinnati-dba-the-connector-oh": MappingProxyType(
-            {"subdivision": "OH", "fiscal_year_end_month": 12,
+            {"subdivision": "OH", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "55311",
              "primary_modes": ("streetcar",)}
         ),
         "city-of-clovis-dba-clovis-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90313",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -473,27 +473,27 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "city-of-columbia-dba-gocomo-mo": MappingProxyType(
-            {"subdivision": "MO", "fiscal_year_end_month": 12,
+            {"subdivision": "MO", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "70016",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-commerce-dba-city-of-commerce-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90043",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-coralville-dba-coralville-transit-system-ia": MappingProxyType(
-            {"subdivision": "IA", "fiscal_year_end_month": 12,
+            {"subdivision": "IA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70030",
              "primary_modes": ("bus",)}
         ),
         "city-of-culver-city-dba-culver-citybus-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90039",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-davenport-dba-davenport-citibus-ia": MappingProxyType(
-            {"subdivision": "IA", "fiscal_year_end_month": 12,
+            {"subdivision": "IA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70009",
              "primary_modes": ("bus",)}
         ),
@@ -503,17 +503,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-dekalb-dba-city-of-dekalb-public-transit-il": MappingProxyType(
-            {"subdivision": "IL", "fiscal_year_end_month": 12,
+            {"subdivision": "IL", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50176",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-detroit-dba-detroit-department-of-transportation-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50119",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-durham-dba-godurham-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40087",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -523,7 +523,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-el-paso-dba-sun-metro-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 8,
              "currency": "USD", "country": "US", "ntd_id": "60006",
              "primary_modes": ("bus", "streetcar", "paratransit")}
         ),
@@ -538,12 +538,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-fairfax-dba-cue-bus-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30058",
              "primary_modes": ("bus",)}
         ),
         "city-of-fairfield-california-dba-fast-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90092",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -553,7 +553,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-fayetteville-dba-fayetteville-area-system-of-transit-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40009",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -563,37 +563,37 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "brt", "paratransit")}
         ),
         "city-of-fort-lauderdale-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "44929",
              "primary_modes": ("bus", "ferry")}
         ),
         "city-of-fresno-dba-fresno-area-express-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90027",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-gainesville-fl-dba-regional-transit-system-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40030",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-galveston-dba-galveston-island-transit-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60015",
              "primary_modes": ("bus", "streetcar", "paratransit")}
         ),
         "city-of-gardena-dba-gtrans-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90042",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-glendale-az": MappingProxyType(
-            {"subdivision": "AZ", "fiscal_year_end_month": 12,
+            {"subdivision": "AZ", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90034",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-glendale-dba-beeline-bus-dial-a-ride-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "99423",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -608,32 +608,32 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-greensboro-dba-greensboro-transit-agency-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40093",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-harrisonburg-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30094",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-huntsville-alabama-dba-huntsville-transit-al": MappingProxyType(
-            {"subdivision": "AL", "fiscal_year_end_month": 12,
+            {"subdivision": "AL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40071",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-iowa-city-dba-iowa-city-transit-ia": MappingProxyType(
-            {"subdivision": "IA", "fiscal_year_end_month": 12,
+            {"subdivision": "IA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70018",
              "primary_modes": ("bus",)}
         ),
         "city-of-jackson-ms-ms": MappingProxyType(
-            {"subdivision": "MS", "fiscal_year_end_month": 12,
+            {"subdivision": "MS", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40015",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-jackson-transportation-authority-dba-jackson-area-transportation-authority-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "50034",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -643,7 +643,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "streetcar", "paratransit")}
         ),
         "city-of-knoxville-dba-knoxville-area-transit-tn": MappingProxyType(
-            {"subdivision": "TN", "fiscal_year_end_month": 12,
+            {"subdivision": "TN", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40002",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -658,12 +658,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-la-mirada-dba-la-mirada-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90024",
              "primary_modes": ("paratransit",)}
         ),
         "city-of-laredo-dba-laredo-transit-management-inc-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60009",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -678,12 +678,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-lincoln-dba-startran-ne": MappingProxyType(
-            {"subdivision": "NE", "fiscal_year_end_month": 12,
+            {"subdivision": "NE", "fiscal_year_end_month": 8,
              "currency": "USD", "country": "US", "ntd_id": "70001",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-long-beach-ny": MappingProxyType(
-            {"subdivision": "NY", "fiscal_year_end_month": 12,
+            {"subdivision": "NY", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "20006",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -693,7 +693,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-los-angeles-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90147",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -703,7 +703,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-lubbock-dba-citibus-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60010",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -718,12 +718,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("paratransit",)}
         ),
         "city-of-mckinney-dba-collin-county-transit-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60270",
              "primary_modes": ("paratransit",)}
         ),
         "city-of-memphis-dba-memphis-area-transit-authority-tn": MappingProxyType(
-            {"subdivision": "TN", "fiscal_year_end_month": 12,
+            {"subdivision": "TN", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40003",
              "primary_modes": ("bus", "streetcar", "paratransit")}
         ),
@@ -733,17 +733,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("streetcar",)}
         ),
         "city-of-mobile-dba-the-wave-transit-system-al": MappingProxyType(
-            {"subdivision": "AL", "fiscal_year_end_month": 12,
+            {"subdivision": "AL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40043",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-montebello-dba-montebello-bus-lines-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90041",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-montgomery-dba-the-m-transit-al": MappingProxyType(
-            {"subdivision": "AL", "fiscal_year_end_month": 12,
+            {"subdivision": "AL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40044",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -753,32 +753,32 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("paratransit",)}
         ),
         "city-of-nashua-dba-nashua-transit-system-nh": MappingProxyType(
-            {"subdivision": "NH", "fiscal_year_end_month": 12,
+            {"subdivision": "NH", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10087",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-norwalk-dba-norwalk-transit-system-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90022",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-pasadena-dba-pasadena-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "99424",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-peoria-az": MappingProxyType(
-            {"subdivision": "AZ", "fiscal_year_end_month": 12,
+            {"subdivision": "AZ", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90140",
              "primary_modes": ("paratransit",)}
         ),
         "city-of-petaluma-dba-petaluma-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90213",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-phoenix-dba-valley-metro-az": MappingProxyType(
-            {"subdivision": "AZ", "fiscal_year_end_month": 12,
+            {"subdivision": "AZ", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90032",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -788,7 +788,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-portland-dba-portland-streetcar-or": MappingProxyType(
-            {"subdivision": "OR", "fiscal_year_end_month": 12,
+            {"subdivision": "OR", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "00058",
              "primary_modes": ("streetcar",)}
         ),
@@ -803,17 +803,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-raleigh-dba-goraleigh-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40007",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-redondo-beach-dba-beach-cities-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90214",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-riverside-dba-riverside-connect-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90086",
              "primary_modes": ("paratransit",)}
         ),
@@ -828,37 +828,37 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-san-luis-obispo-dba-slo-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90156",
              "primary_modes": ("bus",)}
         ),
         "city-of-santa-clarita-dba-santa-clarita-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90171",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-santa-fe-dba-santa-fe-trails-nm": MappingProxyType(
-            {"subdivision": "NM", "fiscal_year_end_month": 12,
+            {"subdivision": "NM", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "60077",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-santa-maria-dba-santa-maria-regional-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90087",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-santa-monica-dba-big-blue-bus-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90008",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-santa-rosa-dba-santa-rosa-citybus-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90017",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-scottsdale-dba-scottsdale-trolley-az": MappingProxyType(
-            {"subdivision": "AZ", "fiscal_year_end_month": 12,
+            {"subdivision": "AZ", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90131",
              "primary_modes": ("bus",)}
         ),
@@ -873,7 +873,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-sioux-city-dba-sioux-city-transit-system-ia": MappingProxyType(
-            {"subdivision": "IA", "fiscal_year_end_month": 12,
+            {"subdivision": "IA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70012",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -883,12 +883,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-springfield-dba-city-utilities-of-springfield-mo-mo": MappingProxyType(
-            {"subdivision": "MO", "fiscal_year_end_month": 12,
+            {"subdivision": "MO", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "70003",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-tallahassee-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40036",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -898,27 +898,27 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-torrance-dba-torrance-transit-system-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90010",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-tucson-dba-sun-tran-az": MappingProxyType(
-            {"subdivision": "AZ", "fiscal_year_end_month": 12,
+            {"subdivision": "AZ", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90033",
              "primary_modes": ("bus", "streetcar", "paratransit")}
         ),
         "city-of-turlock-dba-turlock-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90201",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-visalia-dba-visalia-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90091",
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-waco-dba-waco-transit-system-inc-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60012",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -933,12 +933,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "city-of-wilsonville-dba-south-metro-area-regional-transit-or": MappingProxyType(
-            {"subdivision": "OR", "fiscal_year_end_month": 12,
+            {"subdivision": "OR", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "00046",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "city-of-winston-salem-dba-winston-salem-transit-authority-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40012",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -958,62 +958,62 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "clinton-area-transit-system-dba-my-blue-bus-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "50314",
              "primary_modes": ("paratransit",)}
         ),
         "cobb-county-dba-cobblinc-ga": MappingProxyType(
-            {"subdivision": "GA", "fiscal_year_end_month": 12,
+            {"subdivision": "GA", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40078",
              "primary_modes": ("bus", "paratransit")}
         ),
         "collier-county-dba-collier-area-transit-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40140",
              "primary_modes": ("bus", "paratransit")}
         ),
         "concho-valley-transit-district-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60102",
              "primary_modes": ("bus", "paratransit")}
         ),
         "connecticut-department-of-transportation-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10102",
              "primary_modes": ("bus", "commuter_rail")}
         ),
         "connecticut-department-of-transportation-cttransit-hartford-division-dba-cttransit-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10048",
              "primary_modes": ("bus", "brt")}
         ),
         "connecticut-department-of-transportation-cttransit-new-britain-dattco-dba-dattco-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10045",
              "primary_modes": ("bus",)}
         ),
         "connecticut-department-of-transportation-cttransit-new-britain-dba-cttransit-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10130",
              "primary_modes": ("bus",)}
         ),
         "connecticut-department-of-transportation-cttransit-new-haven-division-dba-cttransit-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10055",
              "primary_modes": ("bus",)}
         ),
         "connecticut-department-of-transportation-cttransit-stamford-division-dba-cttransit-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10056",
              "primary_modes": ("bus",)}
         ),
         "connecticut-department-of-transportation-cttransit-waterbury-net-dba-cttransit-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10128",
              "primary_modes": ("bus", "paratransit")}
         ),
         "cooperative-alliance-for-seacoast-transportation-nh": MappingProxyType(
-            {"subdivision": "NH", "fiscal_year_end_month": 12,
+            {"subdivision": "NH", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "10086",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1023,7 +1023,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "county-commissioners-of-charles-county-md-dba-pgm-vango-md": MappingProxyType(
-            {"subdivision": "MD", "fiscal_year_end_month": 12,
+            {"subdivision": "MD", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30088",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1038,32 +1038,32 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "county-of-fayette-dba-fayette-area-coordinated-transportation-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30087",
              "primary_modes": ("bus", "paratransit")}
         ),
         "county-of-johnson-iowa-dba-johnson-county-seats-ia": MappingProxyType(
-            {"subdivision": "IA", "fiscal_year_end_month": 12,
+            {"subdivision": "IA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70045",
              "primary_modes": ("paratransit",)}
         ),
         "county-of-lackawanna-transit-system-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30025",
              "primary_modes": ("bus", "paratransit")}
         ),
         "county-of-lebanon-transit-authority-dba-lebanon-transit-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30095",
              "primary_modes": ("bus", "paratransit")}
         ),
         "county-of-maui-hi": MappingProxyType(
-            {"subdivision": "HI", "fiscal_year_end_month": 12,
+            {"subdivision": "HI", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90241",
              "primary_modes": ("bus", "paratransit")}
         ),
         "county-of-miami-dade-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40034",
              "primary_modes": ("bus", "subway", "light_rail", "brt", "paratransit", "on_demand")}
         ),
@@ -1078,7 +1078,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("ferry",)}
         ),
         "county-of-placer-dba-placer-county-transit-tart-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90196",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
@@ -1088,17 +1088,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "county-of-sonoma-dba-sonoma-county-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90089",
              "primary_modes": ("bus", "paratransit")}
         ),
         "county-of-volusia-dba-votran-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40032",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "dallas-area-rapid-transit-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60056",
              "primary_modes": ("bus", "light_rail", "commuter_rail", "streetcar", "paratransit")}
         ),
@@ -1108,12 +1108,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("paratransit",)}
         ),
         "delaware-transit-corporation-de": MappingProxyType(
-            {"subdivision": "DE", "fiscal_year_end_month": 12,
+            {"subdivision": "DE", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30075",
              "primary_modes": ("bus", "paratransit")}
         ),
         "denton-county-transportation-authority-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60101",
              "primary_modes": ("bus", "commuter_rail", "paratransit", "on_demand")}
         ),
@@ -1128,17 +1128,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "light_rail", "commuter_rail", "paratransit")}
         ),
         "des-moines-area-regional-transit-authority-ia": MappingProxyType(
-            {"subdivision": "IA", "fiscal_year_end_month": 12,
+            {"subdivision": "IA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70010",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "detroit-transportation-corporation-dba-detroit-people-mover-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50141",
              "primary_modes": ("light_rail",)}
         ),
         "district-department-of-transportation-dba-dc-circulator-dc-streetcar-dc": MappingProxyType(
-            {"subdivision": "DC", "fiscal_year_end_month": 12,
+            {"subdivision": "DC", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "30112",
              "primary_modes": ("streetcar",)}
         ),
@@ -1153,37 +1153,37 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "el-paso-county-dba-el-paso-transportation-authority-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60179",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "erie-metropolitan-transit-authority-dba-the-e-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30013",
              "primary_modes": ("bus", "paratransit")}
         ),
         "escambia-county-board-of-county-commissioners-fl-dba-escambia-county-area-transit-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40038",
              "primary_modes": ("bus", "paratransit")}
         ),
         "fairfax-county-va-dba-fairfax-connector-bus-system-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30068",
              "primary_modes": ("bus",)}
         ),
         "florida-department-of-transportation-district-1-office-dba-commute-connector-ga": MappingProxyType(
-            {"subdivision": "GA", "fiscal_year_end_month": 12,
+            {"subdivision": "GA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40271",
              "primary_modes": ("on_demand",)}
         ),
         "foothill-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90146",
              "primary_modes": ("bus",)}
         ),
         "fort-bend-county-texas-dba-fort-bend-transit-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60103",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1193,12 +1193,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "fort-worth-transportation-authority-dba-trinity-metro-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60007",
              "primary_modes": ("bus", "commuter_rail", "paratransit", "on_demand")}
         ),
         "frederick-county-maryland-dba-transit-services-of-frederick-md": MappingProxyType(
-            {"subdivision": "MD", "fiscal_year_end_month": 12,
+            {"subdivision": "MD", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30072",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1208,37 +1208,37 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "gold-coast-transit-district-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90035",
              "primary_modes": ("bus", "paratransit")}
         ),
         "golden-crescent-regional-planning-commission-dba-victoria-transit-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 8,
              "currency": "USD", "country": "US", "ntd_id": "60095",
              "primary_modes": ("bus", "paratransit")}
         ),
         "golden-empire-transit-district-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90004",
              "primary_modes": ("bus", "paratransit")}
         ),
         "golden-gate-bridge-highway-and-transportation-district-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90016",
              "primary_modes": ("bus", "ferry", "paratransit")}
         ),
         "great-falls-transit-district-mt": MappingProxyType(
-            {"subdivision": "MT", "fiscal_year_end_month": 12,
+            {"subdivision": "MT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "80012",
              "primary_modes": ("bus", "paratransit")}
         ),
         "greater-attleboro-taunton-regional-transit-authority-ma": MappingProxyType(
-            {"subdivision": "MA", "fiscal_year_end_month": 12,
+            {"subdivision": "MA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10064",
              "primary_modes": ("bus", "paratransit")}
         ),
         "greater-bridgeport-transit-authority-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10050",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1248,7 +1248,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "trolleybus", "paratransit")}
         ),
         "greater-hartford-transit-district-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10017",
              "primary_modes": ("paratransit",)}
         ),
@@ -1258,17 +1258,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "greater-lynchburg-transit-company-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30008",
              "primary_modes": ("bus", "paratransit")}
         ),
         "greater-new-haven-transit-district-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10049",
              "primary_modes": ("paratransit",)}
         ),
         "greater-peoria-mass-transit-district-dba-citylink-il": MappingProxyType(
-            {"subdivision": "IL", "fiscal_year_end_month": 12,
+            {"subdivision": "IL", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50056",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1278,17 +1278,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "greater-richmond-transit-company-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30006",
              "primary_modes": ("bus", "brt", "paratransit", "on_demand")}
         ),
         "greater-roanoke-transit-company-dba-valley-metro-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30007",
              "primary_modes": ("bus", "paratransit")}
         ),
         "green-mountain-transit-authority-vt": MappingProxyType(
-            {"subdivision": "VT", "fiscal_year_end_month": 12,
+            {"subdivision": "VT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10066",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1298,7 +1298,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("paratransit",)}
         ),
         "greenville-transit-authority-dba-greenlink-sc": MappingProxyType(
-            {"subdivision": "SC", "fiscal_year_end_month": 12,
+            {"subdivision": "SC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40053",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1313,17 +1313,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus",)}
         ),
         "harris-county-dba-harris-county-transit-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60108",
              "primary_modes": ("bus", "paratransit")}
         ),
         "heart-of-iowa-regional-transit-agency-dba-hirta-public-transit-ia": MappingProxyType(
-            {"subdivision": "IA", "fiscal_year_end_month": 12,
+            {"subdivision": "IA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70066",
              "primary_modes": ("paratransit", "on_demand")}
         ),
         "hendricks-county-sycamore-services-dba-link-hendricks-county-morgan-county-connect-in": MappingProxyType(
-            {"subdivision": "IN", "fiscal_year_end_month": 12,
+            {"subdivision": "IN", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50342",
              "primary_modes": ("paratransit",)}
         ),
@@ -1333,27 +1333,27 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "hillsborough-area-regional-transit-authority-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40041",
              "primary_modes": ("bus", "streetcar", "paratransit")}
         ),
         "housatonic-area-regional-transit-dba-hartransit-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10051",
              "primary_modes": ("bus", "paratransit")}
         ),
         "hyannis-harbor-tours-inc-dba-hy-line-cruises-ma": MappingProxyType(
-            {"subdivision": "MA", "fiscal_year_end_month": 12,
+            {"subdivision": "MA", "fiscal_year_end_month": 2,
              "currency": "USD", "country": "US", "ntd_id": "11239",
              "primary_modes": ("ferry",)}
         ),
         "imperial-county-transportation-commission-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90226",
              "primary_modes": ("bus", "paratransit")}
         ),
         "indian-river-county-dba-goline-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40104",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1368,22 +1368,22 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "interurban-transit-partnership-dba-the-rapid-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "50033",
              "primary_modes": ("bus", "brt", "paratransit")}
         ),
         "jackson-transit-authority-tn": MappingProxyType(
-            {"subdivision": "TN", "fiscal_year_end_month": 12,
+            {"subdivision": "TN", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40057",
              "primary_modes": ("bus", "paratransit")}
         ),
         "jacksonville-transportation-authority-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40040",
              "primary_modes": ("bus", "light_rail", "ferry", "paratransit")}
         ),
         "jaunt-inc-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30045",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1398,7 +1398,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "kanawha-valley-regional-transportation-authority-wv": MappingProxyType(
-            {"subdivision": "WV", "fiscal_year_end_month": 12,
+            {"subdivision": "WV", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30001",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1408,7 +1408,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "brt", "paratransit", "on_demand")}
         ),
         "kansas-city-city-of-missouri-dba-kansas-city-streetcar-mo": MappingProxyType(
-            {"subdivision": "MO", "fiscal_year_end_month": 12,
+            {"subdivision": "MO", "fiscal_year_end_month": 4,
              "currency": "USD", "country": "US", "ntd_id": "70271",
              "primary_modes": ("streetcar",)}
         ),
@@ -1418,7 +1418,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "streetcar", "trolleybus", "ferry", "paratransit", "on_demand")}
         ),
         "kings-county-area-public-transit-agency-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90200",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
@@ -1428,27 +1428,27 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "ferry", "paratransit", "on_demand")}
         ),
         "knoxville-knox-county-community-action-committee-dba-knox-county-cac-transit-tn": MappingProxyType(
-            {"subdivision": "TN", "fiscal_year_end_month": 12,
+            {"subdivision": "TN", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40171",
              "primary_modes": ("paratransit",)}
         ),
         "lafayette-city-parish-consolidated-government-dba-lafayette-transit-system-la": MappingProxyType(
-            {"subdivision": "LA", "fiscal_year_end_month": 12,
+            {"subdivision": "LA", "fiscal_year_end_month": 10,
              "currency": "USD", "country": "US", "ntd_id": "60038",
              "primary_modes": ("bus", "paratransit")}
         ),
         "lake-county-board-of-county-commissioners-dba-lakexpress-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40158",
              "primary_modes": ("bus", "paratransit")}
         ),
         "lake-erie-transportation-commission-dba-lake-erie-transit-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50522",
              "primary_modes": ("bus", "paratransit")}
         ),
         "lakeland-area-mass-transit-district-dba-citrus-connection-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40031",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1463,22 +1463,22 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "lane-transit-district-or": MappingProxyType(
-            {"subdivision": "OR", "fiscal_year_end_month": 12,
+            {"subdivision": "OR", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "00007",
              "primary_modes": ("bus", "brt", "paratransit", "on_demand")}
         ),
         "lee-county-dba-leetran-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40028",
              "primary_modes": ("bus", "paratransit")}
         ),
         "lehigh-and-northampton-transportation-authority-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30010",
              "primary_modes": ("bus", "paratransit")}
         ),
         "lexington-transit-authority-dba-lextran-ky": MappingProxyType(
-            {"subdivision": "KY", "fiscal_year_end_month": 12,
+            {"subdivision": "KY", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40017",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1488,12 +1488,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "livermore-amador-valley-transit-authority-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90144",
              "primary_modes": ("bus",)}
         ),
         "long-beach-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90023",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1503,17 +1503,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("streetcar",)}
         ),
         "los-angeles-county-metropolitan-transportation-authority-dba-metro-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90154",
              "primary_modes": ("bus", "subway", "light_rail", "brt", "paratransit", "on_demand")}
         ),
         "loudoun-county-dba-loudoun-county-transit-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30081",
              "primary_modes": ("bus", "paratransit")}
         ),
         "lowell-regional-transit-authority-dba-lrta-ma": MappingProxyType(
-            {"subdivision": "MA", "fiscal_year_end_month": 12,
+            {"subdivision": "MA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10005",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1523,47 +1523,47 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "luzerne-county-transportation-authority-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30015",
              "primary_modes": ("bus", "paratransit")}
         ),
         "macatawa-area-express-transportation-authority-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "50184",
              "primary_modes": ("bus", "paratransit")}
         ),
         "madison-county-transit-district-il": MappingProxyType(
-            {"subdivision": "IL", "fiscal_year_end_month": 12,
+            {"subdivision": "IL", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50146",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "manatee-county-board-of-county-commissioners-dba-manatee-county-area-transit-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40026",
              "primary_modes": ("bus", "paratransit")}
         ),
         "marin-county-transit-district-dba-marin-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90234",
              "primary_modes": ("bus", "paratransit")}
         ),
         "martin-county-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40192",
              "primary_modes": ("bus", "paratransit")}
         ),
         "maryland-transit-administration-dba-mta-md": MappingProxyType(
-            {"subdivision": "MD", "fiscal_year_end_month": 12,
+            {"subdivision": "MD", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30034",
              "primary_modes": ("bus", "subway", "light_rail", "commuter_rail", "paratransit")}
         ),
         "mass-transportation-authority-dba-mta-flint-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "50032",
              "primary_modes": ("bus", "paratransit")}
         ),
         "massachusetts-bay-transportation-authority-ma": MappingProxyType(
-            {"subdivision": "MA", "fiscal_year_end_month": 12,
+            {"subdivision": "MA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10003",
              "primary_modes": ("bus", "subway", "light_rail", "commuter_rail", "brt", "ferry", "paratransit")}
         ),
@@ -1573,7 +1573,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("streetcar",)}
         ),
         "mecklenburg-county-dba-mecklenburg-transportation-system-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40228",
              "primary_modes": ("paratransit",)}
         ),
@@ -1583,7 +1583,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("paratransit",)}
         ),
         "merrimack-valley-regional-transit-authority-dba-merrimack-valley-transit-ma": MappingProxyType(
-            {"subdivision": "MA", "fiscal_year_end_month": 12,
+            {"subdivision": "MA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10013",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1603,12 +1603,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "light_rail", "commuter_rail", "brt")}
         ),
         "metropolitan-atlanta-rapid-transit-authority-ga": MappingProxyType(
-            {"subdivision": "GA", "fiscal_year_end_month": 12,
+            {"subdivision": "GA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40022",
              "primary_modes": ("bus", "subway", "streetcar", "brt", "paratransit")}
         ),
         "metropolitan-bus-authority-pr": MappingProxyType(
-            {"subdivision": "PR", "fiscal_year_end_month": 12,
+            {"subdivision": "PR", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40086",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1618,27 +1618,27 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "metropolitan-transit-authority-dba-wego-public-transit-tn": MappingProxyType(
-            {"subdivision": "TN", "fiscal_year_end_month": 12,
+            {"subdivision": "TN", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40004",
              "primary_modes": ("bus", "paratransit")}
         ),
         "metropolitan-transit-authority-of-harris-county-texas-dba-metro-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60008",
              "primary_modes": ("bus", "light_rail", "paratransit", "on_demand")}
         ),
         "metropolitan-transportation-commission-dba-mtc-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90094",
              "primary_modes": ("on_demand",)}
         ),
         "metropolitan-tulsa-transit-authority-dba-tulsa-transit-metrolink-tulsa-ok": MappingProxyType(
-            {"subdivision": "OK", "fiscal_year_end_month": 12,
+            {"subdivision": "OK", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "60018",
              "primary_modes": ("bus", "paratransit")}
         ),
         "metrowest-regional-transit-authority-ma": MappingProxyType(
-            {"subdivision": "MA", "fiscal_year_end_month": 12,
+            {"subdivision": "MA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10118",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1648,12 +1648,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "michigan-department-of-transportation-dba-michivan-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "50193",
              "primary_modes": ("on_demand",)}
         ),
         "mid-mon-valley-transit-authority-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30061",
              "primary_modes": ("bus",)}
         ),
@@ -1663,7 +1663,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("on_demand",)}
         ),
         "milford-transit-district-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10107",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1678,27 +1678,27 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "missoula-urban-transportation-district-dba-mountain-line-mt": MappingProxyType(
-            {"subdivision": "MT", "fiscal_year_end_month": 12,
+            {"subdivision": "MT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "80009",
              "primary_modes": ("bus", "paratransit")}
         ),
         "montachusett-regional-transit-authority-ma": MappingProxyType(
-            {"subdivision": "MA", "fiscal_year_end_month": 12,
+            {"subdivision": "MA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10061",
              "primary_modes": ("bus", "paratransit")}
         ),
         "monterey-salinas-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90062",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "montgomery-county-maryland-dba-ride-on-md": MappingProxyType(
-            {"subdivision": "MD", "fiscal_year_end_month": 12,
+            {"subdivision": "MD", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30051",
              "primary_modes": ("bus", "paratransit")}
         ),
         "ms-coast-transportation-authority-dba-coast-transit-authority-ms": MappingProxyType(
-            {"subdivision": "MS", "fiscal_year_end_month": 12,
+            {"subdivision": "MS", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40014",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
@@ -1728,22 +1728,22 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "napa-valley-transportation-authority-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90088",
              "primary_modes": ("bus", "paratransit")}
         ),
         "nebraska-department-of-transportation-ne": MappingProxyType(
-            {"subdivision": "NE", "fiscal_year_end_month": 12,
+            {"subdivision": "NE", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70275",
              "primary_modes": ("on_demand",)}
         ),
         "new-jersey-transit-corporation-nj": MappingProxyType(
-            {"subdivision": "NJ", "fiscal_year_end_month": 12,
+            {"subdivision": "NJ", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "20080",
              "primary_modes": ("bus", "light_rail", "commuter_rail", "paratransit", "on_demand")}
         ),
         "new-mexico-department-of-transportation-dba-nmgo-nm": MappingProxyType(
-            {"subdivision": "NM", "fiscal_year_end_month": 12,
+            {"subdivision": "NM", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "66339",
              "primary_modes": ("on_demand",)}
         ),
@@ -1753,27 +1753,27 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "streetcar", "ferry", "paratransit")}
         ),
         "new-york-city-department-of-transportation-ny": MappingProxyType(
-            {"subdivision": "NY", "fiscal_year_end_month": 12,
+            {"subdivision": "NY", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "20082",
              "primary_modes": ("ferry",)}
         ),
         "new-york-city-economic-development-corporation-ny": MappingProxyType(
-            {"subdivision": "NY", "fiscal_year_end_month": 12,
+            {"subdivision": "NY", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "22930",
              "primary_modes": ("bus", "ferry")}
         ),
         "niagara-frontier-transportation-authority-dba-nfta-metro-bus-rail-ny": MappingProxyType(
-            {"subdivision": "NY", "fiscal_year_end_month": 12,
+            {"subdivision": "NY", "fiscal_year_end_month": 3,
              "currency": "USD", "country": "US", "ntd_id": "20004",
              "primary_modes": ("bus", "light_rail", "paratransit")}
         ),
         "north-carolina-state-university-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40147",
              "primary_modes": ("bus",)}
         ),
         "north-county-transit-district-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90030",
              "primary_modes": ("bus", "commuter_rail", "paratransit")}
         ),
@@ -1788,7 +1788,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("commuter_rail",)}
         ),
         "northern-arizona-intergovernmental-public-transportation-authority-dba-mountain-line-az": MappingProxyType(
-            {"subdivision": "AZ", "fiscal_year_end_month": 12,
+            {"subdivision": "AZ", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90219",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
@@ -1798,32 +1798,32 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("commuter_rail",)}
         ),
         "northern-new-england-passenger-rail-authority-dba-amtrak-downeaster-me": MappingProxyType(
-            {"subdivision": "ME", "fiscal_year_end_month": 12,
+            {"subdivision": "ME", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10115",
              "primary_modes": ("commuter_rail",)}
         ),
         "norwalk-transit-district-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10057",
              "primary_modes": ("bus", "paratransit")}
         ),
         "ohio-valley-regional-transportation-authority-wv": MappingProxyType(
-            {"subdivision": "WV", "fiscal_year_end_month": 12,
+            {"subdivision": "WV", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "30035",
              "primary_modes": ("bus", "paratransit")}
         ),
         "okaloosa-county-board-of-county-commissioners-dba-ec-rider-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40128",
              "primary_modes": ("bus", "paratransit")}
         ),
         "omnitrans-dba-omni-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90029",
              "primary_modes": ("bus", "paratransit")}
         ),
         "orange-county-transportation-authority-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90036",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
@@ -1838,32 +1838,32 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("paratransit",)}
         ),
         "paratransit-inc-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90223",
              "primary_modes": ("bus", "paratransit")}
         ),
         "pasco-county-board-of-county-commissioners-dba-gopasco-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40074",
              "primary_modes": ("bus", "paratransit")}
         ),
         "pee-dee-regional-transportation-authority-sc": MappingProxyType(
-            {"subdivision": "SC", "fiscal_year_end_month": 12,
+            {"subdivision": "SC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40056",
              "primary_modes": ("bus", "paratransit")}
         ),
         "peninsula-corridor-joint-powers-board-dba-caltrain-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90134",
              "primary_modes": ("commuter_rail",)}
         ),
         "pennsylvania-department-of-transportation-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30057",
              "primary_modes": ("commuter_rail",)}
         ),
         "piedmont-authority-for-regional-transportation-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40173",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
@@ -1873,22 +1873,22 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "pima-association-of-governments-az": MappingProxyType(
-            {"subdivision": "AZ", "fiscal_year_end_month": 12,
+            {"subdivision": "AZ", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90222",
              "primary_modes": ("on_demand",)}
         ),
         "pinellas-suncoast-transit-authority-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40027",
              "primary_modes": ("bus", "brt", "ferry", "paratransit", "on_demand")}
         ),
         "pioneer-valley-transit-authority-ma": MappingProxyType(
-            {"subdivision": "MA", "fiscal_year_end_month": 12,
+            {"subdivision": "MA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10008",
              "primary_modes": ("bus", "paratransit")}
         ),
         "pittsburgh-regional-transit-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30022",
              "primary_modes": ("bus", "light_rail", "streetcar", "paratransit")}
         ),
@@ -1898,7 +1898,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("ferry",)}
         ),
         "pomona-valley-transportation-authority-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "99425",
              "primary_modes": ("paratransit",)}
         ),
@@ -1923,12 +1923,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "potomac-and-rappahannock-transportation-commission-dba-omniride-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30070",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "prince-george-s-county-maryland-dba-prince-george-s-county-transit-thebus-md": MappingProxyType(
-            {"subdivision": "MD", "fiscal_year_end_month": 12,
+            {"subdivision": "MD", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30085",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -1938,12 +1938,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus",)}
         ),
         "puerto-rico-highway-and-transportation-authority-pr": MappingProxyType(
-            {"subdivision": "PR", "fiscal_year_end_month": 12,
+            {"subdivision": "PR", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40105",
              "primary_modes": ("bus",)}
         ),
         "puerto-rico-maritime-transport-authority-pr": MappingProxyType(
-            {"subdivision": "PR", "fiscal_year_end_month": 12,
+            {"subdivision": "PR", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40175",
              "primary_modes": ("ferry",)}
         ),
@@ -1953,12 +1953,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "regional-planning-commission-of-greater-birmingham-dba-commutesmart-al": MappingProxyType(
-            {"subdivision": "AL", "fiscal_year_end_month": 12,
+            {"subdivision": "AL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40169",
              "primary_modes": ("on_demand",)}
         ),
         "regional-public-transportation-authority-dba-valley-metro-az": MappingProxyType(
-            {"subdivision": "AZ", "fiscal_year_end_month": 12,
+            {"subdivision": "AZ", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90136",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
@@ -1968,82 +1968,82 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "streetcar")}
         ),
         "regional-transit-service-ny": MappingProxyType(
-            {"subdivision": "NY", "fiscal_year_end_month": 12,
+            {"subdivision": "NY", "fiscal_year_end_month": 3,
              "currency": "USD", "country": "US", "ntd_id": "20113",
              "primary_modes": ("bus", "paratransit")}
         ),
         "regional-transportation-authority-dba-wego-public-transit-tn": MappingProxyType(
-            {"subdivision": "TN", "fiscal_year_end_month": 12,
+            {"subdivision": "TN", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40159",
              "primary_modes": ("bus", "commuter_rail", "on_demand")}
         ),
         "regional-transportation-authority-of-pima-county-az": MappingProxyType(
-            {"subdivision": "AZ", "fiscal_year_end_month": 12,
+            {"subdivision": "AZ", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "91122",
              "primary_modes": ("bus", "paratransit")}
         ),
         "regional-transportation-commission-of-southern-nevada-nv": MappingProxyType(
-            {"subdivision": "NV", "fiscal_year_end_month": 12,
+            {"subdivision": "NV", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90045",
              "primary_modes": ("bus", "paratransit")}
         ),
         "regional-transportation-commission-of-washoe-county-nv": MappingProxyType(
-            {"subdivision": "NV", "fiscal_year_end_month": 12,
+            {"subdivision": "NV", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90001",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "research-triangle-regional-public-transportation-authority-dba-gotriangle-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40108",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "rhode-island-department-of-transportation-ri": MappingProxyType(
-            {"subdivision": "RI", "fiscal_year_end_month": 12,
+            {"subdivision": "RI", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "11147",
              "primary_modes": ("ferry",)}
         ),
         "rhode-island-public-transit-authority-dba-ripta-ri": MappingProxyType(
-            {"subdivision": "RI", "fiscal_year_end_month": 12,
+            {"subdivision": "RI", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10001",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "ride-connection-inc-or": MappingProxyType(
-            {"subdivision": "OR", "fiscal_year_end_month": 12,
+            {"subdivision": "OR", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "00376",
              "primary_modes": ("bus", "paratransit")}
         ),
         "rio-metro-regional-transit-district-nm": MappingProxyType(
-            {"subdivision": "NM", "fiscal_year_end_month": 12,
+            {"subdivision": "NM", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "60111",
              "primary_modes": ("bus", "commuter_rail", "paratransit")}
         ),
         "river-bend-transit-ia": MappingProxyType(
-            {"subdivision": "IA", "fiscal_year_end_month": 12,
+            {"subdivision": "IA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70049",
              "primary_modes": ("bus", "paratransit")}
         ),
         "river-valley-metro-mass-transit-district-il": MappingProxyType(
-            {"subdivision": "IL", "fiscal_year_end_month": 12,
+            {"subdivision": "IL", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50159",
              "primary_modes": ("bus", "paratransit")}
         ),
         "river-valley-transit-authority-dba-river-valley-transit-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30207",
              "primary_modes": ("bus", "paratransit")}
         ),
         "riverside-county-transportation-commission-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90218",
              "primary_modes": ("on_demand",)}
         ),
         "riverside-transit-agency-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90031",
              "primary_modes": ("bus", "paratransit")}
         ),
         "rock-island-county-metropolitan-mass-transit-district-il": MappingProxyType(
-            {"subdivision": "IL", "fiscal_year_end_month": 12,
+            {"subdivision": "IL", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50057",
              "primary_modes": ("bus", "ferry", "paratransit")}
         ),
@@ -2053,7 +2053,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "streetcar", "paratransit", "on_demand")}
         ),
         "rockford-mass-transit-district-il": MappingProxyType(
-            {"subdivision": "IL", "fiscal_year_end_month": 12,
+            {"subdivision": "IL", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50058",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -2063,97 +2063,97 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus",)}
         ),
         "rogue-valley-transportation-district-or": MappingProxyType(
-            {"subdivision": "OR", "fiscal_year_end_month": 12,
+            {"subdivision": "OR", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "00034",
              "primary_modes": ("bus", "paratransit")}
         ),
         "sacramento-regional-transit-district-dba-sacramento-rt-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90019",
              "primary_modes": ("bus", "light_rail", "paratransit")}
         ),
         "saginaw-transit-authority-regional-service-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "50039",
              "primary_modes": ("bus", "paratransit")}
         ),
         "salem-area-mass-transit-district-dba-salem-keizer-transit-or-cherriots-or": MappingProxyType(
-            {"subdivision": "OR", "fiscal_year_end_month": 12,
+            {"subdivision": "OR", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "00025",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "san-bernardino-county-transportation-authority-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90302",
              "primary_modes": ("on_demand",)}
         ),
         "san-diego-association-of-governments-dba-sandag-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90095",
              "primary_modes": ("on_demand",)}
         ),
         "san-diego-metropolitan-transit-system-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90026",
              "primary_modes": ("bus", "light_rail", "paratransit")}
         ),
         "san-francisco-bay-area-rapid-transit-district-dba-sf-bart-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90003",
              "primary_modes": ("subway", "light_rail", "commuter_rail")}
         ),
         "san-francisco-bay-area-water-emergency-transportation-authority-dba-san-francisco-bay-ferry-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90225",
              "primary_modes": ("ferry",)}
         ),
         "san-joaquin-council-dba-dibs-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "99422",
              "primary_modes": ("on_demand",)}
         ),
         "san-joaquin-regional-transit-district-dba-san-joaquin-rtd-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90012",
              "primary_modes": ("bus", "paratransit")}
         ),
         "san-luis-obispo-regional-transit-authority-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90206",
              "primary_modes": ("bus", "paratransit")}
         ),
         "san-mateo-county-transit-district-dba-samtrans-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90009",
              "primary_modes": ("bus", "paratransit")}
         ),
         "santa-barbara-county-association-of-governments-dba-clean-air-express-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90303",
              "primary_modes": ("bus",)}
         ),
         "santa-barbara-metropolitan-transit-district-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90020",
              "primary_modes": ("bus", "paratransit")}
         ),
         "santa-clara-valley-transportation-authority-dba-valley-transportation-authority-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90013",
              "primary_modes": ("bus", "light_rail", "paratransit")}
         ),
         "santa-cruz-metropolitan-transit-district-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90006",
              "primary_modes": ("bus", "paratransit")}
         ),
         "santee-wateree-regional-transportation-authority-dba-santee-wateree-rta-sc": MappingProxyType(
-            {"subdivision": "SC", "fiscal_year_end_month": 12,
+            {"subdivision": "SC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40100",
              "primary_modes": ("bus", "paratransit")}
         ),
         "sarasota-county-dba-breeze-transit-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40046",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -2178,7 +2178,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "solano-county-transit-dba-soltrans-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90232",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -2188,7 +2188,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "sonoma-marin-area-rail-transit-district-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90299",
              "primary_modes": ("commuter_rail", "paratransit")}
         ),
@@ -2198,32 +2198,32 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "south-central-transit-authority-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30202",
              "primary_modes": ("bus", "paratransit")}
         ),
         "south-florida-regional-transportation-authority-dba-tri-rail-fl": MappingProxyType(
-            {"subdivision": "FL", "fiscal_year_end_month": 12,
+            {"subdivision": "FL", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40077",
              "primary_modes": ("bus", "commuter_rail")}
         ),
         "southeast-area-transit-district-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10040",
              "primary_modes": ("bus", "paratransit")}
         ),
         "southeastern-pennsylvania-transportation-authority-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30019",
              "primary_modes": ("bus", "subway", "commuter_rail", "streetcar", "trolleybus", "paratransit")}
         ),
         "southeastern-regional-transit-authority-ma": MappingProxyType(
-            {"subdivision": "MA", "fiscal_year_end_month": 12,
+            {"subdivision": "MA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10006",
              "primary_modes": ("bus", "paratransit")}
         ),
         "southern-california-regional-rail-authority-dba-metrolink-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90151",
              "primary_modes": ("commuter_rail",)}
         ),
@@ -2238,12 +2238,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "southwestern-pennsylvania-commission-dba-commuteinfo-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30078",
              "primary_modes": ("on_demand",)}
         ),
         "spartanburg-regional-health-services-inc-sc": MappingProxyType(
-            {"subdivision": "SC", "fiscal_year_end_month": 12,
+            {"subdivision": "SC", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40244",
              "primary_modes": ("paratransit",)}
         ),
@@ -2253,27 +2253,27 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "springfield-mass-transit-district-dba-sangamon-mass-transit-district-il": MappingProxyType(
-            {"subdivision": "IL", "fiscal_year_end_month": 12,
+            {"subdivision": "IL", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50059",
              "primary_modes": ("bus", "paratransit")}
         ),
         "st-cloud-metropolitan-transit-commission-dba-metro-bus-mn": MappingProxyType(
-            {"subdivision": "MN", "fiscal_year_end_month": 12,
+            {"subdivision": "MN", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "50028",
              "primary_modes": ("bus", "paratransit")}
         ),
         "stanislaus-council-of-governments-dba-staniscruise-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90311",
              "primary_modes": ("on_demand",)}
         ),
         "stanislaus-regional-transit-authority-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90306",
              "primary_modes": ("bus", "paratransit")}
         ),
         "star-transit-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 8,
              "currency": "USD", "country": "US", "ntd_id": "60114",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -2288,12 +2288,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("subway",)}
         ),
         "step-inc-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "31036",
              "primary_modes": ("paratransit",)}
         ),
         "suburban-mobility-authority-for-regional-transportation-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50031",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -2308,17 +2308,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "sunline-transit-agency-dba-sunline-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90079",
              "primary_modes": ("bus", "paratransit")}
         ),
         "susquehanna-regional-transportation-authority-dba-rabbittransit-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30206",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "tahoe-transportation-district-nv": MappingProxyType(
-            {"subdivision": "NV", "fiscal_year_end_month": 12,
+            {"subdivision": "NV", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "91092",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -2328,17 +2328,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus",)}
         ),
         "texas-state-university-dba-bobcat-shuttle-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 8,
              "currency": "USD", "country": "US", "ntd_id": "60269",
              "primary_modes": ("bus",)}
         ),
         "texoma-area-paratransit-system-inc-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60107",
              "primary_modes": ("paratransit",)}
         ),
         "the-eastern-contra-costa-transit-authority-dba-tri-delta-transit-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90162",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -2348,17 +2348,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "subway", "light_rail", "brt", "paratransit")}
         ),
         "the-transportation-management-association-group-dba-the-tma-group-tn": MappingProxyType(
-            {"subdivision": "TN", "fiscal_year_end_month": 12,
+            {"subdivision": "TN", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40178",
              "primary_modes": ("on_demand",)}
         ),
         "the-tri-county-council-for-the-lower-eastern-shore-of-maryland-dba-shore-transit-md": MappingProxyType(
-            {"subdivision": "MD", "fiscal_year_end_month": 12,
+            {"subdivision": "MD", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30096",
              "primary_modes": ("bus", "paratransit")}
         ),
         "the-tri-state-transit-authority-wv": MappingProxyType(
-            {"subdivision": "WV", "fiscal_year_end_month": 12,
+            {"subdivision": "WV", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30002",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -2378,17 +2378,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus",)}
         ),
         "topeka-metropolitan-transit-authority-dba-topeka-metro-ks": MappingProxyType(
-            {"subdivision": "KS", "fiscal_year_end_month": 12,
+            {"subdivision": "KS", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70014",
              "primary_modes": ("bus", "paratransit")}
         ),
         "town-of-blacksburg-dba-blacksburg-transit-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30091",
              "primary_modes": ("bus", "paratransit")}
         ),
         "town-of-chapel-hill-dba-chapel-hill-transit-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40051",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -2403,12 +2403,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus",)}
         ),
         "transit-authority-of-central-kentucky-dba-tack-ky": MappingProxyType(
-            {"subdivision": "KY", "fiscal_year_end_month": 12,
+            {"subdivision": "KY", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40191",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "transit-authority-of-northern-kentucky-ky": MappingProxyType(
-            {"subdivision": "KY", "fiscal_year_end_month": 12,
+            {"subdivision": "KY", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40019",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -2418,32 +2418,32 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "transit-authority-of-river-city-ky": MappingProxyType(
-            {"subdivision": "KY", "fiscal_year_end_month": 12,
+            {"subdivision": "KY", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40018",
              "primary_modes": ("bus", "paratransit")}
         ),
         "transit-joint-powers-authority-for-merced-county-dba-merced-the-bus-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90173",
              "primary_modes": ("bus", "paratransit")}
         ),
         "transit-management-of-central-maryland-inc-dba-regional-transportation-agency-of-central-maryland-md": MappingProxyType(
-            {"subdivision": "MD", "fiscal_year_end_month": 12,
+            {"subdivision": "MD", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30205",
              "primary_modes": ("bus", "paratransit")}
         ),
         "transportation-district-commission-of-hampton-roads-dba-hampton-roads-transit-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30083",
              "primary_modes": ("bus", "light_rail", "ferry", "paratransit", "on_demand")}
         ),
         "tri-county-metropolitan-transportation-district-of-oregon-dba-trimet-or": MappingProxyType(
-            {"subdivision": "OR", "fiscal_year_end_month": 12,
+            {"subdivision": "OR", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "00008",
              "primary_modes": ("bus", "light_rail", "commuter_rail", "paratransit")}
         ),
         "tulare-county-regional-transit-agency-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90310",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -2453,42 +2453,42 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "university-of-california-davis-dba-unitrans-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90142",
              "primary_modes": ("bus",)}
         ),
         "university-of-georgia-dba-transportation-and-parking-services-ga": MappingProxyType(
-            {"subdivision": "GA", "fiscal_year_end_month": 12,
+            {"subdivision": "GA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40180",
              "primary_modes": ("bus", "paratransit")}
         ),
         "university-of-iowa-ia": MappingProxyType(
-            {"subdivision": "IA", "fiscal_year_end_month": 12,
+            {"subdivision": "IA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70019",
              "primary_modes": ("bus", "paratransit")}
         ),
         "university-of-kansas-dba-ku-transportation-services-ks": MappingProxyType(
-            {"subdivision": "KS", "fiscal_year_end_month": 12,
+            {"subdivision": "KS", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "70044",
              "primary_modes": ("bus",)}
         ),
         "university-of-michigan-parking-and-transportation-services-mi": MappingProxyType(
-            {"subdivision": "MI", "fiscal_year_end_month": 12,
+            {"subdivision": "MI", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50158",
              "primary_modes": ("bus",)}
         ),
         "university-of-minnesota-mn": MappingProxyType(
-            {"subdivision": "MN", "fiscal_year_end_month": 12,
+            {"subdivision": "MN", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "50515",
              "primary_modes": ("bus",)}
         ),
         "university-of-montana-dba-asum-transportation-mt": MappingProxyType(
-            {"subdivision": "MT", "fiscal_year_end_month": 12,
+            {"subdivision": "MT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "80107",
              "primary_modes": ("bus",)}
         ),
         "university-of-texas-rio-grande-valley-nm": MappingProxyType(
-            {"subdivision": "NM", "fiscal_year_end_month": 12,
+            {"subdivision": "NM", "fiscal_year_end_month": 8,
              "currency": "USD", "country": "US", "ntd_id": "60273",
              "primary_modes": ("bus",)}
         ),
@@ -2498,7 +2498,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "light_rail", "commuter_rail", "paratransit", "on_demand")}
         ),
         "valley-metro-rail-inc-az": MappingProxyType(
-            {"subdivision": "AZ", "fiscal_year_end_month": 12,
+            {"subdivision": "AZ", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90209",
              "primary_modes": ("light_rail", "streetcar")}
         ),
@@ -2508,17 +2508,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "valley-transit-district-ct": MappingProxyType(
-            {"subdivision": "CT", "fiscal_year_end_month": 12,
+            {"subdivision": "CT", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10042",
              "primary_modes": ("paratransit",)}
         ),
         "ventura-county-transportation-commission-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90164",
              "primary_modes": ("bus", "paratransit")}
         ),
         "via-metropolitan-transit-dba-via-tx": MappingProxyType(
-            {"subdivision": "TX", "fiscal_year_end_month": 12,
+            {"subdivision": "TX", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "60011",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
@@ -2528,42 +2528,42 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("paratransit",)}
         ),
         "victor-valley-transit-authority-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90148",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "virginia-railway-express-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30073",
              "primary_modes": ("commuter_rail",)}
         ),
         "waccamaw-regional-transportation-authority-dba-coast-rta-sc": MappingProxyType(
-            {"subdivision": "SC", "fiscal_year_end_month": 12,
+            {"subdivision": "SC", "fiscal_year_end_month": 9,
              "currency": "USD", "country": "US", "ntd_id": "40102",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "wake-county-dba-gowake-access-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40222",
              "primary_modes": ("paratransit",)}
         ),
         "washington-county-transportation-authority-dba-freedom-transit-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30111",
              "primary_modes": ("bus", "paratransit")}
         ),
         "washington-metropolitan-area-transit-authority-dba-washington-metro-dc": MappingProxyType(
-            {"subdivision": "DC", "fiscal_year_end_month": 12,
+            {"subdivision": "DC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30030",
              "primary_modes": ("bus", "subway", "paratransit")}
         ),
         "washington-state-ferries-wa": MappingProxyType(
-            {"subdivision": "WA", "fiscal_year_end_month": 12,
+            {"subdivision": "WA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "00035",
              "primary_modes": ("ferry",)}
         ),
         "west-virginia-university-dba-personal-rapid-transit-wv": MappingProxyType(
-            {"subdivision": "WV", "fiscal_year_end_month": 12,
+            {"subdivision": "WV", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30107",
              "primary_modes": ("light_rail",)}
         ),
@@ -2573,12 +2573,12 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "western-contra-costa-transit-authority-dba-westcat-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90159",
              "primary_modes": ("bus", "paratransit")}
         ),
         "western-piedmont-regional-transit-authority-dba-greenway-public-transportation-nc": MappingProxyType(
-            {"subdivision": "NC", "fiscal_year_end_month": 12,
+            {"subdivision": "NC", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "40172",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -2588,7 +2588,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit")}
         ),
         "westmoreland-county-transit-authority-pa": MappingProxyType(
-            {"subdivision": "PA", "fiscal_year_end_month": 12,
+            {"subdivision": "PA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30044",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -2598,7 +2598,7 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),
         "williamsburg-area-transit-authority-va": MappingProxyType(
-            {"subdivision": "VA", "fiscal_year_end_month": 12,
+            {"subdivision": "VA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "30076",
              "primary_modes": ("bus", "paratransit")}
         ),
@@ -2608,17 +2608,17 @@ US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(
              "primary_modes": ("bus", "ferry")}
         ),
         "worcester-regional-transit-authority-ma": MappingProxyType(
-            {"subdivision": "MA", "fiscal_year_end_month": 12,
+            {"subdivision": "MA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "10014",
              "primary_modes": ("bus", "paratransit")}
         ),
         "yolo-county-transportation-district-ca": MappingProxyType(
-            {"subdivision": "CA", "fiscal_year_end_month": 12,
+            {"subdivision": "CA", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90090",
              "primary_modes": ("bus", "paratransit")}
         ),
         "yuma-county-intergovernmental-public-transportation-authority-dba-yuma-county-area-transit-az": MappingProxyType(
-            {"subdivision": "AZ", "fiscal_year_end_month": 12,
+            {"subdivision": "AZ", "fiscal_year_end_month": 6,
              "currency": "USD", "country": "US", "ntd_id": "90233",
              "primary_modes": ("bus", "paratransit", "on_demand")}
         ),

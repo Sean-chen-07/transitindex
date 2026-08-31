@@ -471,3 +471,369 @@ def test_module_imports_without_third_party():
     assert hasattr(m, "ChunkedHybridExtractor")
     assert hasattr(m, "chunk_markdown")
     assert hasattr(m, "merge_values")
+
+
+# --- component readings: code adds, the model only transcribes ---------------
+
+
+def _component(metric, value, label, conf=0.9, quote=None):
+    return ExtractedValue(
+        metric_code=metric, value=Decimal(str(value)), unit="CAD",
+        period_kind="annual", period_year=2024, page_number=4,
+        confidence=Decimal(str(conf)), component_label=label, source_quote=quote,
+    )
+
+
+def test_components_are_summed_deterministically_when_no_total_is_printed():
+    values = [
+        _component("energy_fuel_cost", "70", "Diesel fuel", conf=0.9),
+        _component("energy_fuel_cost", "30", "Electricity", conf=0.8),
+    ]
+    (out,) = ch.aggregate_components(values)
+    assert out.value == Decimal("100")
+    assert out.confidence == Decimal("0.8")          # weakest addend
+    assert out.component_label is None               # it is a whole metric now
+    assert ch.COMPONENT_SUM_MARKER in out.note
+    assert "Diesel fuel 70" in out.note and "Electricity 30" in out.note
+
+
+def test_repeated_component_label_across_chunks_is_not_double_counted():
+    values = [
+        _component("energy_fuel_cost", "70", "Diesel fuel", conf=0.7),
+        _component("energy_fuel_cost", "70", "Diesel fuel", conf=0.95),  # same line, other chunk
+        _component("energy_fuel_cost", "30", "Electricity", conf=0.9),
+    ]
+    (out,) = ch.aggregate_components(values)
+    assert out.value == Decimal("100")
+
+
+def test_component_provenance_keeps_every_addends_quote():
+    values = [
+        _component("energy_fuel_cost", "70", "Diesel fuel", quote="Diesel fuel 70"),
+        _component("energy_fuel_cost", "30", "Electricity", quote="Electricity 30"),
+    ]
+    (out,) = ch.aggregate_components(values)
+    assert out.source_quote == "Diesel fuel 70 | Electricity 30"
+
+
+def test_printed_total_wins_and_the_component_sum_is_only_a_crosscheck():
+    whole = _ev("energy_fuel_cost", "100", conf=0.9)
+    values = [
+        whole,
+        _component("energy_fuel_cost", "70", "Diesel fuel"),
+        _component("energy_fuel_cost", "30", "Electricity"),
+    ]
+    (out,) = ch.aggregate_components(values)
+    assert out.value == Decimal("100")               # the PRINTED total, not the sum
+    assert out.confidence == Decimal("0.9")          # agreement costs nothing
+    assert "printed total agrees with its components" in out.note
+
+
+def test_component_sum_disagreeing_with_the_printed_total_goes_to_review():
+    whole = _ev("energy_fuel_cost", "100", conf=0.9)
+    values = [
+        whole,
+        _component("energy_fuel_cost", "70", "Diesel fuel"),
+        _component("energy_fuel_cost", "55", "Electricity"),  # sums to 125
+    ]
+    (out,) = ch.aggregate_components(values)
+    assert out.value == Decimal("100")
+    assert out.confidence == ch.REVIEW_CONFIDENCE
+    assert "disagrees with its components" in out.note
+
+
+def test_aggregate_components_is_a_plain_merge_when_nothing_is_a_component():
+    values = [_ev("ridership", "100"), _ev("ridership", "100")]
+    assert [v.value for v in ch.aggregate_components(values)] == [Decimal("100")]
+
+
+def test_extractor_sums_components_end_to_end(monkeypatch):
+    monkeypatch.setattr(ch, "_to_markdown", lambda b: "only one chunk")
+    monkeypatch.setattr(ch, "_image_page_batches", lambda b, t, **k: [])
+    rows = [
+        {**_ROW, "metric_code": "energy_fuel_cost", "value": "70",
+         "component_label": "Diesel fuel", "source_quote": "Diesel fuel 70"},
+        {**_ROW, "metric_code": "energy_fuel_cost", "value": "30",
+         "component_label": "Electricity", "source_quote": "Electricity 30"},
+    ]
+    ext, _ = _ext(lambda text: rows)
+    res = ext.extract(ExtractionRequest(agency_slug="ttc", pdf_bytes=b"%PDF"))
+    (v,) = res.values
+    assert v.value == Decimal("100")
+    assert res.diagnostics["component_sums"] == 1
+
+
+# --- restated vs actual ------------------------------------------------------
+
+
+def test_restated_and_actual_for_one_figure_collapse_to_the_restated_row():
+    values = [
+        _ev("total_revenue", "200", basis="actual"),
+        _ev("total_revenue", "210", basis="restated"),
+    ]
+    (out,) = ch.prefer_restated(values)
+    assert out.basis == "restated"
+    assert out.value == Decimal("210")
+    assert "as-reported actual was 200" in out.note
+    assert out.confidence == ch.REVIEW_CONFIDENCE     # they disagree -> a human decides
+
+
+def test_restated_agreeing_with_the_actual_keeps_its_confidence():
+    values = [
+        _ev("total_revenue", "200", conf=0.9, basis="actual"),
+        _ev("total_revenue", "200", conf=0.9, basis="restated"),
+    ]
+    (out,) = ch.prefer_restated(values)
+    assert out.basis == "restated"
+    assert out.confidence == Decimal("0.9")
+    assert "reviewer confirm" not in out.note
+
+
+def test_restated_alone_or_actual_alone_passes_through_untouched():
+    only_restated = [_ev("total_revenue", "210", basis="restated")]
+    assert ch.prefer_restated(only_restated) == only_restated
+    only_actual = [_ev("total_revenue", "200", basis="actual")]
+    assert ch.prefer_restated(only_actual) == only_actual
+
+
+def test_restated_collapse_respects_scope_and_period():
+    values = [
+        _ev("total_revenue", "200", basis="actual"),
+        _ev("total_revenue", "210", basis="restated", year=2023),
+        _ev("total_revenue", "220", basis="restated", scope="conventional"),
+    ]
+    assert len(ch.prefer_restated(values)) == 3
+
+
+# --- deterministic statement router -----------------------------------------
+#
+# route_chunk is pure: hand it text + a {statement code: StatementSpec} map. These
+# use synthetic specs so the router's RULES are tested, not the YAML's cue list.
+
+
+def _specs():
+    from transitindex_ingest.dictionary import StatementSpec
+
+    return {
+        "income_statement": StatementSpec(
+            code="income_statement", display_name="Income statement",
+            cues=("statement of operations", "total revenue"),
+        ),
+        "balance_sheet": StatementSpec(
+            code="balance_sheet", display_name="Balance sheet",
+            cues=("statement of financial position", "total assets"),
+        ),
+    }
+
+
+def test_router_sends_a_clear_income_statement_chunk_to_the_income_specialist():
+    text = "STATEMENT OF OPERATIONS\nFare revenue 100\nTotal revenue 250"
+    assert ch.route_chunk(text, _specs()) == "income_statement"
+
+
+def test_router_sends_a_clear_balance_sheet_chunk_to_the_balance_specialist():
+    text = "Statement of Financial Position\nTotal assets 900"
+    assert ch.route_chunk(text, _specs()) == "balance_sheet"
+
+
+def test_router_flags_a_chunk_matching_both_statements():
+    text = "Total revenue 250 ... Total assets 900"
+    assert ch.route_chunk(text, _specs()) == ch.ROUTE_BOTH
+
+
+def test_router_matches_a_cue_that_only_appears_in_the_context_header():
+    # The chunker carries the section heading forward; the chunk's own lines are
+    # bare numbers, so the header is the only place the statement is named.
+    context = 'Context from earlier in the document — section: "# Statement of Operations"'
+    chunk = "| Fare revenue | 100 |\n| Subsidy | 400 |"
+    assert ch.route_chunk(f"{context}\n{chunk}", _specs()) == "income_statement"
+
+
+def test_router_leaves_a_no_cue_chunk_to_the_generalist():
+    text = "Ridership grew to 100 million boardings and the fleet averaged 8 years."
+    assert ch.route_chunk(text, _specs()) == ch.ROUTE_GENERAL
+
+
+def test_router_is_general_when_no_statement_specs_are_available():
+    # The stdlib-only env has no PyYAML -> no specs -> pre-split behaviour.
+    assert ch.route_chunk("Statement of Operations", {}) == ch.ROUTE_GENERAL
+
+
+# --- specialist calls (offline) ---------------------------------------------
+
+
+class _RouteClient(_Client):
+    """Fake whose handler sees the whole call kwargs (so it can answer per route)."""
+
+    def create(self, **kw):
+        self.calls.append(kw)
+        return _Msg(self._handler(kw))
+
+
+def _tool_enum(call):
+    return call["tools"][0]["input_schema"]["properties"]["values"]["items"]["properties"][
+        "metric_code"
+    ]["enum"]
+
+
+def _routed(handler, **over):
+    client = _RouteClient(handler)
+    ext = ch.ChunkedHybridExtractor(api_key="x", _client=client, target_lines=1, **over)
+    return ext, client
+
+
+def _run(monkeypatch, handler, md, **over):
+    import pytest
+
+    pytest.importorskip("yaml")  # the router cues + specialist canon are YAML-backed
+    monkeypatch.setattr(ch, "_to_markdown", lambda b: md)
+    monkeypatch.setattr(ch, "_image_page_batches", lambda b, t, **k: [])
+    ext, client = _routed(handler, **over)
+    return ext.extract(ExtractionRequest(agency_slug="ttc", pdf_bytes=b"%PDF")), client
+
+
+_IS_MD = "Statement of Operations\nTotal revenue 250"
+_BS_MD = "Statement of Financial Position\nTotal assets 900"
+_SERVICE_MD = "Ridership reached 100 million boardings this year."
+
+
+def test_specialist_tool_schema_only_offers_its_own_statements_codes(monkeypatch):
+    _, client = _run(monkeypatch, lambda kw: [], f"{_IS_MD}\n\n{_BS_MD}\n\n{_SERVICE_MD}")
+    enums = {tuple(_tool_enum(c)) for c in client.calls}
+    assert len(enums) == 3                       # three distinct schemas: IS, BS, generalist
+
+    def _by_specialist(name):
+        return next(
+            c for c in client.calls if f"YOU ARE THE {name}" in c["system"][0]["text"].upper()
+        )
+
+    is_call = _by_specialist("INCOME STATEMENT")
+    bs_call = _by_specialist("BALANCE SHEET")
+    assert "total_revenue" in _tool_enum(is_call)
+    assert "total_assets" not in _tool_enum(is_call)      # cannot record a BS metric
+    assert "total_assets" in _tool_enum(bs_call)
+    assert "total_revenue" not in _tool_enum(bs_call)     # cannot record an IS metric
+    assert "ridership" not in _tool_enum(is_call) and "ridership" not in _tool_enum(bs_call)
+
+
+def test_general_chunk_keeps_the_full_canon_call(monkeypatch):
+    from transitindex_ingest.pdf.llm import SOURCED_METRIC_CODES
+
+    _, client = _run(monkeypatch, lambda kw: [], _SERVICE_MD)
+    (call,) = client.calls
+    assert _tool_enum(call) == list(SOURCED_METRIC_CODES)
+    assert "SPECIALIST" not in call["system"][0]["text"]
+
+
+def test_specialist_prompt_carries_its_statements_names_traps_and_canon(monkeypatch):
+    _, client = _run(monkeypatch, lambda kw: [], _BS_MD)
+    (call,) = client.calls
+    system = call["system"][0]["text"]
+    assert "BALANCE SHEET" in system.upper()
+    assert "Statement of Financial Position" in system      # printed name (EN)
+    assert "situation financière" in system                 # printed name (FR)
+    assert "NEVER extract these look-alikes:" in system
+    assert "Fiduciary" in system                            # a known trap from the spec
+    assert "total_assets" in system                         # its slice of the canon
+    assert "farebox_revenue" not in system                  # not the other statement's
+
+
+def test_a_specialist_row_naming_another_statements_code_is_dropped(monkeypatch):
+    # Belt to the schema's braces: if the model ever returns an out-of-statement code
+    # anyway, the row is dropped (and counted), never recorded.
+    row = {**_ROW, "metric_code": "total_revenue", "value": "250"}
+    res, client = _run(monkeypatch, lambda kw: [row], _BS_MD)
+    assert len(client.calls) == 1
+    assert res.diagnostics["dropped_off_statement"] == 1
+    assert res.values == []
+
+
+def test_a_both_cue_chunk_is_sent_to_both_specialists(monkeypatch):
+    md = "Statement of Operations and Statement of Financial Position summary"
+    res, client = _run(monkeypatch, lambda kw: [], md)
+    assert res.diagnostics["routed_both"] == 1
+    assert res.diagnostics["md_chunks"] == 1        # one chunk...
+    assert res.diagnostics["segments"] == 2         # ...two specialist calls
+    systems = " ".join(c["system"][0]["text"].upper() for c in client.calls)
+    assert "INCOME STATEMENT (STATEMENT OF OPERATIONS) SPECIALIST" in systems
+    assert "BALANCE SHEET (STATEMENT OF FINANCIAL POSITION) SPECIALIST" in systems
+    assert [s["route"] for s in res.diagnostics["segments_raw"]] == [
+        "income_statement", "balance_sheet",
+    ]
+
+
+def test_both_route_outputs_flow_into_the_normal_merge(monkeypatch):
+    # The both-chunk's two specialist calls each record their own statement's figure;
+    # a later income-statement chunk reads the same total_revenue and the two agreeing
+    # readings collapse to one -- the merge is untouched by the split.
+    both_md = "Statement of Operations and Statement of Financial Position"
+    md = f"{both_md}\n\n{_IS_MD}"
+
+    def handler(kw):
+        if "total_revenue" in _tool_enum(kw):
+            return [{**_ROW, "metric_code": "total_revenue", "value": "250"}]
+        return [{**_ROW, "metric_code": "accumulated_surplus", "value": "900"}]
+
+    res, client = _run(monkeypatch, handler, md)
+    assert len(client.calls) == 3                       # 2 for the both-chunk + 1 for the IS chunk
+    assert res.diagnostics["values_raw"] == 3
+    assert res.diagnostics["values_merged"] == 2
+    assert {v.metric_code for v in res.values} == {"total_revenue", "accumulated_surplus"}
+
+
+def test_route_counters_cover_every_segment(monkeypatch):
+    md = f"{_IS_MD}\n\n{_BS_MD}\n\n{_SERVICE_MD}"
+    res, _ = _run(monkeypatch, lambda kw: [], md)
+    d = res.diagnostics
+    assert (d["routed_income"], d["routed_balance"], d["routed_both"], d["routed_general"]) == (
+        1, 1, 0, 1,
+    )
+    assert d["md_chunks"] == 3 and d["segments"] == 3
+
+
+def test_image_batches_cannot_be_routed_and_stay_general(monkeypatch):
+    import pytest
+
+    pytest.importorskip("yaml")
+    monkeypatch.setattr(ch, "_to_markdown", lambda b: _IS_MD)
+    monkeypatch.setattr(ch, "_image_page_batches", lambda b, t, **k: [("B64", [5, 6])])
+    ext, client = _routed(lambda kw: [])
+    res = ext.extract(ExtractionRequest(agency_slug="ttc", pdf_bytes=b"%PDF"))
+
+    img_call = next(
+        c for c in client.calls
+        if any(b.get("type") == "document" for b in c["messages"][0]["content"])
+    )
+    assert "SPECIALIST" not in img_call["system"][0]["text"]   # full-canon generalist
+    assert res.diagnostics["routed_general"] == 1             # the image batch
+    assert res.diagnostics["routed_income"] == 1              # the text chunk
+
+
+def test_extract_routes_a_three_section_document_end_to_end(monkeypatch):
+    # One income-statement section, one balance-sheet section, one service section:
+    # each is read by the right parser and all three values come back merged.
+    md = f"{_IS_MD}\n\n{_BS_MD}\n\n{_SERVICE_MD}"
+
+    def handler(kw):
+        enum = _tool_enum(kw)
+        if "ridership" in enum:            # the generalist's full canon
+            return [{**_ROW, "metric_code": "ridership", "value": "100"}]
+        if "total_revenue" in enum:        # the income-statement specialist
+            return [{**_ROW, "metric_code": "total_revenue", "value": "250"}]
+        return [{**_ROW, "metric_code": "total_assets", "value": "900"}]
+
+    res, _ = _run(monkeypatch, handler, md)
+    assert res.diagnostics["dropped_off_statement"] == 0
+    assert {v.metric_code for v in res.values} == {"total_revenue", "total_assets", "ridership"}
+    assert [s["route"] for s in res.diagnostics["segments_raw"]] == [
+        "income_statement", "balance_sheet", "general",
+    ]
+
+
+def test_extraction_tool_default_is_the_shared_full_canon_schema():
+    from transitindex_ingest.pdf.llm import EXTRACTION_TOOL, extraction_tool
+
+    assert extraction_tool() is EXTRACTION_TOOL                     # existing callers unchanged
+    narrowed = extraction_tool(["ridership"])
+    assert _tool_enum({"tools": [narrowed]}) == ["ridership"]
+    assert _tool_enum({"tools": [EXTRACTION_TOOL]}) != ["ridership"]  # the shared one is untouched

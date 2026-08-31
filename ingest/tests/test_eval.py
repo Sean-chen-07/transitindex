@@ -1,7 +1,8 @@
 """Gold-fixture eval: the prompt/model regression guard (test requirement T1).
 
 Drives a FakeLLMClient scenario through the real Tier 2 pipeline and scores it
-against the hand-verified gold values in tests/fixtures/gold/. The headline
+against the SYNTHETIC scenario in tests/fixtures/gold/synthetic/ (invented round
+numbers that exercise the eval machinery -- not real TTC figures). The headline
 scenario is "mostly correct + one wrong-but-flagged value": it must keep
 precision high (the clean values are right) while catching every should_flag
 row (flag_recall == 1.0). A regression that silently returns a wrong figure
@@ -27,7 +28,7 @@ from transitindex_ingest.pdf.llm import ExtractedValue, FakeLLMClient, _row_to_v
 from transitindex_ingest.pdf.pipeline import SourceRefMeta, run_pdf
 from transitindex_ingest.validation.flags import validate
 
-GOLD_DIR = Path(__file__).parent / "fixtures" / "gold"
+GOLD_DIR = Path(__file__).parent / "fixtures" / "gold" / "synthetic"
 GOLD = load_gold(GOLD_DIR / "ttc_annual_2024.json")
 PAGES = pages_from_text((GOLD_DIR / "ttc_annual_2024_pages.txt").read_text(encoding="utf-8").split("=== PAGE"))
 

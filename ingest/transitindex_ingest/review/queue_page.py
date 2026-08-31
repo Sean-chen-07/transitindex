@@ -21,7 +21,7 @@ import html
 import json
 from typing import Optional
 
-from ..refdata import AGENCIES
+from ..refdata import ALL_AGENCIES
 
 _FLAG_FILTERS = ("all", "flagged", "clean")
 
@@ -46,7 +46,7 @@ def mount_review(app, repo, *, token: Optional[str] = None, storage=None, db_loc
 
     def _slug_by_id() -> dict:
         out = {}
-        for slug in AGENCIES:
+        for slug in ALL_AGENCIES:
             try:
                 out[repo.agency_id(slug)] = slug
             except ValueError:

@@ -17,9 +17,12 @@ from transitindex_ingest.validation.flags import (
     SUM_MISMATCH,
     UNIT_MISMATCH,
     YOY_SPIKE,
+    cohorts,
     sum_mismatch,
+    sum_mismatch_records,
     validate,
     validate_cohort,
+    validate_cohort_records,
 )
 
 
@@ -474,3 +477,105 @@ def test_validate_clean_record_has_no_flags(make_record):
 def test_validate_cohort_returns_deduped_sum_flag(make_record):
     cohort = _expense_cohort(make_record, labour="60", energy="20", materials="40", expenses="100")
     assert validate_cohort(cohort) == [SUM_MISMATCH]
+
+
+# --- scope-aware cohorts + row-scoped sum_mismatch ---------------------------
+
+
+def _bs_row(make_record, code, value, **overrides):
+    """One balance-sheet record for the shared agency+period."""
+    fields = dict(
+        agency_slug="ttc",
+        period_type="monthly",
+        period_start=date(2026, 3, 1),
+        period_end=date(2026, 3, 31),
+        period_label="Mar 2026",
+        service_scope="total",
+        quality="preliminary",
+        unit="CAD",
+        currency="CAD",
+    )
+    fields.update(overrides)
+    return make_record(metric_code=code, value=Decimal(value), **fields)
+
+
+def test_cohorts_split_by_service_scope(make_record):
+    rows = [
+        _bs_row(make_record, "total_assets", "100", service_scope="total"),
+        _bs_row(make_record, "total_assets", "40", service_scope="conventional"),
+    ]
+    got = cohorts(rows)
+    assert len(got) == 2
+    assert sorted(c["total_assets"].value for c in got) == [Decimal("40"), Decimal("100")]
+
+
+def test_cohorts_split_expense_lines_by_cost_basis(make_record):
+    """A psab_total expense total and an operating one are different cohorts, but
+    the non-expense records (whose cost_basis is meaningless) join both."""
+    rows = [
+        _bs_row(make_record, "operating_expenses", "130", cost_basis="psab_total"),
+        _bs_row(make_record, "operating_expenses", "100", cost_basis="operating"),
+        _bs_row(make_record, "total_assets", "999"),
+    ]
+    got = cohorts(rows)
+    assert len(got) == 2
+    assert sorted(c["operating_expenses"].value for c in got) == [Decimal("100"), Decimal("130")]
+    assert all(c["total_assets"].value == Decimal("999") for c in got)
+
+
+def test_mixed_cost_basis_no_longer_corrupts_the_expense_identity(make_record):
+    """The 5 components reconcile to the OPERATING total (100). A psab_total
+    reading of 130 for the same period used to win last-write-wins and break the
+    identity; now each basis reconciles inside its own cohort."""
+    rows = _expense_cohort(
+        make_record, labour="60", energy="20", materials="10",
+        amortization="8", other="2", expenses="100",
+    ) + [
+        _bs_row(
+            make_record, "operating_expenses", "130",
+            service_scope="system_wide", cost_basis="psab_total",
+        )
+    ]
+    assert sum_mismatch(rows) == []
+
+
+def test_mixed_service_scope_no_longer_corrupts_the_asset_identity(make_record):
+    """A 'total' split that closes plus an unrelated 'conventional' total_assets."""
+    rows = [
+        _bs_row(make_record, "total_assets", "100"),
+        _bs_row(make_record, "total_financial_assets", "60"),
+        _bs_row(make_record, "total_non_financial_assets", "40"),
+        _bs_row(make_record, "total_assets", "7", service_scope="conventional"),
+    ]
+    assert sum_mismatch(rows) == []
+
+
+def test_sum_mismatch_records_names_only_the_participating_rows(make_record):
+    """A broken asset split must not stamp the period's ridership row."""
+    ridership = _bs_row(make_record, "ridership", "500", unit="count", currency=None)
+    rows = [
+        _bs_row(make_record, "total_assets", "100"),
+        _bs_row(make_record, "total_financial_assets", "60"),
+        _bs_row(make_record, "total_non_financial_assets", "20"),  # split sums to 80
+        ridership,
+    ]
+    offenders = sum_mismatch_records(rows)
+    assert {r.metric_code for r in offenders} == {
+        "total_assets", "total_financial_assets", "total_non_financial_assets"
+    }
+    assert all(r is not ridership for r in offenders)
+    assert sum_mismatch(rows) == [SUM_MISMATCH]  # the cohort-level view is unchanged
+
+
+def test_validate_cohort_records_keys_only_the_offenders(make_record):
+    ridership = _bs_row(make_record, "ridership", "500", unit="count", currency=None)
+    assets = _bs_row(make_record, "total_assets", "100")
+    rows = [
+        assets,
+        _bs_row(make_record, "total_financial_assets", "60"),
+        _bs_row(make_record, "total_non_financial_assets", "20"),
+        ridership,
+    ]
+    by_row = validate_cohort_records(rows)
+    assert by_row[id(assets)] == [SUM_MISMATCH]
+    assert id(ridership) not in by_row

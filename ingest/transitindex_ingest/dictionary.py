@@ -32,6 +32,14 @@ SOURCE_TIERS: frozenset[str] = frozenset(
     {"statcan", "open_data", "annual_report", "foi", "derived"}
 )
 
+# Which printed statement a metric's figure lives on. The two financial values
+# name a specialist PDF parser (and an entry in the YAML's `statements:` section);
+# "service" means the metric is not a financial-statement line at all.
+STATEMENTS: frozenset[str] = frozenset(
+    {"income_statement", "balance_sheet", "service"}
+)
+FINANCIAL_STATEMENTS: tuple[str, ...] = ("income_statement", "balance_sheet")
+
 # Required keys every YAML metric entry must carry (the rest are recommended).
 _REQUIRED_FIELDS: tuple[str, ...] = (
     "display_name",
@@ -39,6 +47,7 @@ _REQUIRED_FIELDS: tuple[str, ...] = (
     "definition",
     "is_not",
     "source_tier",
+    "statement",
 )
 
 _DICTIONARY_FILE = "metric_dictionary.yaml"
@@ -53,13 +62,14 @@ class MetricSpec:
     plain_meaning: str
     definition: str  # what it IS
     is_not: str  # what it is NOT
+    statement: str  # income_statement | balance_sheet | service
     unit: str  # from refdata
     unit_type: str  # from refdata
     is_derived: bool  # from refdata
     formula: Optional[str]  # from equations.display_formula (derived only)
     source_tier: str
     entity_scope: str = ""  # whole-organization scope note (financial metrics)
-    scale_note: str = ""  # $000s/$M vs whole-CAD recording guidance
+    scale_note: str = ""  # $000s/$M vs whole-dollar recording guidance
     period_semantics: str = ""
     includes: tuple[str, ...] = ()
     excludes: tuple[str, ...] = ()
@@ -70,19 +80,78 @@ class MetricSpec:
     equations: tuple[str, ...] = ()  # equation codes this metric participates in
 
 
+@dataclass(frozen=True)
+class StatementSpec:
+    """One printed financial statement's vocabulary (the `statements:` section).
+
+    Feeds the split PDF extractors: `names_en`/`names_fr` are the statement's
+    title as printed, `cues` are lowercase keywords a deterministic chunk-router
+    can substring-match against a page, and `never_extract` lists the look-alike
+    statements/columns whose figures must never be recorded for this statement.
+    """
+
+    code: str
+    display_name: str
+    names_en: tuple[str, ...] = ()
+    names_fr: tuple[str, ...] = ()
+    cues: tuple[str, ...] = ()
+    never_extract: tuple[str, ...] = ()
+    notes: str = ""
+
+
 def _dictionary_path() -> str:
     return os.path.join(os.path.dirname(__file__), _DICTIONARY_FILE)
 
 
-def _load_yaml() -> dict:
-    """Parse the YAML file. Imports PyYAML lazily."""
+def _load_yaml_document() -> dict:
+    """Parse the whole YAML file. Imports PyYAML lazily."""
     import yaml  # lazy: keeps the package stdlib-only unless the dictionary is used
 
     with open(_dictionary_path(), encoding="utf-8") as fh:
         data = yaml.safe_load(fh)
     if not isinstance(data, dict) or "metrics" not in data:
         raise ValueError("metric_dictionary.yaml must have a top-level 'metrics:' map")
-    return data["metrics"]
+    return data
+
+
+def _load_yaml() -> dict:
+    """The `metrics:` map from the YAML file."""
+    return _load_yaml_document()["metrics"]
+
+
+def load_statements() -> dict[str, StatementSpec]:
+    """The `statements:` section: per-statement names, router cues, and traps.
+
+    Keyed by the same values the metrics' `statement` field uses; only the two
+    financial statements have entries (service metrics are not tied to one
+    printed statement).
+    """
+    raw = _load_yaml_document().get("statements") or {}
+    if not isinstance(raw, dict):
+        raise ValueError("metric_dictionary.yaml 'statements:' must be a mapping")
+    out: dict[str, StatementSpec] = {}
+    for code in FINANCIAL_STATEMENTS:
+        entry = raw.get(code)
+        if entry is None:
+            raise ValueError(f"metric_dictionary.yaml: no 'statements: {code}:' entry")
+        out[code] = StatementSpec(
+            code=code,
+            display_name=str(entry["display_name"]),
+            names_en=_tuple(entry.get("names_en")),
+            names_fr=_tuple(entry.get("names_fr")),
+            cues=_tuple(entry.get("cues")),
+            never_extract=_tuple(entry.get("never_extract")),
+            notes=str(entry.get("notes", "")),
+        )
+    return out
+
+
+def metrics_for_statement(statement: str) -> tuple[str, ...]:
+    """Metric codes assigned to one statement, in `refdata.METRICS` order."""
+    if statement not in STATEMENTS:
+        raise ValueError(f"unknown statement '{statement}'")
+    specs = load_dictionary()
+    return tuple(c for c, s in specs.items() if s.statement == statement)
 
 
 def _equations_for(code: str) -> tuple[str, ...]:
@@ -119,6 +188,7 @@ def load_dictionary() -> dict[str, MetricSpec]:
             plain_meaning=str(entry["plain_meaning"]),
             definition=str(entry["definition"]),
             is_not=str(entry["is_not"]),
+            statement=str(entry["statement"]),
             unit=str(meta["unit"]),
             unit_type=str(meta["unit_type"]),
             is_derived=bool(meta["is_derived"]),
@@ -162,6 +232,9 @@ def validate_dictionary(raw: dict) -> list[str]:
         tier = entry.get("source_tier")
         if tier is not None and tier not in SOURCE_TIERS:
             problems.append(f"'{code}': unknown source_tier '{tier}'")
+        statement = entry.get("statement")
+        if statement is not None and statement not in STATEMENTS:
+            problems.append(f"'{code}': unknown statement '{statement}'")
     return problems
 
 
@@ -229,6 +302,7 @@ def generate_markdown() -> str:
         lines.append("")
         lines.append(f"- **Is:** {s.definition}")
         lines.append(f"- **Is NOT:** {s.is_not}")
+        lines.append(f"- **Statement:** {s.statement}")
         if s.entity_scope:
             lines.append(f"- **Entity scope:** {s.entity_scope}")
         if s.scale_note:
@@ -267,7 +341,9 @@ def generate_markdown() -> str:
 # --- extraction + FOI generators (the dictionary drives both) ----------------
 
 
-def extraction_guidance(codes: Optional[list[str]] = None) -> str:
+def extraction_guidance(
+    codes: Optional[list[str]] = None, statement: Optional[str] = None
+) -> str:
     """Per-metric guidance for the PDF-extraction system prompt.
 
     For each metric (default: the sourced ones a model may emit) emits what it IS
@@ -275,10 +351,18 @@ def extraction_guidance(codes: Optional[list[str]] = None) -> str:
     common confusions -- so the model maps a printed figure to the right metric and
     avoids the classic mix-ups (unlinked vs linked trips, operating vs total
     revenue, a metro car vs a bus in "fleet").
+
+    `statement` narrows the canon to one statement's metrics, so the income-statement
+    and balance-sheet specialist parsers each see only their own vocabulary. The
+    default (None) is the unfiltered, all-metrics output existing callers get.
     """
     specs = load_dictionary()
     if codes is None:
         codes = [c for c, s in specs.items() if not s.is_derived]
+    if statement is not None:
+        if statement not in STATEMENTS:
+            raise ValueError(f"unknown statement '{statement}'")
+        codes = [c for c in codes if specs[c].statement == statement]
     out: list[str] = []
     for code in codes:
         s = specs[code]

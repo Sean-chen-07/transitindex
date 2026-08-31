@@ -243,3 +243,88 @@ def test_row_to_value_quote_supports_keeps_confidence_and_note():
     )
     assert ev.confidence == Decimal("0.9")
     assert ev.note == "restated"  # no cap note appended when the quote supports it
+
+
+# --- quote_supports_value: scale / decimal-point formatting artifacts --------
+#
+# A frozen-replay analysis found 105 of 438 recorded values penalized purely by
+# formatting: the figure is printed as "525.5" under a "(Millions)" header, and
+# the check ran against the full-scale digits. These are the artifact families.
+
+
+def test_quote_support_scale_artifact_millions_header():
+    assert quote_supports_value(
+        "525500000", "Revenue Passenger Trips (Millions) 525.5", "millions"
+    ) is None
+
+
+def test_quote_support_scale_artifact_grouped_decimal():
+    assert quote_supports_value("1234500000", "Total revenue ... 1,234.5", "millions") is None
+
+
+def test_quote_support_scale_artifact_broken_ocr_spacing():
+    # OCR split the number: "4 61.8" is one figure, not two.
+    assert quote_supports_value("461800000", "Subsidy 4 61.8", "millions") is None
+
+
+def test_quote_support_scale_artifact_multiple_numbers_in_quote():
+    # A row of years must still resolve to the ONE token that matches.
+    assert quote_supports_value(
+        "6900000", "Service hours 6.3 6.3 6.7 6.9 7.0", "millions"
+    ) is None
+
+
+def test_quote_support_decimal_point_artifact_at_units_scale():
+    # No scale header, but the quote carries a decimal point the printed form lost.
+    assert quote_supports_value("5255", "reported 525.5 for the year") is None
+
+
+def test_quote_support_still_fails_when_the_number_is_absent():
+    assert quote_supports_value(
+        "525500000", "Revenue Passenger Trips (Millions) 611.2", "millions"
+    ) == "mismatch"
+    assert quote_supports_value("1234500000", "Total revenue ... 9,876.5", "millions") == "mismatch"
+
+
+def test_quote_support_scale_relaxation_needs_more_than_one_digit():
+    # sig digits "5" would "corroborate" any figure starting with a 5.
+    assert quote_supports_value("5000000", "Total 5.0 million rides", "millions") == "mismatch"
+
+
+def test_quote_support_exact_digit_mismatch_at_units_is_untouched():
+    assert quote_supports_value("250000000", "Ridership of 251,000,000") == "mismatch"
+
+
+def test_row_to_value_keeps_confidence_through_a_scale_artifact():
+    row = {
+        "metric_code": "total_revenue",
+        "value": "1,234.5",
+        "unit": "CAD",
+        "period_kind": "annual",
+        "period_year": 2024,
+        "page_number": 7,
+        "confidence": 0.92,
+        "printed_scale": "millions",
+        # The quote renders the same figure at a different scale.
+        "source_quote": "Total revenue 1,234,500 thousand",
+    }
+    ev = _row_to_value(row)
+    assert ev.confidence == Decimal("0.92")
+    assert ev.note is None
+
+
+def test_row_to_value_still_caps_confidence_on_a_real_mismatch():
+    row = {
+        "metric_code": "total_revenue",
+        "value": "1,234.5",
+        "unit": "CAD",
+        "period_kind": "annual",
+        "period_year": 2024,
+        "page_number": 7,
+        "confidence": 0.92,
+        "printed_scale": "millions",
+        "source_quote": "Total revenue 987,600 thousand",
+    }
+    ev = _row_to_value(row)
+    assert ev.confidence == Decimal("0.3")
+    assert "not found in its source quote" in ev.note

@@ -10,6 +10,8 @@ Inputs (from fetch_ntd.py, committed under db/seeds/ntd/):
     mode set, and the state.
   * db/seeds/ntd/ntd_annual.csv  — supplies the display name for the latest
     report year (falls back to the monthly `agency` name).
+  * db/seeds/ntd/ntd_agency_info.csv — supplies each reporter's fiscal-year end
+    (`fy_end_date`), which becomes fiscal_year_end_month.
 
 Outputs (BOTH committed):
   * db/seeds/08_agencies_us.sql            — core.agencies + core.agency_modes
@@ -18,8 +20,8 @@ Outputs (BOTH committed):
 Deterministic and slug-preserving: an ntd_id already present in the existing
 refdata_us.NTD_AGENCY_MAP keeps its slug forever (slugs are public URLs);
 new agencies get slugify(name)-<state>, with -<ntd_id> appended on collision.
-fiscal_year_end_month defaults to 12 (calendar) — the NTD Agency Information
-dataset carries real fiscal-year ends and can refine this in a later pass.
+fiscal_year_end_month comes from the Agency Information snapshot's fy_end_date;
+a reporter missing from that snapshot falls back to 12 (calendar year).
 Stdlib only.
 """
 
@@ -34,6 +36,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MONTHLY_CSV = REPO_ROOT / "db" / "seeds" / "ntd" / "ntd_monthly.csv"
 ANNUAL_CSV = REPO_ROOT / "db" / "seeds" / "ntd" / "ntd_annual.csv"
+AGENCY_INFO_CSV = REPO_ROOT / "db" / "seeds" / "ntd" / "ntd_agency_info.csv"
 SEED_OUT = REPO_ROOT / "db" / "seeds" / "08_agencies_us.sql"
 REFDATA_OUT = REPO_ROOT / "ingest" / "transitindex_ingest" / "refdata_us.py"
 
@@ -59,6 +62,10 @@ NTD_MODE_MAP: dict[str, str] = {
 }
 DROPPED_MODES = {"TR"}
 
+# Fallback fiscal-year end for a reporter absent from the Agency Information
+# snapshot (a handful): calendar year. Reported as a count when it happens.
+DEFAULT_FY_END_MONTH = 12
+
 US_SUBDIVISIONS = {
     "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID",
     "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS",
@@ -78,8 +85,28 @@ def sql_quote(text: str) -> str:
     return "'" + text.replace("'", "''") + "'"
 
 
+def read_fy_end_months(path: Path) -> dict[str, int]:
+    """ntd_id -> fiscal-year end month, from the Agency Information snapshot.
+
+    `fy_end_date` is an ISO timestamp ("2024-06-30T00:00:00.000"); the month is
+    what core.agencies.fiscal_year_end_month stores. A reporter listed more than
+    once (several reporting modules) resolves to its latest fy_end_date, so the
+    result is deterministic.
+    """
+    latest: dict[str, str] = {}
+    with path.open(encoding="utf-8-sig", newline="") as fh:
+        for row in csv.DictReader(fh):
+            ntd_id = (row.get("ntd_id") or "").strip()
+            raw = (row.get("fy_end_date") or "").strip()
+            if len(raw) < 7 or not ntd_id:
+                continue
+            if raw > latest.get(ntd_id, ""):
+                latest[ntd_id] = raw
+    return {ntd_id: int(raw[5:7]) for ntd_id, raw in latest.items()}
+
+
 def main() -> int:
-    if not MONTHLY_CSV.exists() or not ANNUAL_CSV.exists():
+    if not MONTHLY_CSV.exists() or not ANNUAL_CSV.exists() or not AGENCY_INFO_CSV.exists():
         print(
             f"missing snapshot CSVs under {MONTHLY_CSV.parent} — run "
             "`python ingest/scripts/fetch_ntd.py` first",
@@ -145,6 +172,9 @@ def main() -> int:
             if ntd_id not in annual_names or year > annual_names[ntd_id][0]:
                 annual_names[ntd_id] = (year, name)
 
+    # --- agency information: fiscal-year end month ---------------------------
+    fy_end_months = read_fy_end_months(AGENCY_INFO_CSV)
+
     # --- assign slugs (preserve existing; disambiguate collisions) -----------
     canadian_slugs = set(AGENCIES)
     taken: set[str] = set(canadian_slugs) | set(EXISTING_MAP.values())
@@ -174,7 +204,16 @@ def main() -> int:
             "legal_name": name,
             "subdivision": state,
             "modes": modes,
+            "fiscal_year_end_month": fy_end_months.get(ntd_id, DEFAULT_FY_END_MONTH),
         }
+    missing_fy = [s for s in sorted(agencies) if agencies[s]["ntd_id"] not in fy_end_months]
+    if missing_fy:
+        print(
+            f"WARNING: {len(missing_fy)} agency/agencies absent from the Agency Information "
+            f"snapshot — fiscal_year_end_month defaulted to {DEFAULT_FY_END_MONTH}:"
+        )
+        for slug in missing_fy:
+            print(f"  {agencies[slug]['ntd_id']} {slug}")
     if skipped_states:
         print(f"WARNING: {len(skipped_states)} reporter(s) with unrecognized state skipped:")
         for ntd_id, name, state in skipped_states:
@@ -189,7 +228,7 @@ def main() -> int:
         "-- Selection: reporter_type='Full Reporter' with UPT reported in the last",
         "-- 12 data months of the committed monthly snapshot (db/seeds/ntd/).",
         "-- service_area_population left NULL (not fabricated); fiscal_year_end_month",
-        "-- defaults to 12 pending an Agency Information refinement pass.",
+        "-- comes from the Agency Information snapshot's fy_end_date (12 if absent).",
         "-- Re-runnable (ON CONFLICT DO NOTHING / idempotent UPDATE).",
         "SET client_encoding = 'UTF8';",
         "",
@@ -201,7 +240,7 @@ def main() -> int:
         modes_sql = ",".join(f"'{m}'" for m in a["modes"])
         value_rows.append(
             f"  ({sql_quote(slug)}, {sql_quote(a['legal_name'])}, NULL, 'US', "
-            f"'{a['subdivision']}', 12, 'USD', ARRAY[{modes_sql}])"
+            f"'{a['subdivision']}', {a['fiscal_year_end_month']}, 'USD', ARRAY[{modes_sql}])"
         )
     lines.append(",\n".join(value_rows))
     lines.append("ON CONFLICT (slug) DO NOTHING;")
@@ -248,7 +287,7 @@ def main() -> int:
         "from types import MappingProxyType",
         "from typing import Mapping",
         "",
-        "# slug -> {subdivision (2-letter state), fiscal_year_end_month, currency,",
+        "# slug -> {subdivision (2-letter state), fiscal_year_end_month (NTD fy_end_date),",
         "#          country, ntd_id, primary_modes}. Same shape as refdata.AGENCIES",
         "#          plus country/currency/ntd_id.",
         "US_AGENCIES: Mapping[str, Mapping] = MappingProxyType(",
@@ -260,7 +299,8 @@ def main() -> int:
         trailing = "," if len(a["modes"]) == 1 else ""
         py.append(f'        "{slug}": MappingProxyType(')
         py.append(
-            f'            {{"subdivision": "{a["subdivision"]}", "fiscal_year_end_month": 12,'
+            f'            {{"subdivision": "{a["subdivision"]}", '
+            f'"fiscal_year_end_month": {a["fiscal_year_end_month"]},'
         )
         py.append(
             f'             "currency": "USD", "country": "US", "ntd_id": "{a["ntd_id"]}",'

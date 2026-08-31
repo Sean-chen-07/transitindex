@@ -190,14 +190,19 @@ def _gold_key(meta: dict) -> tuple[str, int]:
 
 
 def load_gold_index(gold_dir: Path) -> dict[tuple[str, int], Path]:
-    """Map every confirmed gold fixture's (slug, year) to its path.
+    """Map every confirmed real-document gold fixture's (slug, year) to its path.
 
-    Only top-level files of `gold_dir` are read; the `candidates/` subdirectory
-    (unconfirmed) is excluded by globbing files, not recursing.
+    Only top-level files of `gold_dir` are read, so the `candidates/`
+    (unconfirmed) and `synthetic/` (invented unit-test scenarios) subdirectories
+    are excluded by globbing files, not recursing. A file marked
+    `"synthetic": true` is skipped wherever it sits -- an invented scenario must
+    never be scored against a real document.
     """
     index: dict[tuple[str, int], Path] = {}
     for path in sorted(gold_dir.glob("*.json")):
         meta = json.loads(path.read_text(encoding="utf-8"))
+        if meta.get("synthetic"):
+            continue
         if "agency_slug" in meta and "period_year" in meta:
             index[_gold_key(meta)] = path
     return index
@@ -233,9 +238,9 @@ def score_gold(values: list, gold_path: Path, gold_meta: dict) -> EvalReport:
 
 def _slug_for_agency_id(repo, agency_id: int) -> Optional[str]:
     """Reverse the seeded slug->id map (same approach as scan.py)."""
-    from ..refdata import AGENCIES
+    from ..refdata import ALL_AGENCIES
 
-    for slug in AGENCIES:
+    for slug in ALL_AGENCIES:
         try:
             if repo.agency_id(slug) == agency_id:
                 return slug

@@ -43,6 +43,9 @@ ingest/_smoke*_result.json
 ingest/_replay_report.json
 pdfs/
 
+# Graphify local knowledge-graph state (machine-local tool output)
+graphify-out/
+
 # OS / editor
 .DS_Store
 Thumbs.db

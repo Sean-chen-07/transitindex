@@ -10,6 +10,7 @@ green without those deps.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 
@@ -451,3 +452,123 @@ def test_anthropic_client_constructs_when_sdk_present():
     # Construction must not make a network call (only when a key is provided).
     client = AnthropicLLMClient(api_key="sk-test-not-real")
     assert isinstance(client, LLMClient)
+
+
+# --- row-scoped cohort flags + deterministic solver arithmetic ---------------
+
+
+def _fin(metric_code, value, unit="CAD", *, conf="0.95", note=None, component=None):
+    return ExtractedValue(
+        metric_code=metric_code,
+        value=Decimal(value),
+        unit=unit,
+        period_kind="annual",
+        period_year=2024,
+        page_number=2,
+        confidence=Decimal(conf),
+        note=note,
+        component_label=component,
+    )
+
+
+def _staged(repo, pending_ids):
+    """`{metric_code: PendingValue}` for what run_pdf staged (codes are unique here)."""
+    code_by_id = {m.id: m.code for m in repo.list_metrics()}
+    return {
+        code_by_id[repo.get_pending_value(pid).metric_id]: repo.get_pending_value(pid)
+        for pid in pending_ids
+    }
+
+
+def test_sum_mismatch_lands_only_on_the_rows_that_broke_the_identity(repo):
+    """A broken asset split must not stamp the period's ridership row."""
+    values = [
+        _fin("total_financial_assets", "60000000"),
+        _fin("total_non_financial_assets", "20000000"),
+        _fin("total_assets", "100000000"),          # the split sums to 80M
+        _fin("ridership", "250000000", unit="count"),
+    ]
+    staged = _staged(repo, _run(repo, values))
+    for code in ("total_assets", "total_financial_assets", "total_non_financial_assets"):
+        assert "sum_mismatch" in staged[code].flags
+    assert "sum_mismatch" not in staged["ridership"].flags
+
+
+def test_a_different_service_scope_is_reconciled_separately(repo):
+    """A closing 'total' split plus an unrelated 'conventional' total_assets: the
+    mixed-scope cohort used to let the last record win and break the identity."""
+    values = [
+        _fin("total_financial_assets", "60000000"),
+        _fin("total_non_financial_assets", "40000000"),
+        _fin("total_assets", "100000000"),
+        replace(_fin("total_assets", "7000000"), service_scope="conventional"),
+    ]
+    for pid in _run(repo, values):
+        assert "sum_mismatch" not in repo.get_pending_value(pid).flags
+
+
+def test_solver_back_solves_a_value_the_page_never_printed(repo):
+    """farebox + earned revenue determine other_revenue; it is staged as derived."""
+    values = [
+        _fin("farebox_revenue", "480000000"),
+        _fin("total_revenue_excluding_subsidy", "600000000"),
+    ]
+    staged = _staged(repo, _run(repo, values))
+    other = staged["other_revenue"]
+    assert other.value == Decimal("120000000")
+    assert "derived" in other.flags               # the reviewer sees it was calculated
+    assert other.page_number is None              # nothing was printed to cite
+    assert other.quality == "preliminary"         # never stronger than its inputs
+
+
+def test_derivation_never_overwrites_an_observed_value(repo):
+    """other_revenue is PRINTED (and disagrees with the residual): the printed
+    reading stands and no second row appears for it."""
+    values = [
+        _fin("farebox_revenue", "480000000"),
+        _fin("total_revenue_excluding_subsidy", "600000000"),
+        _fin("other_revenue", "111000000"),
+    ]
+    pending_ids = _run(repo, values)
+    code_by_id = {m.id: m.code for m in repo.list_metrics()}
+    rows = [repo.get_pending_value(pid) for pid in pending_ids]
+    other = [r for r in rows if code_by_id[r.metric_id] == "other_revenue"]
+    assert len(other) == 1
+    assert other[0].value == Decimal("111000000")
+    assert "derived" not in other[0].flags
+
+
+def test_derived_ratios_are_left_to_the_recompute_job(repo):
+    """ridership + operating_expenses determine cost_per_rider, but the RATIO
+    metrics belong to jobs/derived_recompute over APPROVED values -- staging them
+    here would duplicate that job and pad the review queue."""
+    values = [
+        _fin("ridership", "250000000", unit="count"),
+        _fin("operating_expenses", "2100000000"),
+    ]
+    assert set(_staged(repo, _run(repo, values))) == {"ridership", "operating_expenses"}
+
+
+def test_solver_cross_check_flags_an_identity_validation_does_not_own(repo):
+    """total_revenue = earned + subsidy is only in the equation catalog. 600 + 300
+    is 900, not the reported 1,000 -- and only those three rows are flagged."""
+    values = [
+        _fin("total_revenue_excluding_subsidy", "600000000"),
+        _fin("subsidy", "300000000"),
+        _fin("total_revenue", "1000000000"),
+        _fin("ridership", "250000000", unit="count"),
+    ]
+    staged = _staged(repo, _run(repo, values))
+    for code in ("total_revenue", "total_revenue_excluding_subsidy", "subsidy"):
+        assert "sum_mismatch" in staged[code].flags
+    assert "sum_mismatch" not in staged["ridership"].flags
+
+
+def test_component_summed_value_is_flagged_for_the_reviewer(repo):
+    """A pending row keeps no notes, so 'the code added the printed sub-lines'
+    has to reach the reviewer through the flags array."""
+    from transitindex_ingest.pdf.llm import COMPONENT_SUM_MARKER
+
+    values = [_fin("energy_fuel_cost", "100000000", note=f"{COMPONENT_SUM_MARKER}: Diesel 70M, Electricity 30M")]
+    (pid,) = _run(repo, values)
+    assert "summed_from_components" in repo.get_pending_value(pid).flags

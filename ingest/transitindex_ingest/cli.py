@@ -522,11 +522,11 @@ def cmd_docs_verify(args) -> int:
 
 
 def _seeded_slugs(repo) -> list[str]:
-    """The launch agency slugs, for id->slug display."""
-    from .refdata import AGENCIES
+    """The seeded agency slugs (Canadian + US), for id->slug display."""
+    from .refdata import ALL_AGENCIES
 
     out = []
-    for slug in AGENCIES:
+    for slug in ALL_AGENCIES:
         try:
             repo.agency_id(slug)
             out.append(slug)

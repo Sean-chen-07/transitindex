@@ -22,6 +22,7 @@ import re
 from dataclasses import replace
 from typing import Optional
 
+from ..refdata import agency_currency
 from .extractor import ExtractionRequest, ExtractionResult
 from .llm import (
     EXTRACTION_SYSTEM_PROMPT,
@@ -326,12 +327,13 @@ class ClaudePdfExtractor:
         rows = self._tool_rows(message, EXTRACTION_TOOL["name"])
         # Be defensive: a weaker/truncated model can hand back a malformed row
         # (a bare string, a missing key). Skip those rather than crash the run.
+        currency = agency_currency(request.agency_slug)
         values: list[ExtractedValue] = []
         for r in rows:
             if not isinstance(r, dict):
                 continue
             try:
-                values.append(_row_to_value(r))
+                values.append(_row_to_value(r, currency))
             except (KeyError, ValueError, TypeError):
                 continue
         return values, message.usage

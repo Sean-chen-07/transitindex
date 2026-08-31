@@ -18,12 +18,14 @@ from typing import Optional
 
 from .catalog import DOC_TYPE_TO_SOURCE
 from .config import load_config
-from .refdata import AGENCIES
+from .refdata import ALL_AGENCIES
 
 
 def _slug_for_agency_id(repo, agency_id: int) -> Optional[str]:
-    """Reverse the seeded slug->id map (same approach as the review app)."""
-    for slug in AGENCIES:
+    """Reverse the seeded slug->id map (same approach as the review app).
+
+    Iterates ALL_AGENCIES (Canadian + US), so a US document resolves too."""
+    for slug in ALL_AGENCIES:
         try:
             if repo.agency_id(slug) == agency_id:
                 return slug

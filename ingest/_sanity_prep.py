@@ -16,13 +16,13 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from transitindex_ingest.config import load_config
 from transitindex_ingest.db.postgres import PostgresRepository
-from transitindex_ingest.refdata import AGENCIES
+from transitindex_ingest.refdata import ALL_AGENCIES
 
 OUT = Path(__file__).resolve().parent / "_sanity"
 repo = PostgresRepository(load_config().database_url)
 c = repo._conn
 slug_by_id = {}
-for s in AGENCIES:
+for s in ALL_AGENCIES:
     try:
         slug_by_id[repo.agency_id(s)] = s
     except ValueError:

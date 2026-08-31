@@ -28,6 +28,12 @@ YOY_SPIKE = "yoy_spike"
 CROSS_SOURCE_DISAGREEMENT = "cross_source_disagreement"
 UNIT_MISMATCH = "unit_mismatch"
 SUM_MISMATCH = "sum_mismatch"
+# Provenance flags for the deterministic-arithmetic path. `core.pending_values.flags`
+# is a free-form text[], and it is the ONLY per-row field that survives staging
+# (a record's `notes` are not persisted), so "this number was calculated, not
+# printed" has to travel as a flag for the reviewer to ever see it.
+DERIVED = "derived"  # back-solved from an accounting identity; never read off a page
+SUMMED_FROM_COMPONENTS = "summed_from_components"  # code added the printed sub-lines
 
 # Thresholds.
 _YOY_THRESHOLD = Decimal("0.50")  # |Δ| vs prior-year same period must EXCEED this
@@ -133,6 +139,55 @@ def unit_mismatch(record: MetricValueRecord) -> Optional[str]:
 # Phase 5 item 2.)
 _SUBSIDY_IDENTITY_TOLERANCE = Decimal("0.10")
 
+# Expense lines are the only metrics whose `cost_basis` is meaningful (the
+# extraction prompt names exactly these). Everything else carries the default
+# 'operating' and belongs to every cost-basis cohort within its service_scope.
+_EXPENSE_METRICS: frozenset[str] = frozenset(
+    {
+        "operating_expenses",
+        "labour_cost",
+        "energy_fuel_cost",
+        "materials_services_cost",
+        "other_operating_expenses",
+        "total_expenses",
+    }
+)
+
+
+def cohorts(
+    records_for_agency_period: Iterable[MetricValueRecord],
+) -> list[dict[str, MetricValueRecord]]:
+    """Split one period's records into internally consistent identity cohorts.
+
+    An accounting identity may only be evaluated over operands that share a
+    `service_scope` and an expense accounting `cost_basis`: reconciling a 'total'
+    operating_expenses against a 'conventional' labour_cost, or a psab_total
+    expense total against operating-basis components, is meaningless -- and the
+    old flat ``{r.metric_code: r}`` map silently let the last record of a mixed
+    batch win, corrupting every identity it touched.
+
+    Records are grouped by service_scope; within a scope one cohort is produced
+    per distinct cost_basis found on the EXPENSE lines, and the non-expense
+    records join every one of them. Returns ``[{metric_code: record}, ...]``.
+    """
+    by_scope: dict[str, list[MetricValueRecord]] = {}
+    for r in records_for_agency_period:
+        by_scope.setdefault(r.service_scope, []).append(r)
+
+    out: list[dict[str, MetricValueRecord]] = []
+    for scope in sorted(by_scope):
+        group = by_scope[scope]
+        bases = sorted({r.cost_basis for r in group if r.metric_code in _EXPENSE_METRICS})
+        for basis in bases or ["operating"]:
+            cohort: dict[str, MetricValueRecord] = {}
+            for r in group:
+                if r.metric_code in _EXPENSE_METRICS and r.cost_basis != basis:
+                    continue
+                cohort[r.metric_code] = r
+            if cohort:
+                out.append(cohort)
+    return out
+
 
 def sum_mismatch(
     records_for_agency_period: Iterable[MetricValueRecord], tolerance: float = 0.02
@@ -171,10 +226,44 @@ def sum_mismatch(
     Each identity's tolerance is relative to its anchor (the total it reconciles
     to). Returns ``[sum_mismatch]`` if any identity fails, else ``[]`` -- the flag
     lands on the cohort, so it is reported once regardless of which identity broke.
+    Use `sum_mismatch_records` when you need to know WHICH records broke it.
     """
-    by_code: dict[str, MetricValueRecord] = {
-        r.metric_code: r for r in records_for_agency_period
-    }
+    return (
+        [SUM_MISMATCH]
+        if sum_mismatch_records(records_for_agency_period, tolerance)
+        else []
+    )
+
+
+def sum_mismatch_records(
+    records_for_agency_period: Iterable[MetricValueRecord], tolerance: float = 0.02
+) -> list[MetricValueRecord]:
+    """The records that PARTICIPATED in a failing identity, in first-seen order.
+
+    Same identities as `sum_mismatch`, but evaluated per consistent cohort
+    (`cohorts`) and reported per participating record, so a broken balance-sheet
+    split does not stamp `sum_mismatch` on an unrelated ridership row in the same
+    period. Empty list == everything that could be reconciled did.
+    """
+    offenders: list[MetricValueRecord] = []
+    for cohort in cohorts(records_for_agency_period):
+        for codes in _identity_failures(cohort, tolerance):
+            for code in codes:
+                rec = cohort.get(code)
+                if rec is not None and not any(rec is seen for seen in offenders):
+                    offenders.append(rec)
+    return offenders
+
+
+def _identity_failures(
+    by_code: dict[str, MetricValueRecord], tolerance: float
+) -> list[tuple[str, ...]]:
+    """Every failing identity in ONE consistent cohort, as its operand codes.
+
+    Each returned tuple names exactly the metrics that took part in the identity
+    that failed -- the row-scoping the caller stamps flags with.
+    """
+    failures: list[tuple[str, ...]] = []
 
     def _val(code: str) -> Optional[Decimal]:
         rec = by_code.get(code)
@@ -194,7 +283,7 @@ def sum_mismatch(
         if all(c in by_code for c in components):
             total = sum((by_code[c].value for c in components), Decimal(0))
             if _off(total, expenses, expenses):
-                return [SUM_MISMATCH]
+                failures.append(("operating_expenses", *components))
 
         # Identity 2 (INFORMATIONAL): subsidy == expenses - revenue, at a widened
         # tolerance since it holds exactly only when the annual result is ~0.
@@ -203,7 +292,9 @@ def sum_mismatch(
         if subsidy is not None and revenue is not None:
             expected = expenses - revenue
             if (subsidy - expected).copy_abs() > expenses.copy_abs() * _SUBSIDY_IDENTITY_TOLERANCE:
-                return [SUM_MISMATCH]
+                failures.append(
+                    ("operating_expenses", "subsidy", "total_revenue_excluding_subsidy")
+                )
 
     # Identity 3: honest bottom line -- total_revenue - total_expenses == annual_surplus_deficit.
     total_revenue = _val("total_revenue")
@@ -211,7 +302,7 @@ def sum_mismatch(
     surplus_deficit = _val("annual_surplus_deficit")
     if total_revenue is not None and total_expenses is not None and surplus_deficit is not None:
         if _off(surplus_deficit, total_revenue - total_expenses, total_revenue):
-            return [SUM_MISMATCH]
+            failures.append(("total_revenue", "total_expenses", "annual_surplus_deficit"))
 
     assets = _val("total_assets")
     if assets is not None:
@@ -220,14 +311,16 @@ def sum_mismatch(
         non_financial = _val("total_non_financial_assets")
         if financial is not None and non_financial is not None:
             if _off(financial + non_financial, assets, assets):
-                return [SUM_MISMATCH]
+                failures.append(
+                    ("total_assets", "total_financial_assets", "total_non_financial_assets")
+                )
 
         # Identity 5 (PSAB): accumulated surplus == assets - liabilities.
         surplus = _val("accumulated_surplus")
         liabilities = _val("total_liabilities")
         if surplus is not None and liabilities is not None:
             if _off(surplus, assets - liabilities, assets):
-                return [SUM_MISMATCH]
+                failures.append(("total_assets", "accumulated_surplus", "total_liabilities"))
 
     # Identity 6 (PSAB net-debt model): net_debt == total_liabilities - total_financial_assets.
     net_debt = _val("net_debt")
@@ -235,7 +328,7 @@ def sum_mismatch(
     financial = _val("total_financial_assets")
     if net_debt is not None and liabilities is not None and financial is not None:
         if _off(net_debt, liabilities - financial, liabilities):
-            return [SUM_MISMATCH]
+            failures.append(("net_debt", "total_liabilities", "total_financial_assets"))
 
     # Component + residual == total identities (income statement + balance
     # sheet, addendum #2) + bounds. Each fires only when all its terms are
@@ -255,12 +348,12 @@ def sum_mismatch(
         # Component identity: part + residual == total (all three present).
         if total is not None and part is not None and residual is not None:
             if _off(part + residual, total, total):
-                return [SUM_MISMATCH]
+                failures.append((total_code, part_code, residual_code))
         # Component bound: the sourced part must not exceed its total.
         if total is not None and part is not None and part > total:
-            return [SUM_MISMATCH]
+            failures.append((total_code, part_code))
 
-    return []
+    return failures
 
 
 def validate(
@@ -291,6 +384,19 @@ def validate_cohort(records: Iterable[MetricValueRecord]) -> list[str]:
     """
     records = list(records)
     return _dedup(sum_mismatch(records))
+
+
+def validate_cohort_records(
+    records: Iterable[MetricValueRecord],
+) -> dict[int, list[str]]:
+    """Row-scoped set-level validation: `{id(record): flags}` for the offenders only.
+
+    Same identities as `validate_cohort`, but the flag lands ONLY on the records
+    that took part in a failing identity (see `sum_mismatch_records`), so an
+    unrelated row in the same period is not swept up. Keyed by `id()` because
+    `MetricValueRecord` carries a list field and is therefore unhashable.
+    """
+    return {id(rec): [SUM_MISMATCH] for rec in sum_mismatch_records(list(records))}
 
 
 def _dedup(flags: Iterable[str]) -> list[str]:

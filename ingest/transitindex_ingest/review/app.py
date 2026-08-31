@@ -19,12 +19,20 @@ from typing import Optional
 from ..db.models import PendingValue
 from ..db.repository import Repository
 from ..promotion import _PROMOTED_NOTE, promote_one
-from ..refdata import AGENCIES
+from ..refdata import ALL_AGENCIES
 
 
 def _slug_by_agency_id(repo: Repository) -> dict[int, str]:
-    """agency_id -> slug, via the public id-resolver over seeded slugs."""
-    return {repo.agency_id(slug): slug for slug in AGENCIES}
+    """agency_id -> slug, via the public id-resolver over seeded slugs.
+
+    Covers Canadian + US agencies; a slug not seeded in this DB is skipped."""
+    out: dict[int, str] = {}
+    for slug in ALL_AGENCIES:
+        try:
+            out[repo.agency_id(slug)] = slug
+        except ValueError:
+            continue
+    return out
 
 
 def _code_by_metric_id(repo: Repository) -> dict[int, str]:

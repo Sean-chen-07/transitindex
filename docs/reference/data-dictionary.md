@@ -56,6 +56,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The number of unlinked passenger trips (boardings) on the system. One rider counts as one trip each time they board a vehicle, so a journey with one transfer is two boardings. Held at whatever period the source reports — monthly, quarterly, or annual — with the annual figure being the sum of the twelve months when all twelve are present.
 - **Is NOT:** NOT the number of distinct people (riders), and NOT linked trips/journeys (a journey with a transfer is one journey but two boardings). NOT fare-paying passengers only — it includes transfers, passes, and free riders unless a source explicitly says otherwise.
+- **Statement:** service
 - **Unit:** count (count)
 - **Period:** Native monthly for most large agencies (StatCan 23-10-0307) and quarterly/annual elsewhere. Period granularity is a DIMENSION of the value, not part of the metric name: the same `ridership` metric holds monthly, quarterly, and annual values. Annual = sum of the twelve calendar/fiscal months; an incomplete year is a partial year-to-date value, never a full year, and a year-to-date value is never ranked against full years.
 - **Includes:** All boardings across all modes (bus, rail, ferry, paratransit) unless scoped; Transfers, pass holders, concession and free riders
@@ -77,6 +78,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The total hours vehicles operated in revenue service — i.e. on a published route available to carry passengers. The standard denominator for service-productivity and cost-per-hour measures.
 - **Is NOT:** NOT total vehicle hours: it EXCLUDES deadhead (pull-in/pull-out), layover where defined out, training, and maintenance movements. NOT platform hours unless the agency defines them identically.
+- **Statement:** service
 - **Unit:** hours (time)
 - **Period:** Usually annual; a few agencies publish it monthly/quarterly. Annual is the sum of the reported sub-periods.
 - **Includes:** In-service revenue operation across all revenue modes
@@ -95,6 +97,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The total kilometres vehicles travelled in revenue service (available to carry passengers). A measure of service supplied by distance.
 - **Is NOT:** NOT total fleet kilometres: EXCLUDES deadhead and non-revenue travel. NOT passenger-kilometres (distance travelled by passengers).
+- **Statement:** service
 - **Unit:** km (distance)
 - **Period:** Usually annual; annual is the sum of any reported sub-periods.
 - **Includes:** In-service revenue distance across revenue modes
@@ -112,6 +115,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Farebox revenue divided by ridership — the average fare earned per boarding. Uses farebox_revenue (passenger fares only), NOT the broad total_revenue_excluding_subsidy, so ancillary/investment income never inflates it. A calculated figure, not a posted price.
 - **Is NOT:** NOT the posted/advertised adult cash fare. Because it blends passes, concessions, free riders and transfers, average fare is typically well BELOW the cash fare. NOT total_revenue_excluding_subsidy divided by ridership — that would fold in ancillary and capital income and overstate the true per-rider fare.
+- **Statement:** service
 - **Entity scope:** Company-wide: derived from company-wide farebox_revenue and ridership, so it inherits the whole-organization scope.
 - **Unit:** CAD (currency)
 - **Formula:** `farebox_revenue / ridership`
@@ -129,6 +133,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Ridership divided by revenue service hours — boardings carried for each hour of service supplied. Higher means more productive service.
 - **Is NOT:** NOT trips per vehicle and NOT a cost figure. Sensitive to the revenue-hours definition (deadhead must be excluded from the denominator).
+- **Statement:** service
 - **Unit:** trips/hr (ratio)
 - **Formula:** `ridership / revenue_service_hours`
 - **Period:** Matches its inputs' period (same agency, same period).
@@ -145,6 +150,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The percentage of trips (or stops/departures) that met the agency's on-time definition. A service-quality measure, reported as a percentage.
 - **Is NOT:** NOT a single universal standard — each agency defines its own on-time window (e.g. 0 to +3 min, or ±1 min), and rail vs bus windows differ. NOT a count; it is a ratio.
+- **Statement:** service
 - **Unit:** % (ratio)
 - **Period:** Monthly to quarterly for large agencies; annual otherwise.
 - **Includes:** The agency's own on-time definition (record it in notes)
@@ -162,20 +168,24 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Revenue the agency earns from operations — passenger fares plus ancillary operating income (advertising, charters, fees). NOT the numerator of farebox recovery or average fare — those use farebox_revenue (fares only) so they don't inflate for capital-heavy agencies.
 - **Is NOT:** NOT total revenue: it EXCLUDES government operating subsidy/funding and capital contributions. NOT fares only when ancillary income exists, and NOT gross of refunds. NOT a component line promoted to the total — it is defined exactly as total_revenue − subsidy (StatCan 23-10-0307), never sourced by picking one revenue line and calling it the whole.
+- **Statement:** income_statement
 - **Entity scope:** Company-wide: the whole reporting organization's earned revenue from the audited financial statements — conventional + specialized/paratransit + every business line. Never a transit-segment or conventional-only carve-out. For multi-division agencies (TransLink incl. roads/bridges, Metrolinx incl. GO + UP + PRESTO) use the audited entity total. For a transit division inside a city (Calgary Transit, Edmonton ETS, Hamilton HSR) use the transit division's own schedule, never the municipality-wide total.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Monthly for the farebox portion at large agencies (StatCan); the full figure is usually annual from the audited statement of operations.
 - **Includes:** Passenger fare revenue (cash, passes, concessions); Ancillary operating income (advertising, charter, fees)
 - **Excludes:** Government operating subsidy and funding transfers; Capital grants and contributions
-- **Labels (EN):** Operating revenue; Revenue from operations; Fare revenue (subset); Passenger revenue (subset)
-- **Labels (FR):** Revenus d'exploitation; Produits d'exploitation; Recettes tarifaires (sous-ensemble)
+- **Labels (EN):** Total revenue excluding subsidies; Revenue excluding subsidies; Operating revenue; Operating revenues; Total operating revenue; Total operating revenues; Revenue from operations; Earned revenue; System-generated revenue; Fare revenue (subset); Passenger revenue (subset)
+- **Labels (FR):** Revenus d'exploitation; Produits d'exploitation; Total des revenus excluant les subventions; Revenus autonomes; Recettes tarifaires (sous-ensemble)
 - **Where in a report:** Statement of operations / income statement in the audited financial statements; fare revenue alone appears in StatCan and farebox tables.
 - **Common confusions:**
   - Operating revenue (earned) vs total revenue that includes government subsidy
   - Fares-only vs fares + ancillary income — operating revenue is the broader earned figure
   - farebox_revenue (fares only, a COMPONENT) vs total_revenue_excluding_subsidy (the broader earned total) — never record the fares-only line as this total
   - One Fare / U-Pass / fare-program reimbursements are SUBSIDY, not part of this earned line — they never widen total_revenue_excluding_subsidy
+  - 'Operating revenue' in US GASB statements sometimes INCLUDES operating assistance — check whether subsidy sits above or below the operating line before using the subtotal
+  - StatCan 23-10-0307 prints this exact line as 'total revenue excluding subsidies'
+  - A city-wide 'revenue from own sources' figure is the municipality's, not the transit division's
 - **Equations:** `earned_revenue_components`, `expense_revenue_subsidy`, `total_revenue_def`
 - **Source tier:** statcan
 
@@ -183,19 +193,23 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The total cost of operating the service over the period — labour, energy/fuel, materials and contracted services, and other operating costs. The denominator of farebox recovery and the cost-efficiency ratios.
 - **Is NOT:** NOT total expenses including capital: typically EXCLUDES capital expenditure. Watch AMORTIZATION/DEPRECIATION — PSAB statements of operations INCLUDE it, while CUTA-style operating cost EXCLUDES it. Record the structured cost_basis: 'psab_total' when the figure is an audited statement-of-operations total (amortization included), 'operating' when the source states amortization is excluded. The efficiency ratios use the operating basis; never fold amortization into a component line to make it fit. NOT any single object-class line (labour, energy/fuel, materials & services) promoted to the total.
+- **Statement:** income_statement
 - **Entity scope:** Company-wide: the whole reporting organization's operating cost from the audited financial statements — conventional + specialized/paratransit + every business line. Never a transit-segment or conventional-only carve-out. For multi-division agencies use the audited entity total; for a transit division inside a city use the transit division's own schedule, never the municipality-wide total.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Annual for most; quarterly for a few (TransLink, OC Transpo, Calgary).
 - **Includes:** Labour, energy/fuel, materials and contracted services, other operating costs
 - **Excludes:** Capital expenditure; Amortization/depreciation when an operating (CUTA) basis is used
-- **Labels (EN):** Operating expenses; Operating costs; Total operating expenditure; Cost of service
-- **Labels (FR):** Charges d'exploitation; Dépenses d'exploitation; Coûts d'exploitation
+- **Labels (EN):** Operating expenses; Operating expenditures; Operating costs; Total operating expenses; Total operating expenditure; Total operating costs; Cost of service; Total cost of service; Operating expenses excluding depreciation; Total operating expenses before depreciation
+- **Labels (FR):** Charges d'exploitation; Dépenses d'exploitation; Coûts d'exploitation; Total des charges d'exploitation; Frais d'exploitation
 - **Where in a report:** Statement of operations / income statement; operating budget tables.
 - **Common confusions:**
   - Operating vs total expenses that fold in capital
   - Amortization included (PSAB) vs excluded (CUTA operating basis) — changes farebox recovery
   - labour_cost / energy_fuel_cost / materials_services_cost / amortization / other_operating_expenses are COMPONENTS — never record one object-class line as this total
+  - US GASB 'total operating expenses' INCLUDES depreciation — record cost_basis='psab_total' and subtract amortization to reach the CUTA/NTD operating basis
+  - A city ACFR 'Transportation' functional expense covers roads, traffic and other services, not just transit
+  - Interest expense on debt is often shown as a non-operating expense — it is not part of the operating-basis figure
 - **Equations:** `cost_per_hour_def`, `cost_per_rider_def`, `expense_components`, `expense_revenue_subsidy`, `farebox_recovery_def`
 - **Source tier:** annual_report
 
@@ -203,19 +217,25 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Total government operating funding that covers the shortfall between operating expenses and operating revenue (municipal + provincial + federal operating contributions).
 - **Is NOT:** NOT total government funding: EXCLUDES capital grants. NOT a single level of government — it is the combined operating contribution. Equal to operating expenses minus operating revenue when both are on the same basis. NOT a single named program or funding source promoted to the total: a line naming ONE level of government or ONE program ("federal gas tax", "provincial operating grant", "municipal contribution", "Safe Restart") is a COMPONENT, never the combined total — record subsidy only from a line that is the combined total, or leave it for the identity (operating_expenses − total_revenue_excluding_subsidy) to solve. Never sum components yourself and never promote one level/program to the total.
+- **Statement:** income_statement
 - **Entity scope:** Company-wide: the whole reporting organization's combined operating subsidy from the audited financial statements — conventional + specialized/paratransit + every business line. Never a transit-segment or conventional-only carve-out. For a transit division inside a city, use the transit division's own schedule, never the municipality-wide total.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Annual.
 - **Includes:** Municipal, provincial, and federal OPERATING contributions, combined into one figure
 - **Excludes:** Capital grants and contributions; A single level of government's share, or a single named program, reported alone
-- **Labels (EN):** Operating subsidy; Net operating funding; Government operating contribution; Municipal/provincial operating funding
-- **Labels (FR):** Subvention d'exploitation; Contribution gouvernementale d'exploitation; Financement public d'exploitation
+- **Labels (EN):** Operating subsidy; Transit subsidy; Net operating funding; Government operating contribution; Municipal/provincial operating funding; Government transfers; Government funding; Government contributions; Grants and contributions; Subsidies and contributions; Operating assistance; Operating grants; Operating contributions; Contributions — City of X; Contribution from the City; Transfers from other governments; Intergovernmental revenue; Local operating assistance; State operating assistance; Provincial operating assistance; Federal operating assistance; Non-operating revenues — government subsidies
+- **Labels (FR):** Subvention d'exploitation; Subventions; Subventions et contributions; Contribution gouvernementale d'exploitation; Contributions gouvernementales; Transferts gouvernementaux; Financement public d'exploitation; Quote-part des municipalités; Contributions municipales
 - **Where in a report:** Statement of operations (as funding/contributions) or the funding-sources note; municipal budget transfer line.
 - **Common confusions:**
   - Operating subsidy vs total funding that includes capital grants
   - One government's share (federal gas tax, provincial operating grant, municipal contribution, Safe Restart) vs the combined operating contribution — a single-level/single-program line is a COMPONENT, never the total
   - One Fare / U-Pass / fare-program reimbursements are SUBSIDY, not farebox_revenue — do not leave them out of subsidy or fold them into fares
+  - US GASB enterprise funds print operating assistance BELOW the operating line as 'non-operating revenues' — it is still operating subsidy, not a separate category
+  - A named US funding program (FTA Section 5307, Section 5311, CARES / CRRSAA / ARP relief, state STA) is a COMPONENT, never the combined total
+  - Capital grants, 'capital contributions', and Section 5307/5339 capital assistance are NOT operating subsidy
+  - Dedicated sales-tax, fuel-tax, or property-tax revenue pledged to transit is government funding, but record it as subsidy only when the source presents it as the combined operating contribution
+  - 'Intergovernmental revenue' on a city-wide statement is the whole municipality's transfers, not the transit agency's
 - **Equations:** `expense_revenue_subsidy`, `subsidy_per_rider_def`, `total_revenue_def`
 - **Source tier:** annual_report
 
@@ -223,20 +243,24 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Total employee compensation in operating cost — wages and salaries plus benefits (pension, health, payroll taxes). Usually the largest operating-cost line.
 - **Is NOT:** NOT wages only when the source includes benefits, and NOT operator wages only — it is all-staff compensation unless scoped. NOT contracted-service labour (that sits in materials & services). It is a COMPONENT of operating_expenses, never the total.
+- **Statement:** income_statement
 - **Entity scope:** Company-wide: the whole reporting organization's labour cost from the audited financial statements — every business line, never a transit-segment carve-out. For a transit division inside a city, use the transit division's own schedule.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Annual.
 - **Includes:** Wages, salaries, overtime; Benefits: pension, health, payroll taxes
 - **Excludes:** Contracted-out service labour (in materials & services)
-- **Labels (EN):** Labour; Wages, salaries and benefits; Employee compensation; Salaries and benefits
-- **Labels (FR):** Coûts de main-d'œuvre; Salaires et avantages sociaux; Rémunération
+- **Labels (EN):** Labour; Labor; Labour costs; Labor costs; Wages, salaries and benefits; Salaries, wages and benefits; Salaries and wages; Salaries and benefits; Wages and benefits; Employee compensation; Personnel services; Personnel costs; Payroll and benefits; Operator wages and benefits; Salaries, wages and employee benefits
+- **Labels (FR):** Coûts de main-d'œuvre; Main-d'œuvre; Salaires et avantages sociaux; Rémunération et avantages sociaux; Rémunération; Charges salariales; Traitements et avantages sociaux
 - **Where in a report:** Expenses-by-object note in the audited financial statements; budget detail.
 - **Common confusions:**
   - Wages only vs wages + benefits
   - Operator labour vs all-staff labour
   - In-house labour vs contracted-service labour
   - A COMPONENT of operating_expenses vs the operating_expenses total itself
+  - US spelling 'labor' and the US object class 'personnel services' both mean this line
+  - Pension / OPEB actuarial adjustments belong here only when the source shows them inside employee compensation, not as a separate non-operating charge
+  - 'Salaries and wages' alone excludes benefits — prefer the combined line and note the basis when only wages are printed
 - **Equations:** `expense_components`
 - **Source tier:** annual_report
 
@@ -244,19 +268,21 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The cost of traction energy — diesel/CNG fuel and electricity for trolley, rail, and battery-electric vehicles.
 - **Is NOT:** NOT facility/building energy unless the source bundles it (note if so). NOT a fuel volume — it is a dollar figure. It is a COMPONENT of operating_expenses, never the total.
+- **Statement:** income_statement
 - **Entity scope:** Company-wide: the whole reporting organization's energy/fuel cost from the audited financial statements — every business line, never a transit-segment carve-out. For a transit division inside a city, use the transit division's own schedule.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Annual.
 - **Includes:** Vehicle fuel (diesel, CNG); Traction electricity (rail, trolley, battery-electric)
 - **Excludes:** Facility/building heating and power unless bundled by the source
-- **Labels (EN):** Energy and fuel; Fuel and energy; Diesel and electricity; Traction power
-- **Labels (FR):** Carburant et énergie; Énergie; Carburant
+- **Labels (EN):** Energy and fuel; Fuel and energy; Fuel; Fuel costs; Fuel and lubricants; Diesel fuel; Diesel and electricity; Traction power; Propulsion power; Traction electricity; Energy; Fuel and traction power
+- **Labels (FR):** Carburant et énergie; Énergie; Carburant; Carburants et lubrifiants; Électricité de traction; Énergie de traction
 - **Where in a report:** Expenses-by-object note in the audited financial statements.
 - **Common confusions:**
   - Vehicle traction energy vs facility energy
   - Dollar cost vs litres/kWh consumed
   - A COMPONENT of operating_expenses vs the operating_expenses total itself
+  - US NTD 'fuel and lubricants' bundles lubricants with fuel; an ACFR 'utilities' line usually mixes facility power with traction power — note the bundling
 - **Equations:** `expense_components`
 - **Source tier:** annual_report
 
@@ -264,19 +290,22 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Spending on materials/supplies (parts, tyres, lubricants) and purchased/contracted services (contracted operations, professional services, utilities other than traction).
 - **Is NOT:** NOT capital purchases (those are capital expenditure). NOT labour or energy — it is the remaining materials-and-services object class. It is a COMPONENT of operating_expenses, never the total, and it should NOT silently absorb figures that belong in other_operating_expenses.
+- **Statement:** income_statement
 - **Entity scope:** Company-wide: the whole reporting organization's materials & services cost from the audited financial statements — every business line, never a transit-segment carve-out. For a transit division inside a city, use the transit division's own schedule.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Annual.
 - **Includes:** Parts, supplies, materials; Contracted/purchased services, professional fees
 - **Excludes:** Capital asset purchases; Labour and traction energy
-- **Labels (EN):** Materials and services; Supplies and services; Goods and services; Materials and supplies
-- **Labels (FR):** Matériel et services; Fournitures et services; Biens et services
+- **Labels (EN):** Materials and services; Materials and supplies; Supplies and services; Services and supplies; Goods and services; Contract services; Contracted services; Contractual services; Professional and technical services; Parts and supplies; Repairs and maintenance; Maintenance materials and services
+- **Labels (FR):** Matériel et services; Fournitures et services; Biens et services; Pièces et fournitures; Services contractuels; Entretien et réparations
 - **Where in a report:** Expenses-by-object note in the audited financial statements.
 - **Common confusions:**
   - Operating materials/services vs capital purchases
   - Contracted-service labour appears here, not under labour cost
   - A COMPONENT of operating_expenses vs the operating_expenses total itself
+  - US ACFR/NTD usually print 'services' and 'materials and supplies' as two separate object lines — this metric is both combined
+  - 'Purchased transportation' (contracted-out service delivery) belongs in other_operating_expenses, not here
 - **Equations:** `expense_components`
 - **Source tier:** annual_report
 
@@ -284,6 +313,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Farebox revenue divided by operating expenses — the fraction of the cost of service paid for by passenger fares. Uses farebox_revenue as the numerator (NOT the broad total_revenue_excluding_subsidy) and the operating-basis operating_expenses (amortization excluded) as the denominator.
 - **Is NOT:** NOT fares ÷ total cost-including-capital. The result depends on the expense basis (amortization included or not); the numerator is fares-only (farebox_revenue), never the broad revenue line — keep numerator and denominator on consistent bases.
+- **Statement:** service
 - **Entity scope:** Company-wide: derived from company-wide farebox_revenue and the operating-basis operating_expenses, so it inherits the whole-organization scope.
 - **Unit:** % (ratio)
 - **Formula:** `farebox_revenue / operating_expenses`
@@ -302,6 +332,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Operating expenses divided by ridership — the operating cost of carrying one boarding. Lower is generally better.
 - **Is NOT:** NOT cost per distinct rider (it is per boarding), and NOT including capital cost unless the expense input does.
+- **Statement:** service
 - **Entity scope:** Company-wide: derived from the company-wide operating-basis operating_expenses and ridership, so it inherits the whole-organization scope.
 - **Unit:** CAD (currency)
 - **Formula:** `operating_expenses / ridership`
@@ -320,6 +351,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Operating expenses divided by revenue service hours — the operating cost of supplying one hour of service. A standard cost-efficiency benchmark.
 - **Is NOT:** NOT cost per total vehicle hour (the denominator excludes deadhead), and NOT a wage rate.
+- **Statement:** service
 - **Entity scope:** Company-wide: derived from the company-wide operating-basis operating_expenses and revenue_service_hours, so it inherits the whole-organization scope.
 - **Unit:** CAD/hr (currency)
 - **Formula:** `operating_expenses / revenue_service_hours`
@@ -338,6 +370,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Total operating subsidy divided by ridership — the public funding required per boarding after fares and other operating revenue. Equivalent to (operating expenses − operating revenue) ÷ ridership.
 - **Is NOT:** NOT total cost per rider (that ignores fare revenue), and NOT per distinct rider — it is net public subsidy per boarding.
+- **Statement:** service
 - **Entity scope:** Company-wide: derived from the company-wide combined subsidy and ridership, so it inherits the whole-organization scope.
 - **Unit:** CAD (currency)
 - **Formula:** `subsidy / ridership`
@@ -356,6 +389,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The count of active revenue vehicles the agency operates, per mode. A bus is one vehicle. For RAIL, count TRAINS, not individual cars: one train (however many cars it is made up of) is one unit. Displayed on the detail page grouped into four capacity-ordered classes (metric-set-build-plan.md Phase 6): Bus (bus, BRT, trolleybus) · Light rail (light rail, streetcar) · Heavy rail (subway) · Commuter rail (commuter rail). Ferry, paratransit, and on-demand are excluded from the composition (still recorded as fleet_size, just not shown in it).
 - **Is NOT:** NOT total vehicles including non-revenue (supervisor cars, work vehicles), and NOT stored/retired units. For rail, do NOT count individual cars — a 6-car train is ONE unit, not six. NOT seated passenger capacity.
+- **Statement:** service
 - **Unit:** count (count)
 - **Period:** Annual (point-in-time, usually fiscal year-end).
 - **Includes:** Active revenue vehicles in service; For rail: count by TRAIN, not by car
@@ -375,6 +409,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The average age (in years) of the active revenue fleet — a state-of-good-repair signal.
 - **Is NOT:** NOT the oldest vehicle's age and NOT remaining useful life. Lower is generally better.
+- **Statement:** service
 - **Unit:** years (time)
 - **Period:** Annual (point-in-time).
 - **Includes:** Active revenue vehicles
@@ -392,6 +427,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The percentage of the active revenue fleet that is accessible (low-floor or ramp/lift-equipped).
 - **Is NOT:** NOT the share of accessible STOPS/STATIONS (that is a different accessibility measure), and NOT a count — it is a percentage of vehicles.
+- **Statement:** service
 - **Unit:** % (ratio)
 - **Period:** Annual (point-in-time).
 - **Includes:** Low-floor or ramp/lift-equipped revenue vehicles
@@ -409,38 +445,44 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Spending on long-lived assets in the period — new vehicles, facilities, track, and major infrastructure. Distinct from operating cost.
 - **Is NOT:** NOT amortization/depreciation (the accounting spread of past capital), and NOT operating expense. NOT the capital budget/plan — it is actual capital spent. NOT a single project's spending promoted to the agency total.
+- **Statement:** income_statement
 - **Entity scope:** Company-wide: the whole reporting organization's capital spending from the audited financial statements — every business line, never a transit-segment carve-out. For a transit division inside a city, use the transit division's own schedule.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Annual.
 - **Includes:** Vehicle purchases, facility and infrastructure construction, major rehabilitation
 - **Excludes:** Amortization/depreciation; Operating expenses
-- **Labels (EN):** Capital expenditure; Capital spending; Capital additions; Investment in capital assets
-- **Labels (FR):** Dépenses en immobilisations; Investissements en immobilisations; Dépenses d'investissement
+- **Labels (EN):** Capital expenditure; Capital expenditures; Capital spending; Capital additions; Capital asset additions; Additions to tangible capital assets; Investment in capital assets; Acquisition of tangible capital assets; Acquisition and construction of capital assets; Purchases of capital assets; Capital outlay
+- **Labels (FR):** Dépenses en immobilisations; Investissements en immobilisations; Dépenses d'investissement; Acquisitions d'immobilisations corporelles; Ajouts aux immobilisations corporelles
 - **Where in a report:** Capital-assets note (additions) in the audited statements; capital budget/plan for planned (not actual) figures.
 - **Common confusions:**
   - Capital expenditure (cash out for assets) vs amortization (non-cash spread)
   - Actual capital spent vs the capital budget/plan
   - One project/program's capital spend (a COMPONENT) vs the agency-wide total capital expenditure
+  - US cash-flow statements show 'acquisition and construction of capital assets' under capital & related financing activities — that is the actual spend; 'capital outlay' in a budget column is planned
+  - Capital grant RECEIPTS are funding coming in, not capital spending going out
 - **Source tier:** annual_report
 
 ### Total Financial Assets (`total_financial_assets`)
 
 - **Is:** The PSAB total of financial assets — cash, investments, and receivables — the resources that could be turned into cash to settle liabilities. The left side of the net-debt identity.
 - **Is NOT:** NOT total assets (which also includes non-financial/tangible capital assets), and NOT cash alone. A point-in-time figure at fiscal year-end, not a flow. NOT a component line (cash_and_investments) promoted to this total.
+- **Statement:** balance_sheet
 - **Entity scope:** Company-wide: the whole reporting organization's financial assets from the audited statement of financial position — every business line, never a transit-segment carve-out. For a transit division inside a city, use the transit division's own schedule, never the municipality-wide total.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Annual (point-in-time, at fiscal year-end); TransLink also reports quarterly.
 - **Includes:** Cash and cash equivalents, investments, accounts receivable
 - **Excludes:** Tangible capital assets and other non-financial assets
-- **Labels (EN):** Financial assets; Total financial assets
-- **Labels (FR):** Actifs financiers; Total des actifs financiers
+- **Labels (EN):** Financial assets; Total financial assets; Total financial assets (Statement of Financial Position)
+- **Labels (FR):** Actifs financiers; Total des actifs financiers; Total de l'actif financier
 - **Where in a report:** Statement of financial position (top section) in the audited financial statements.
 - **Common confusions:**
   - Financial assets vs total assets (financial + non-financial)
   - Point-in-time stock vs a flow figure from the statement of operations
   - cash_and_investments (a COMPONENT) vs total_financial_assets (the total) — never record the narrower liquidity line as this total
+  - US GASB statements of net position have NO 'financial assets' subtotal — do not substitute 'total current assets'; leave this unsourced for US agencies
+  - Deferred outflows of resources are not financial assets
 - **Equations:** `financial_assets_components`, `net_debt_def`, `total_assets_identity`
 - **Source tier:** annual_report
 
@@ -448,19 +490,22 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The PSAB total of liabilities — debt, accounts payable, deferred revenue, and employee future benefits. The right side of the net-debt identity.
 - **Is NOT:** NOT long-term debt alone (that is a subset), and NOT net debt (liabilities minus financial assets). A point-in-time figure at fiscal year-end. NOT a component line (long_term_debt) promoted to this total.
+- **Statement:** balance_sheet
 - **Entity scope:** Company-wide: the whole reporting organization's liabilities from the audited statement of financial position — every business line, never a transit-segment carve-out. For a transit division inside a city, use the transit division's own schedule, never the municipality-wide total.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Annual (point-in-time); TransLink also quarterly.
 - **Includes:** Debt, payables, deferred revenue, employee future benefits
 - **Excludes:** Net debt (a derived figure, not a liability line)
-- **Labels (EN):** Liabilities; Total liabilities
-- **Labels (FR):** Passifs; Total des passifs
+- **Labels (EN):** Liabilities; Total liabilities; Total current and non-current liabilities
+- **Labels (FR):** Passifs; Total des passifs; Total du passif
 - **Where in a report:** Statement of financial position in the audited financial statements.
 - **Common confusions:**
   - Total liabilities vs long-term debt (a subset)
   - Liabilities vs net debt
   - long_term_debt (a COMPONENT) vs total_liabilities (the total) — never record the debt-only line as this total
+  - US statements of net position often print 'total liabilities and deferred inflows of resources' — record the total liabilities line alone
+  - Net pension and OPEB liabilities ARE part of total liabilities
 - **Equations:** `accumulated_surplus_identity`, `debt_to_assets_def`, `liabilities_components`, `net_debt_def`
 - **Source tier:** annual_report
 
@@ -468,18 +513,20 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The PSAB total of non-financial assets — chiefly tangible capital assets (net book value) plus inventories and prepaid expenses. Assets held for use in service delivery, not to be converted to cash.
 - **Is NOT:** NOT financial assets, and NOT only tangible capital assets (it also includes inventories and prepaids). A point-in-time figure. NOT a component line (tangible_capital_assets) promoted to this total.
+- **Statement:** balance_sheet
 - **Entity scope:** Company-wide: the whole reporting organization's non-financial assets from the audited statement of financial position — every business line, never a transit-segment carve-out. For a transit division inside a city, use the transit division's own schedule, never the municipality-wide total.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Annual (point-in-time); TransLink also quarterly.
 - **Includes:** Tangible capital assets (net), inventories, prepaid expenses
 - **Excludes:** Cash, investments, receivables (those are financial assets)
 - **Labels (EN):** Non-financial assets; Total non-financial assets
-- **Labels (FR):** Actifs non financiers; Total des actifs non financiers
+- **Labels (FR):** Actifs non financiers; Total des actifs non financiers; Total de l'actif non financier
 - **Where in a report:** Statement of financial position (non-financial assets section).
 - **Common confusions:**
   - Non-financial assets vs tangible capital assets (TCA is the largest component)
   - tangible_capital_assets (a COMPONENT) vs total_non_financial_assets (the total) — never record the TCA-only line as this total
+  - US GASB statements have no 'non-financial assets' subtotal — do not substitute total capital assets; record tangible_capital_assets alone and leave this unsourced
 - **Equations:** `non_financial_assets_components`, `total_assets_identity`
 - **Source tier:** annual_report
 
@@ -487,8 +534,9 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The headline total of all assets — financial assets plus non-financial assets. Equal by identity to total_financial_assets + total_non_financial_assets.
 - **Is NOT:** NOT net of liabilities (that is accumulated surplus), and NOT financial assets alone. A point-in-time figure. NOT one of its two components (total_financial_assets or total_non_financial_assets) promoted to this total.
+- **Statement:** balance_sheet
 - **Entity scope:** Company-wide: the whole reporting organization's total assets from the audited statement of financial position — every business line, never a transit-segment carve-out. For a transit division inside a city, use the transit division's own schedule, never the municipality-wide total.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Annual (point-in-time); TransLink also quarterly.
 - **Includes:** Financial assets + non-financial assets
@@ -499,6 +547,8 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 - **Common confusions:**
   - Total assets vs accumulated surplus (assets net of liabilities)
   - total_financial_assets or total_non_financial_assets alone (each a COMPONENT) vs total_assets (their sum)
+  - US 'total assets and deferred outflows of resources' is a wider line — record total assets alone
+  - A government-wide / city-wide statement of net position total is the whole municipality
 - **Equations:** `accumulated_surplus_identity`, `debt_to_assets_def`, `total_assets_identity`
 - **Source tier:** annual_report
 
@@ -506,19 +556,22 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The net book value (cost less accumulated amortization) of tangible capital assets — buses, trains, track, facilities, equipment. The largest component of non-financial assets.
 - **Is NOT:** NOT gross/historical cost (it is net of accumulated amortization), and NOT capital expenditure (a flow). A point-in-time stock. It is a COMPONENT of total_non_financial_assets, never the total.
+- **Statement:** balance_sheet
 - **Entity scope:** Company-wide: the whole reporting organization's tangible capital assets from the audited statement of financial position — every business line, never a transit-segment carve-out. For a transit division inside a city, use the transit division's own schedule.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Annual (point-in-time); TransLink also quarterly.
 - **Includes:** Net book value of vehicles, facilities, track, equipment
 - **Excludes:** Gross cost before amortization; Capital expenditure (the period's additions)
-- **Labels (EN):** Tangible capital assets; Capital assets (net); TCA
-- **Labels (FR):** Immobilisations corporelles; Valeur comptable nette des immobilisations
+- **Labels (EN):** Tangible capital assets; TCA; Capital assets (net); Capital assets, net; Capital assets, net of accumulated depreciation; Net book value of tangible capital assets; Property, plant and equipment, net; Capital assets being depreciated, net
+- **Labels (FR):** Immobilisations corporelles; Immobilisations; Valeur comptable nette des immobilisations; Immobilisations corporelles (valeur nette)
 - **Where in a report:** Tangible capital assets note (net book value) in the audited statements.
 - **Common confusions:**
   - Net book value vs gross/historical cost
   - TCA (a stock) vs capital expenditure (the year's additions)
   - A COMPONENT of total_non_financial_assets vs the total_non_financial_assets total itself
+  - US 'capital assets, net of accumulated depreciation' is this metric; a 'total capital assets' line above the depreciation deduction is gross cost
+  - 'Capital assets not being depreciated' (land, construction in progress) is a COMPONENT of the net total
 - **Equations:** `non_financial_assets_components`
 - **Source tier:** annual_report
 
@@ -526,18 +579,22 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The PSAB accumulated surplus — the agency's net economic position, equal by identity to total assets minus total liabilities (equivalently net financial assets plus non-financial assets). The bottom line of the statement of financial position.
 - **Is NOT:** NOT the annual surplus/deficit (a single year's flow), and NOT cash. A cumulative point-in-time figure.
+- **Statement:** balance_sheet
 - **Entity scope:** Company-wide: the whole reporting organization's accumulated surplus from the audited statement of financial position — every business line, never a transit-segment carve-out. For a transit division inside a city, use the transit division's own schedule.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Annual (point-in-time); TransLink also quarterly.
 - **Includes:** Cumulative net position to date
 - **Excludes:** The single-year surplus/deficit
-- **Labels (EN):** Accumulated surplus; Net position
-- **Labels (FR):** Excédent accumulé; Surplus accumulé
+- **Labels (EN):** Accumulated surplus; Accumulated surplus (deficit); Accumulated surplus, end of year; Net position; Total net position; Net position, end of year; Net assets
+- **Labels (FR):** Excédent accumulé; Surplus accumulé; Excédent (déficit) accumulé; Actif net
 - **Where in a report:** Statement of financial position (bottom line) in the audited statements.
 - **Common confusions:**
   - Accumulated surplus (cumulative) vs annual surplus/deficit (one year)
   - The bottom-line identity total vs any single asset/liability line that feeds it
+  - NEVER the fiduciary 'net position restricted for pension benefits' — those are plan assets, not the agency's net worth
+  - 'Net investment in capital assets', 'restricted', and 'unrestricted' are COMPONENTS of total net position — record the total
+  - US 'total net position' is this metric; 'net assets available for benefits' in a pension plan statement is not
 - **Equations:** `accumulated_surplus_identity`
 - **Source tier:** annual_report
 
@@ -545,18 +602,21 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Borrowing with maturity beyond one year — debentures, bonds, and long-term loans. A subset of total liabilities.
 - **Is NOT:** NOT total liabilities (it excludes payables, deferred revenue, employee benefits), and NOT net debt. It is a COMPONENT of total_liabilities, never the total.
+- **Statement:** balance_sheet
 - **Entity scope:** Company-wide: the whole reporting organization's long-term debt from the audited statement of financial position — every business line, never a transit-segment carve-out. For a transit division inside a city, use the transit division's own schedule.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Annual (point-in-time); TransLink also quarterly.
 - **Includes:** Debentures, bonds, long-term loans
 - **Excludes:** Short-term payables and other liabilities
-- **Labels (EN):** Long-term debt; Debt
-- **Labels (FR):** Dette à long terme; Emprunts à long terme
+- **Labels (EN):** Long-term debt; Long term debt; Debt; Debt outstanding; Debentures; Debenture debt; Bonds payable; Revenue bonds payable; Notes payable; Loans payable; Long-term debt, net of current portion; Capital lease obligations; Finance lease obligations
+- **Labels (FR):** Dette à long terme; Emprunts à long terme; Débentures; Dette obligataire; Obligations à payer; Obligations découlant de contrats de location-acquisition
 - **Where in a report:** Long-term debt note in the audited financial statements.
 - **Common confusions:**
   - Long-term debt vs total liabilities (the broader figure)
   - A COMPONENT of total_liabilities vs the total_liabilities total itself
+  - US 'long-term liabilities' bundles net pension/OPEB liabilities with borrowings — only borrowings belong here
+  - The current portion of long-term debt is still borrowing; include it when the source shows total debt outstanding and note the basis
 - **Equations:** `liabilities_components`
 - **Source tier:** annual_report
 
@@ -564,18 +624,21 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Cash, cash equivalents, and investments — the most liquid portion of financial assets. A liquidity signal.
 - **Is NOT:** NOT total financial assets (which also includes receivables), and NOT total assets. It is a COMPONENT of total_financial_assets, never the total.
+- **Statement:** balance_sheet
 - **Entity scope:** Company-wide: the whole reporting organization's cash and investments from the audited statement of financial position — every business line, never a transit-segment carve-out. For a transit division inside a city, use the transit division's own schedule.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount.
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Period:** Annual (point-in-time); TransLink also quarterly.
 - **Includes:** Cash, cash equivalents, short- and long-term investments
 - **Excludes:** Accounts receivable and other financial assets
-- **Labels (EN):** Cash and investments; Cash and cash equivalents
-- **Labels (FR):** Trésorerie et placements; Encaisse et placements
+- **Labels (EN):** Cash and investments; Cash and cash equivalents; Cash, cash equivalents and investments; Cash and short-term investments; Cash and temporary investments; Pooled cash and investments; Restricted cash and investments; Investments; Portfolio investments
+- **Labels (FR):** Trésorerie et placements; Encaisse et placements; Trésorerie et équivalents de trésorerie; Encaisse et quasi-espèces; Placements; Encaisse
 - **Where in a report:** Statement of financial position / cash and investments note.
 - **Common confusions:**
   - Cash and investments vs total financial assets (the broader figure)
   - A COMPONENT of total_financial_assets vs the total_financial_assets total itself
+  - The cash-flow statement's 'cash and cash equivalents, end of year' excludes investments — the balance-sheet line is the one wanted
+  - Restricted and unrestricted cash both count; a restricted-only line is a COMPONENT
 - **Equations:** `financial_assets_components`
 - **Source tier:** annual_report
 
@@ -583,17 +646,19 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Total liabilities minus total financial assets — the PSAB net debt indicator. Positive net debt means liabilities exceed the financial assets available to settle them. We also store the agency's printed net debt as a cross-check.
 - **Is NOT:** NOT long-term debt, and NOT total liabilities. It is a derived net figure; a NEGATIVE result is "net financial assets" (healthier).
+- **Statement:** balance_sheet
 - **Entity scope:** Company-wide: derived from company-wide total_liabilities and total_financial_assets, so it inherits the whole-organization scope.
 - **Unit:** CAD (currency)
 - **Formula:** `total_liabilities - total_financial_assets`
 - **Period:** Matches its inputs' period (annual; quarterly for TransLink).
-- **Labels (EN):** Net debt; Net financial assets (if negative)
-- **Labels (FR):** Dette nette; Actifs financiers nets (si négatif)
+- **Labels (EN):** Net debt; Net financial assets (if negative); Net debt (net financial assets)
+- **Labels (FR):** Dette nette; Actifs financiers nets (si négatif); Dette nette (actifs financiers nets)
 - **Where in a report:** Computed; the printed net debt rides in the value's cross-check field.
 - **Common confusions:**
   - Net debt vs total liabilities or long-term debt
   - A bigger agency has a bigger net debt — it is NOT ranked across agencies
   - total_liabilities/total_financial_assets (the totals this uses) vs their COMPONENT lines (long_term_debt, cash_and_investments)
+  - US reports do not print the PSAS net-debt indicator — do not substitute 'net position' or 'total debt outstanding'
 - **Equations:** `net_debt_def`, `net_debt_per_capita_def`
 - **Source tier:** derived
 
@@ -601,6 +666,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Total liabilities divided by total assets — a scale-free leverage ratio.
 - **Is NOT:** NOT net debt per capita, and NOT a dollar figure. Lower generally indicates lower leverage. NOT ranked: the rated set is the five Highlights hero metrics (ridership, total_revenue_excluding_subsidy, on_time_performance, cost_per_rider, subsidy_per_rider) — this metric's ranking was retired (metric-set-build-plan.md Phase 1).
+- **Statement:** service
 - **Entity scope:** Company-wide: derived from company-wide total_liabilities and total_assets, so it inherits the whole-organization scope.
 - **Unit:** % (ratio)
 - **Formula:** `total_liabilities / total_assets`
@@ -618,6 +684,7 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Net debt divided by the agency's service-area population — the civic headline that makes net debt comparable across agencies of different sizes. Population is the static service-area population, labelled "per resident served".
 - **Is NOT:** NOT net debt itself (a raw dollar that is not ranked), and NOT per rider. The denominator is population served, not ridership. NOT ranked: the rated set is the five Highlights hero metrics (ridership, total_revenue_excluding_subsidy, on_time_performance, cost_per_rider, subsidy_per_rider) — this metric's ranking was retired (metric-set-build-plan.md Phase 1).
+- **Statement:** service
 - **Entity scope:** Company-wide: derived from company-wide net_debt, so it inherits the whole-organization scope.
 - **Unit:** CAD (currency)
 - **Formula:** `net_debt / service_area_population`
@@ -636,19 +703,22 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The annual amortization/depreciation expense — the non-cash charge that spreads the cost of tangible capital assets (vehicles, facilities, track) over their useful lives. Printed as an expense line on the statement of operations. It is the reconciling item between the PSAB total operating expense (amortization included) and the CUTA/NTD operating basis (amortization excluded): operating basis = operating_expenses − amortization.
 - **Is NOT:** NOT capital expenditure (the cash spent buying assets — amortization is the later non-cash spread of that cost), and NOT accumulated amortization (the balance-sheet stock to date). It is a single year's expense, not a stock.
+- **Statement:** income_statement
 - **Entity scope:** Company-wide: the amortization for the entire reporting organization from the audited financial statements. For a transit division inside a city (Calgary Transit, Edmonton ETS, Hamilton HSR) use the transit division's own schedule, never the municipality-wide figure.
-- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar CAD amount (e.g. "$4,231 (thousands)" is recorded as 4231000).
+- **Scale/unit:** Statements often print figures in thousands ($000s) or millions ($M); record the whole-dollar amount in the agency's reporting currency (CAD or USD) (e.g. "$4,231 (thousands)" is recorded as 4231000).
 - **Unit:** CAD (currency)
 - **Period:** Annual (a flow over the year).
 - **Includes:** Amortization/depreciation of tangible capital assets for the year
 - **Excludes:** Capital expenditure (the cash cost of acquiring assets); Accumulated amortization (the cumulative balance-sheet figure)
-- **Labels (EN):** Amortization; Depreciation; Amortization of tangible capital assets; Depreciation and amortization
-- **Labels (FR):** Amortissement; Amortissement des immobilisations corporelles; Dotation aux amortissements
+- **Labels (EN):** Amortization; Amortization expense; Amortization of tangible capital assets; Depreciation; Depreciation expense; Depreciation and amortization; Depreciation of capital assets
+- **Labels (FR):** Amortissement; Amortissement des immobilisations corporelles; Dotation aux amortissements; Charge d'amortissement; Amortissement de l'exercice
 - **Where in a report:** Statement of operations (as an expense line) and the expenses-by-object note; also reconciled in the tangible capital assets note.
 - **Common confusions:**
   - Amortization (non-cash expense) vs capital expenditure (cash out to buy assets)
   - This year's amortization expense vs accumulated amortization (the cumulative stock)
   - Whether operating_expenses includes it (PSAB) or excludes it (CUTA operating basis)
+  - US reports say 'depreciation' (or 'depreciation and amortization') for exactly this charge — it is this metric, not a different one
+  - Amortization of deferred capital contributions is a REVENUE credit under PSAS, not this expense
 - **Equations:** `expense_components`
 - **Source tier:** annual_report
 
@@ -656,19 +726,22 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The residual "other" operating-expense object class — insurance/casualty, purchased transportation, taxes, and miscellaneous operating costs not captured by labour, energy/fuel, materials & services, or amortization. Its purpose is to let the expense components sum to operating_expenses (PSAB basis) so no residual is forced into materials & services.
 - **Is NOT:** NOT capital expenditure, NOT amortization (its own line), and NOT a catch-all for mis-bucketed labour, energy, or materials — only the genuinely "other" object class belongs here. It is a component of operating_expenses, never the total.
+- **Statement:** income_statement
 - **Entity scope:** Company-wide: the whole reporting organization from the audited statements (the transit division's schedule for a transit-as-a-city-division agency), never a segment carve-out.
-- **Scale/unit:** Record whole-dollar CAD; statements printed in $000s or $M must be scaled up to whole dollars.
+- **Scale/unit:** Record whole-dollar amounts in the agency's reporting currency (CAD or USD); statements printed in $000s or $M must be scaled up to whole dollars.
 - **Unit:** CAD (currency)
 - **Period:** Annual.
 - **Includes:** Insurance/casualty, purchased transportation, taxes, and miscellaneous operating costs
 - **Excludes:** Labour, energy/fuel, materials & services, amortization (their own lines); Capital expenditure
-- **Labels (EN):** Other operating expenses; Other expenses; Miscellaneous operating costs; Insurance and other
-- **Labels (FR):** Autres charges d'exploitation; Autres dépenses d'exploitation; Divers
+- **Labels (EN):** Other operating expenses; Other expenses; Other operating costs; Miscellaneous operating costs; Miscellaneous expenses; Insurance and other; Insurance; Casualty and liability costs; Casualty and liability; Purchased transportation; Taxes and licences; Other general expenses
+- **Labels (FR):** Autres charges d'exploitation; Autres dépenses d'exploitation; Autres frais; Divers; Assurances et divers; Services de transport achetés
 - **Where in a report:** Expenses-by-object note in the audited financial statements.
 - **Common confusions:**
   - A component of operating_expenses vs the operating_expenses total itself
   - Genuinely-other costs vs mis-bucketed labour/energy/materials
   - Operating 'other' vs capital purchases
+  - US NTD object classes 'casualty and liability' and 'purchased transportation' belong here, not in materials & services
+  - A function-based expense table (Operations / Vehicle maintenance / General administration) is a DIFFERENT cut than object classes — do not map 'General administration' onto this residual
 - **Equations:** `expense_components`
 - **Source tier:** annual_report
 
@@ -676,18 +749,22 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The audited PSAB statement-of-operations total revenue — the whole enterprise's revenue, equal to total_revenue_excluding_subsidy + subsidy. The enterprise-lens "how big" figure: it deliberately includes government operating transfers and any capital-contribution amortization recognized as revenue.
 - **Is NOT:** NOT operating/earned revenue (that is total_revenue_excluding_subsidy, which excludes subsidy), and NOT fares only. It is the broad statement total; a bigger number here means a bigger organization, not a more self-funding one — do not use it as the farebox-recovery numerator.
+- **Statement:** income_statement
 - **Entity scope:** Company-wide: the audited entity total for the whole reporting organization (conventional + specialized + every business line). For multi-division agencies (TransLink incl. roads/bridges, Metrolinx incl. GO + UP + PRESTO) use the audited entity total, not a transit segment carve-out. For a transit division inside a city, use the transit division's schedule, never the municipality-wide total.
-- **Scale/unit:** Record whole-dollar CAD; scale up figures printed in thousands or millions.
+- **Scale/unit:** Record whole-dollar amounts in the agency's reporting currency (CAD or USD); scale up figures printed in thousands or millions.
 - **Unit:** CAD (currency)
 - **Period:** Annual (statement of operations).
 - **Includes:** Fares + other earned revenue + government operating subsidy/transfers; Any capital-contribution amortization recognized as revenue under PSAB
 - **Excludes:** Nothing on the revenue side — this is the audited total
-- **Labels (EN):** Total revenue; Total revenues; Revenue (total)
-- **Labels (FR):** Total des revenus; Produits totaux; Total des produits
+- **Labels (EN):** Total revenue; Total revenues; Revenue (total); Total revenues and other income; Total operating and non-operating revenues; Total revenues and contributions
+- **Labels (FR):** Total des revenus; Total des produits; Produits totaux; Total des produits et subventions
 - **Where in a report:** Statement of operations (total revenue line) in the audited financial statements.
 - **Common confusions:**
   - Total revenue (incl. subsidy) vs total_revenue_excluding_subsidy (earned, excl. subsidy)
   - Enterprise scale vs self-funding — a big total_revenue is mostly subsidy for transfer-heavy agencies
+  - 'Total revenues' on a city / government-wide ACFR statement is the WHOLE municipality — never record that as the agency's total
+  - A US enterprise-fund 'total operating revenues' subtotal EXCLUDES subsidy — total_revenue needs operating plus non-operating revenue combined
+  - Budget or amended-budget columns printed beside actuals are not actuals
 - **Equations:** `annual_surplus_deficit_def`, `total_revenue_def`
 - **Source tier:** annual_report
 
@@ -695,19 +772,25 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** Passenger fare revenue only — cash, passes, and concession fares paid by riders. The honest numerator for farebox recovery and average fare, kept narrow so those ratios are not inflated by ancillary or capital income.
 - **Is NOT:** NOT total_revenue_excluding_subsidy (which is the broader "all revenue except subsidy", including advertising/charter/investment income), NOT total revenue, and NOT subsidy. Third-party fare-program reimbursements (One Fare, U-Pass) are SUBSIDY, not farebox revenue — they do not belong here.
+- **Statement:** income_statement
 - **Entity scope:** Company-wide: fares for the whole reporting organization (the transit division's schedule for a transit-as-a-city-division agency), not a single route or segment.
-- **Scale/unit:** Record whole-dollar CAD; scale up figures printed in $000s or $M.
+- **Scale/unit:** Record whole-dollar amounts in the agency's reporting currency (CAD or USD); scale up figures printed in $000s or $M.
 - **Unit:** CAD (currency)
 - **Period:** Monthly for the farebox portion at large agencies (StatCan); otherwise annual from the audited statement of operations.
 - **Includes:** Passenger fares: cash, passes, concession and student fares
 - **Excludes:** Ancillary operating income (advertising, charter, fees) — that is other_revenue; Government subsidy and third-party fare-program reimbursements (One Fare, U-Pass); Capital and investment income
-- **Labels (EN):** Farebox revenue; Passenger fare revenue; Fare revenue; Transit fares
-- **Labels (FR):** Recettes tarifaires; Recettes de la clientèle; Revenus des passagers
+- **Labels (EN):** Farebox revenue; Fare box revenue; Passenger fare revenue; Passenger fare revenues; Fare revenue; Fare revenues; Fare revenues earned; Fares; Passenger fares; Fares and passes; Passenger revenue; Transportation revenue; Transit fares; Revenue from passengers; Ticket and pass revenue
+- **Labels (FR):** Recettes tarifaires; Recettes de la clientèle; Revenus des passagers; Produits tarifaires; Revenus de la clientèle; Titres de transport; Droits de passage
 - **Where in a report:** Statement of operations / revenue note (fare-revenue line); farebox and ridership tables.
 - **Common confusions:**
   - Farebox revenue (fares only) vs total_revenue_excluding_subsidy (fares + other earned revenue)
   - Fares vs One Fare / U-Pass reimbursements, which are subsidy — never farebox
   - Fares vs advertising/charter income (that is other_revenue)
+  - US NTD 'fare revenues earned' (accrual — what riders owed) vs 'fares collected' (cash counted) — record the audited earned figure and note which basis the source used
+  - 'Passenger revenue' / 'transportation revenue' on a US GASB enterprise-fund statement is fares; 'operating revenue' on the same statement is broader (fares + advertising + other)
+  - Contract or purchased-service revenue paid by an institution (school board, university, another municipality) is other_revenue or subsidy — the rider did not pay it
+  - 'Charges for services' on a city-wide ACFR covers every municipal fee, not transit fares
+  - A single mode's or single fare-product's revenue is a COMPONENT — never record it as the fares total
 - **Equations:** `average_fare_def`, `earned_revenue_components`, `farebox_recovery_def`
 - **Source tier:** annual_report
 
@@ -715,18 +798,21 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The audited PSAB statement-of-operations total expenses for the whole enterprise — operating costs plus amortization. The enterprise-lens expense figure that pairs with total_revenue to give the annual surplus/deficit.
 - **Is NOT:** NOT operating_expenses on the CUTA operating basis (which excludes amortization) — this is the full audited total. NOT capital expenditure (a separate cash-flow / TCA-additions item).
+- **Statement:** income_statement
 - **Entity scope:** Company-wide: the audited entity total for the whole reporting organization; for multi-division agencies use the entity total (no segment carve-outs), and for a transit division inside a city use the transit division's schedule, never the municipality-wide total.
-- **Scale/unit:** Record whole-dollar CAD; scale up figures printed in thousands or millions.
+- **Scale/unit:** Record whole-dollar amounts in the agency's reporting currency (CAD or USD); scale up figures printed in thousands or millions.
 - **Unit:** CAD (currency)
 - **Period:** Annual (statement of operations).
 - **Includes:** All operating costs plus amortization for the whole organization
 - **Excludes:** Capital expenditure (a separate item, not an operating-statement expense)
-- **Labels (EN):** Total expenses; Total expenditures; Expenses (total)
-- **Labels (FR):** Total des charges; Total des dépenses; Charges totales
+- **Labels (EN):** Total expenses; Total expenditures; Expenses (total); Total costs and expenses; Total operating and non-operating expenses
+- **Labels (FR):** Total des charges; Total des dépenses; Charges totales; Total des charges et frais
 - **Where in a report:** Statement of operations (total expenses line) in the audited financial statements.
 - **Common confusions:**
   - Total expenses (incl. amortization) vs operating_expenses on the CUTA basis (excl. amortization)
   - Total expenses (a flow) vs capital expenditure or total liabilities
+  - 'Total expenditures' on a fund-basis (modified accrual) statement includes capital outlay and debt principal — that is not the accrual total expenses
+  - A city consolidated 'total expenses' is the whole municipality
 - **Equations:** `annual_surplus_deficit_def`
 - **Source tier:** annual_report
 
@@ -734,19 +820,23 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The broad non-fare, non-subsidy earned-revenue residual — advertising, charter, fees, investment income, and any capital-contribution revenue swept into the earned side. Defined so farebox_revenue + other_revenue = total_revenue_excluding_subsidy (the StatCan "total revenue, excluding subsidies" line). Computed by TransitIndex as the residual.
 - **Is NOT:** NOT government subsidy (that is its own line and is excluded from total_revenue_excluding_subsidy), and NOT passenger fares (that is farebox_revenue). It is deliberately broad on the earned side.
+- **Statement:** income_statement
 - **Entity scope:** Company-wide: it is the residual of two company-wide figures (total_revenue_excluding_subsidy and farebox_revenue), so it inherits the whole-organization scope.
-- **Scale/unit:** A derived whole-dollar CAD figure; inherits the scale of its sourced inputs.
+- **Scale/unit:** A derived whole-dollar figure in the agency's reporting currency (CAD or USD); inherits the scale of its sourced inputs.
 - **Unit:** CAD (currency)
 - **Formula:** `total_revenue_excluding_subsidy - farebox_revenue`
 - **Period:** Matches its inputs' period (same agency, same period).
 - **Includes:** Advertising, charter, fees, investment income, and other non-fare earned revenue
 - **Excludes:** Passenger fares (farebox_revenue); Government operating subsidy/transfers
-- **Labels (EN):** Other revenue; Non-fare revenue; Ancillary revenue
-- **Labels (FR):** Autres revenus; Revenus divers; Produits accessoires
+- **Labels (EN):** Other revenue; Other revenues; Non-fare revenue; Ancillary revenue; Other operating revenue; Miscellaneous revenue; Advertising revenue; Advertising and other revenue; Auxiliary transportation revenue; Nontransportation revenue; Investment income; Interest and investment income; Other income
+- **Labels (FR):** Autres revenus; Autres produits; Revenus divers; Produits accessoires; Revenus publicitaires; Revenus de placements; Autres produits d'exploitation
 - **Where in a report:** Computed by TransitIndex as total_revenue_excluding_subsidy − farebox_revenue; some reports print an "other revenue" line as a cross-check.
 - **Common confusions:**
   - Other (non-fare) revenue vs government subsidy — subsidy is never part of other_revenue
   - The broad earned residual vs a specific ancillary line
+  - US NTD/GASB split 'auxiliary transportation revenue' (advertising, concessions, parking) from 'nontransportation revenue' (investment income) — both belong to this one metric
+  - Capital grants or 'capital contributions' recognized as revenue are NOT other_revenue — they sit on the subsidy/total_revenue side
+  - 'Other revenue' on a city consolidated statement is the whole municipality's residual, not the transit division's
 - **Equations:** `earned_revenue_components`
 - **Source tier:** derived
 
@@ -754,19 +844,22 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The bottom line of the statement of operations — total_revenue minus total_expenses for the year. The bridge from the operating statement to the balance sheet: accumulated_surplus(end) = accumulated_surplus(start) + annual_surplus_deficit. Computed by TransitIndex from the two enterprise totals.
 - **Is NOT:** NOT accumulated surplus (the cumulative net position on the balance sheet — this is one year's flow), and NOT the operating gap covered by subsidy. A NEGATIVE value is a deficit (expenses exceeded revenue); a positive value is a surplus.
+- **Statement:** income_statement
 - **Entity scope:** Company-wide: derived from company-wide total_revenue and total_expenses, so it is the whole organization's annual result.
-- **Scale/unit:** A derived whole-dollar CAD figure (can be negative — a deficit).
+- **Scale/unit:** A derived whole-dollar figure in the agency's reporting currency (CAD or USD) (can be negative — a deficit).
 - **Unit:** CAD (currency)
 - **Formula:** `total_revenue - total_expenses`
 - **Period:** Matches its inputs' period (annual).
 - **Includes:** The single year's revenue-minus-expenses result for the whole organization
 - **Excludes:** The cumulative accumulated surplus (a balance-sheet stock)
-- **Labels (EN):** Annual surplus; Annual surplus (deficit); Annual deficit; Surplus / (deficit) for the year
-- **Labels (FR):** Excédent annuel; Excédent (déficit) de l'exercice; Résultat de l'exercice
+- **Labels (EN):** Annual surplus; Annual surplus (deficit); Annual deficit; Surplus / (deficit) for the year; Annual surplus for the year; Change in net position; Increase (decrease) in net position; Excess of revenues over expenses; Net income (loss)
+- **Labels (FR):** Excédent annuel; Excédent (déficit) de l'exercice; Résultat de l'exercice; Déficit de l'exercice; Excédent (insuffisance) des produits sur les charges; Variation de l'actif net
 - **Where in a report:** Statement of operations (bottom line); computed by TransitIndex from total_revenue − total_expenses.
 - **Common confusions:**
   - Annual surplus/deficit (one year's flow) vs accumulated surplus (the cumulative stock)
   - A negative value means a DEFICIT (expenses > revenue), not a data error
+  - US 'change in net position' is this metric; 'operating income (loss)' (struck before subsidy) is NOT — that is the operating gap subsidy fills
+  - 'Change in net position' of a fiduciary or pension trust fund is never the agency's result
 - **Equations:** `annual_surplus_deficit_def`
 - **Source tier:** derived
 
@@ -774,19 +867,21 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The residual within financial assets: total_financial_assets minus cash_and_investments — chiefly accounts receivable and other short-term financial assets. Defined so cash_and_investments + other_financial_assets = total_financial_assets. Computed by TransitIndex as the residual.
 - **Is NOT:** NOT total_financial_assets (it is only the non-cash portion), and NOT non-financial/tangible capital assets. A point-in-time stock, not a flow. A negative residual means the components exceed the total — flag it, do not record a negative "other".
+- **Statement:** balance_sheet
 - **Entity scope:** Company-wide: the residual of two company-wide balance-sheet figures, so it is the whole organization's figure.
-- **Scale/unit:** A derived whole-dollar CAD point-in-time figure.
+- **Scale/unit:** A derived whole-dollar point-in-time figure in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Formula:** `total_financial_assets - cash_and_investments`
 - **Period:** Matches its inputs' period (annual, point-in-time at fiscal year-end).
 - **Includes:** Accounts receivable and other financial assets that are not cash or investments
 - **Excludes:** Cash and investments (cash_and_investments); Non-financial / tangible capital assets
-- **Labels (EN):** Other financial assets; Receivables and other financial assets
-- **Labels (FR):** Autres actifs financiers; Débiteurs et autres actifs financiers
+- **Labels (EN):** Other financial assets; Receivables and other financial assets; Accounts receivable; Receivables; Due from other governments; Taxes receivable
+- **Labels (FR):** Autres actifs financiers; Débiteurs et autres actifs financiers; Débiteurs; Créances; Sommes à recevoir
 - **Where in a report:** Computed by TransitIndex as total_financial_assets − cash_and_investments (both from the statement of financial position).
 - **Common confusions:**
   - A component of total_financial_assets vs the total itself
   - cash_and_investments vs total_financial_assets — other_financial_assets is the gap between them
+  - US statements have no PSAS financial-assets subtotal, so this residual cannot be computed for most US agencies
 - **Equations:** `financial_assets_components`
 - **Source tier:** derived
 
@@ -794,19 +889,21 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The residual within liabilities: total_liabilities minus long_term_debt — accounts payable, deferred revenue, and employee future benefits. Defined so long_term_debt + other_liabilities = total_liabilities. Computed by TransitIndex as the residual.
 - **Is NOT:** NOT total_liabilities (it is only the non-long-term-debt portion), and NOT net debt. A point-in-time stock. A negative residual means the components exceed the total — flag it.
+- **Statement:** balance_sheet
 - **Entity scope:** Company-wide: the residual of two company-wide balance-sheet figures, so it is the whole organization's figure.
-- **Scale/unit:** A derived whole-dollar CAD point-in-time figure.
+- **Scale/unit:** A derived whole-dollar point-in-time figure in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Formula:** `total_liabilities - long_term_debt`
 - **Period:** Matches its inputs' period (annual, point-in-time at fiscal year-end).
 - **Includes:** Accounts payable, deferred revenue, employee future benefits, other liabilities
 - **Excludes:** Long-term debt (long_term_debt); Net debt (a derived figure, not a liability line)
-- **Labels (EN):** Other liabilities; Accounts payable and other liabilities
-- **Labels (FR):** Autres passifs; Créditeurs et autres passifs
+- **Labels (EN):** Other liabilities; Accounts payable and other liabilities; Accounts payable and accrued liabilities; Accrued liabilities; Deferred revenue; Unearned revenue; Deferred capital contributions; Employee future benefits; Net pension liability; Other post-employment benefits (OPEB)
+- **Labels (FR):** Autres passifs; Créditeurs et autres passifs; Créditeurs et charges à payer; Revenus reportés; Apports de capital reportés; Avantages sociaux futurs
 - **Where in a report:** Computed by TransitIndex as total_liabilities − long_term_debt (both from the statement of financial position).
 - **Common confusions:**
   - A component of total_liabilities vs the total_liabilities total itself
   - long_term_debt vs total_liabilities — other_liabilities is the gap between them
+  - Deferred capital contributions (PSAS) and unearned revenue (US) both sit in this residual, not in long-term debt
 - **Equations:** `liabilities_components`
 - **Source tier:** derived
 
@@ -814,19 +911,21 @@ A precise, plain-language spec for every metric: what it is, what it is not, whe
 
 - **Is:** The residual within non-financial assets: total_non_financial_assets minus tangible_capital_assets — chiefly inventories and prepaid expenses. Defined so tangible_capital_assets + other_non_financial_assets = total_non_financial_assets. Computed by TransitIndex as the residual.
 - **Is NOT:** NOT total_non_financial_assets (it is only the non-TCA portion), and NOT financial assets (cash, investments, receivables). A point-in-time stock. A negative residual means the components exceed the total — flag it.
+- **Statement:** balance_sheet
 - **Entity scope:** Company-wide: the residual of two company-wide balance-sheet figures, so it is the whole organization's figure.
-- **Scale/unit:** A derived whole-dollar CAD point-in-time figure.
+- **Scale/unit:** A derived whole-dollar point-in-time figure in the agency's reporting currency (CAD or USD).
 - **Unit:** CAD (currency)
 - **Formula:** `total_non_financial_assets - tangible_capital_assets`
 - **Period:** Matches its inputs' period (annual, point-in-time at fiscal year-end).
 - **Includes:** Inventories, prepaid expenses, and other non-financial assets
 - **Excludes:** Tangible capital assets (tangible_capital_assets); Financial assets (cash, investments, receivables)
-- **Labels (EN):** Other non-financial assets; Inventories and prepaid expenses
-- **Labels (FR):** Autres actifs non financiers; Stocks et charges payées d'avance
+- **Labels (EN):** Other non-financial assets; Inventories and prepaid expenses; Inventory; Inventories of supplies; Prepaid expenses; Supplies inventory
+- **Labels (FR):** Autres actifs non financiers; Stocks et charges payées d'avance; Stocks; Charges payées d'avance
 - **Where in a report:** Computed by TransitIndex as total_non_financial_assets − tangible_capital_assets (both from the statement of financial position).
 - **Common confusions:**
   - A component of total_non_financial_assets vs the total itself
   - tangible_capital_assets vs total_non_financial_assets — this is the gap between them
+  - US statements have no PSAS non-financial-assets subtotal, so this residual cannot be computed for most US agencies
 - **Equations:** `non_financial_assets_components`
 - **Source tier:** derived
 

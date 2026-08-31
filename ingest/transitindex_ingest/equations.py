@@ -413,6 +413,34 @@ def _residual_flag(
     return None if _close(actual, computed, rel_tol, abs_tol) else CROSS_SOURCE_DISAGREEMENT
 
 
+def cross_check_failures(
+    working: Mapping[str, SolvedValue],
+    *,
+    rel_tol: Decimal = Decimal("0.02"),
+    abs_tol: Decimal = Decimal("0"),
+) -> list[tuple[Equation, str]]:
+    """Equations determined entirely by OBSERVED values whose residual disagrees.
+
+    Returns `[(equation, flag), ...]` so a caller can attribute the disagreement
+    to the exact operands that took part -- `solve` itself only needs the flag
+    strings. Skipping equations with any SOLVED operand is what keeps a green
+    identity meaningful: it means two INDEPENDENT observations agree, never that
+    a value agrees with the equation that produced it.
+    """
+    out: list[tuple[Equation, str]] = []
+    for eq in sorted(EQUATIONS, key=lambda e: e.code):
+        ops = eq.operands
+        if not all(o in working for o in ops):
+            continue
+        metric_ops = [o for o in ops if not o.startswith(ATTR_PREFIX)]
+        if not metric_ops or any(working[o].origin != "observed" for o in metric_ops):
+            continue
+        flag = _residual_flag(eq, working, rel_tol, abs_tol)
+        if flag is not None:
+            out.append((eq, flag))
+    return out
+
+
 def solve(
     observed: Mapping[str, Decimal],
     *,
@@ -468,15 +496,8 @@ def solve(
 
     # Cross-checks: only over equations whose operands are ALL observed, so a
     # green identity never reflects a value agreeing with its own derivation.
-    for eq in eqs:
-        ops = eq.operands
-        if not all(o in working for o in ops):
-            continue
-        metric_ops = [o for o in ops if not o.startswith(ATTR_PREFIX)]
-        if not metric_ops or any(working[o].origin != "observed" for o in metric_ops):
-            continue
-        flag = _residual_flag(eq, working, rel_tol, abs_tol)
-        if flag is not None and flag not in flags:
+    for _eq, flag in cross_check_failures(working, rel_tol=rel_tol, abs_tol=abs_tol):
+        if flag not in flags:
             flags.append(flag)
 
     return SolveResult(values=working, flags=flags)

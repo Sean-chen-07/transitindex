@@ -27,6 +27,7 @@ from __future__ import annotations
 import base64
 from typing import Optional
 
+from ..refdata import agency_currency
 from .extractor import ExtractionRequest, ExtractionResult
 from .llm import EXTRACTION_SYSTEM_PROMPT, EXTRACTION_TOOL, _row_to_value
 
@@ -180,12 +181,13 @@ class MarkitdownExtractor:
             messages=[{"role": "user", "content": content}],
         )
 
+        currency = agency_currency(request.agency_slug)
         values = []
         for r in _rows(message):
             if not isinstance(r, dict):
                 continue
             try:
-                values.append(_row_to_value(r))
+                values.append(_row_to_value(r, currency))
             except (KeyError, ValueError, TypeError):
                 continue
 

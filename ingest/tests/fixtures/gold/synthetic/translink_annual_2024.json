@@ -2,7 +2,8 @@
   "agency_slug": "translink",
   "period_year": 2024,
   "period_kind": "annual",
-  "description": "Hand-verified gold values for a TransLink-style 2024 PSAB annual-report fixture. Covers the ten financial-statement additions from metric-set-build-plan.md Phase 4 (amortization, other_operating_expenses, total_revenue, farebox_revenue, total_expenses, other_revenue, annual_surplus_deficit, other_financial_assets, other_liabilities, other_non_financial_assets) on a clean statement where every closed identity (expense components, revenue components, total_revenue definition, annual surplus/deficit, and the three balance-sheet component identities) reconciles exactly. `should_flag` marks the one row where the source prints a component (a single provincial operating grant) that a healthy extractor must NOT promote to the `subsidy` total.",
+  "synthetic": true,
+  "description": "SYNTHETIC UNIT-TEST SCENARIO — not real TransLink figures, never score a real document against this file. Invented round numbers on a TransLink-style 2024 PSAB statement, paired with tests/fixtures/gold/synthetic/translink_annual_2024_pages.txt. Covers the ten financial-statement additions from metric-set-build-plan.md Phase 4 (amortization, other_operating_expenses, total_revenue, farebox_revenue, total_expenses, other_revenue, annual_surplus_deficit, other_financial_assets, other_liabilities, other_non_financial_assets) on a clean statement where every closed identity (expense components, revenue components, total_revenue definition, annual surplus/deficit, and the three balance-sheet component identities) reconciles exactly. `should_flag` marks the one row where the source prints a component (a single provincial operating grant) that a healthy extractor must NOT promote to the `subsidy` total.",
   "records": [
     {
       "metric_code": "labour_cost",

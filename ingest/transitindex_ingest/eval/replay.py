@@ -9,9 +9,14 @@ improvement before a live run pays for one:
      spread rule (`_within_merge_tolerance`); a group within 0.5% collapses to one
      reading (no longer a review item), a wider spread survives as a real conflict.
   2. Quote check -- step 1.4's `quote_supports_value` is run over each recorded
-     (value, quote) pair. Recorded values are post-scaling, so the as-printed
-     digits are approximated leniently: the value's integer digits with trailing
-     zeros stripped must appear in the quote's normalized digits.
+     (value, quote) pair (via `accuracy_report.quote_support`). Recorded values
+     are post-scaling, so the as-printed digits are approximated leniently: the
+     value's integer digits with trailing zeros stripped must appear in the
+     quote's normalized digits, decimal points ignored.
+
+It then prints the offline accuracy summary (`eval/accuracy_report.py`) over the
+same recording: value counts, flags by type, review rate, and precision /
+flag_recall for every doc that has a CONFIRMED gold fixture.
 
 It prints a per-doc + totals table and writes `ingest/_replay_report.json`
 (untracked, like the smoke file). This is a REPORT, not a gate -- it imports the
@@ -27,7 +32,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from ..pdf.chunked_hybrid import REVIEW_CONFIDENCE, _within_merge_tolerance
-from ..pdf.llm import quote_supports_value
+from .accuracy_report import accuracy_report, format_report, quote_support
 
 # The committed smoke recording is the default "before" baseline (parents[2] is ingest/).
 _DEFAULT_SMOKE = (
@@ -88,7 +93,7 @@ def _replay_doc(entry: dict) -> dict:
         printed = _printed_digits(v["value"])
         if not printed:  # zero-magnitude reading: skip the digit check
             continue
-        support = quote_supports_value(printed, v.get("quote"))
+        support = quote_support(printed, v.get("quote"))
         if support is None:
             quote_match += 1
         elif support == "missing":
@@ -119,7 +124,13 @@ def _replay_doc(entry: dict) -> dict:
 
 
 def replay(smoke_json: Path) -> dict:
-    """Replay every doc in a smoke fixture; return {'docs': [...], 'totals': {...}}."""
+    """Replay every doc in a smoke fixture.
+
+    Returns {'docs': [...], 'totals': {...}, 'accuracy': {...}} -- the accuracy
+    block is the offline before/after instrument (`eval/accuracy_report.py`) run
+    over the same recording, including gold scoring for any doc with a confirmed
+    fixture.
+    """
     smoke = json.loads(Path(smoke_json).read_text(encoding="utf-8"))
     docs = [_replay_doc(entry) for entry in smoke]
     totals_keys = (
@@ -127,7 +138,7 @@ def replay(smoke_json: Path) -> dict:
         "lowconf_before", "lowconf_after", "quote_match", "quote_missing", "quote_mismatch",
     )
     totals = {k: sum(d[k] for d in docs) for k in totals_keys}
-    return {"docs": docs, "totals": totals}
+    return {"docs": docs, "totals": totals, "accuracy": accuracy_report(smoke)}
 
 
 _HEADER = (
@@ -176,6 +187,8 @@ def main() -> None:
         f"\nquote check (all docs): {t['quote_match']} match, "
         f"{t['quote_missing']} missing, {t['quote_mismatch']} mismatch"
     )
+    print()
+    print(format_report(report["accuracy"]))
     _REPORT_PATH.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print("wrote", _REPORT_PATH)
 

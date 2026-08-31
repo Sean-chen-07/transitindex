@@ -1,4 +1,7 @@
-"""TransLink gold fixture: the ten Phase-4 financial-statement additions.
+"""TransLink SYNTHETIC scenario: the ten Phase-4 financial-statement additions.
+
+The fixture lives in tests/fixtures/gold/synthetic/ -- invented round numbers on
+a TransLink-style statement, not real TransLink figures.
 
 Covers metric-set-build-plan.md Phase 7 item 2 ("add a fixture row per new
 metric ... recommend TransLink for the clean PSAB statement"): a clean,
@@ -20,7 +23,7 @@ from transitindex_ingest.pdf.llm import ExtractedValue
 from transitindex_ingest.pdf.pipeline import SourceRefMeta
 from transitindex_ingest.validation.flags import validate
 
-GOLD_DIR = Path(__file__).parent / "fixtures" / "gold"
+GOLD_DIR = Path(__file__).parent / "fixtures" / "gold" / "synthetic"
 GOLD = load_gold(GOLD_DIR / "translink_annual_2024.json")
 PAGES = pages_from_text(
     (GOLD_DIR / "translink_annual_2024_pages.txt").read_text(encoding="utf-8").split("=== PAGE")

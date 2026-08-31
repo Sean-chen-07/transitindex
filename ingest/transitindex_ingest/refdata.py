@@ -150,6 +150,16 @@ AGENCIES: Mapping[str, Mapping] = MappingProxyType(
 # tests can monkeypatch entries; production code must never mutate it.
 ALL_AGENCIES: dict[str, Mapping] = {**AGENCIES, **US_AGENCIES}
 
+
+def agency_currency(agency_slug: str) -> str:
+    """The agency's reporting currency ('CAD'/'USD'); CAD for anything untracked.
+
+    The METRICS catalog below is CAD-denominated ("CAD", "CAD/hr"); callers that
+    stamp a unit or a currency on a value swap this in for the "CAD" token.
+    """
+    return ALL_AGENCIES.get(agency_slug, {}).get("currency", "CAD")
+
+
 # --- 41 metrics (db/seeds/04_metrics.sql) ------------------------------------
 # code -> unit, unit_type, is_derived, formula (None unless derived),
 # higher_is_better (None = neutral). Insertion order preserved.

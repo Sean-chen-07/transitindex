@@ -11,6 +11,8 @@ seed generator consume):
   * ntd_monthly.csv — Complete Monthly Ridership (Socrata 8bui-9xvu),
     Full Reporters only, months >= --since (default 2019-01).
   * ntd_annual.csv  — NTD Annual Data, Metrics (Socrata ekg5-frzt), all rows.
+  * ntd_agency_info.csv — NTD Reporter Agency Information (Socrata ccvf-fykn),
+    all rows; supplies each reporter's fiscal-year end date.
 
 Optional env: NTD_APP_TOKEN — sent as X-App-Token to avoid 429 throttling.
 Retries each page up to 4 times with exponential backoff. Stdlib only.
@@ -41,6 +43,14 @@ DATASETS = {
         "id": "ekg5-frzt",
         "where": None,
         "order": "ntd_id,report_year,mode,type_of_service",
+    },
+    # Reporter Agency Information: the only NTD table carrying each reporter's
+    # fiscal-year end (fy_end_date), which the seed generator turns into
+    # fiscal_year_end_month. Small (~3k rows).
+    "ntd_agency_info.csv": {
+        "id": "ccvf-fykn",
+        "where": None,
+        "order": "ntd_id",
     },
 }
 

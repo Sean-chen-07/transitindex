@@ -9,19 +9,29 @@ composers.
 from __future__ import annotations
 
 from .flags import (
+    DERIVED,
+    SUMMED_FROM_COMPONENTS,
+    cohorts,
     cross_source_disagreement,
     sum_mismatch,
+    sum_mismatch_records,
     unit_mismatch,
     validate,
     validate_cohort,
+    validate_cohort_records,
     yoy_spike,
 )
 
 __all__ = [
+    "DERIVED",
+    "SUMMED_FROM_COMPONENTS",
     "yoy_spike",
     "cross_source_disagreement",
     "unit_mismatch",
     "sum_mismatch",
+    "sum_mismatch_records",
+    "cohorts",
     "validate",
     "validate_cohort",
+    "validate_cohort_records",
 ]

@@ -2,7 +2,8 @@
   "agency_slug": "ttc",
   "period_year": 2024,
   "period_kind": "annual",
-  "description": "Hand-verified gold values for the TTC 2024 annual report fixture. Each row is a true figure a correct extractor should return within `tolerance` (relative). `should_flag` marks rows that a healthy extractor should mark low-confidence (or that validation should flag) because the source figure is ambiguous, restated, or unit-confusing. The eval guards precision (clean values within tolerance) and flag-recall (the hard rows get flagged).",
+  "synthetic": true,
+  "description": "SYNTHETIC UNIT-TEST SCENARIO — not real TTC figures, never score a real document against this file. Invented round numbers paired with tests/fixtures/gold/synthetic/ttc_annual_2024_pages.txt so the eval machinery (precision / flag-recall) can be exercised offline. Each row is a true figure a correct extractor should return within `tolerance` (relative). `should_flag` marks rows that a healthy extractor should mark low-confidence (or that validation should flag) because the source figure is ambiguous, restated, or unit-confusing. The eval guards precision (clean values within tolerance) and flag-recall (the hard rows get flagged).",
   "records": [
     {
       "metric_code": "ridership",

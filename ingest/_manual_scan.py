@@ -43,11 +43,11 @@ def _repo():
 
 
 def _slug_map(repo) -> dict:
-    """agency_id -> slug for the seeded launch agencies."""
-    from transitindex_ingest.refdata import AGENCIES
+    """agency_id -> slug for the seeded agencies (Canadian + US)."""
+    from transitindex_ingest.refdata import ALL_AGENCIES
 
     out = {}
-    for slug in AGENCIES:
+    for slug in ALL_AGENCIES:
         try:
             out[repo.agency_id(slug)] = slug
         except ValueError:

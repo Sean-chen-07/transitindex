@@ -74,3 +74,13 @@ def test_replay_totals_aggregate_docs():
     assert len(report["docs"]) == 10
     assert report["totals"]["collapsed"] == sum(d["collapsed"] for d in report["docs"])
     assert report["totals"]["conflicts_before"] > report["totals"]["conflicts_after"]
+
+
+def test_replay_carries_the_accuracy_report():
+    """replay() ships the offline accuracy summary, gold-scored where a confirmed
+    fixture matches the recording (doc 59 ttc 2019, doc 13 calgary-transit 2019)."""
+    accuracy = replay(SMOKE)["accuracy"]
+    assert accuracy["totals"]["values"] == 438
+    assert accuracy["totals"]["flags"]["conflict"] > 0
+    scored = {(g["slug"], g["year"]) for g in accuracy["gold"]}
+    assert scored == {("ttc", 2019), ("calgary-transit", 2019)}

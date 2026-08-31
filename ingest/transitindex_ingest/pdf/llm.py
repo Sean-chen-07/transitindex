@@ -13,12 +13,13 @@ number parser are stdlib-pure; the Anthropic SDK is imported lazily inside
 
 from __future__ import annotations
 
+import copy
 import re
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Optional, Protocol, runtime_checkable
 
-from ..refdata import METRICS
+from ..refdata import METRICS, agency_currency
 
 # The sourced metrics (every non-derived code in METRICS) are the only ones the
 # model may emit. Derived metrics (average_fare, farebox_recovery_ratio, ...)
@@ -36,6 +37,11 @@ LOW_CONFIDENCE_THRESHOLD = Decimal("0.7")
 # unverifiable; a quote whose digits don't match is a stronger red flag.
 QUOTE_MISSING_CONFIDENCE_CAP = Decimal("0.5")
 QUOTE_MISMATCH_CONFIDENCE_CAP = Decimal("0.3")
+
+# Stamped in a value's note when the extractor added up printed component rows
+# instead of reading a printed total (see chunked_hybrid.aggregate_components).
+# The pipeline looks for it to raise the reviewer-visible flag.
+COMPONENT_SUM_MARKER = "Σ summed from printed components"
 
 
 @dataclass(frozen=True)
@@ -65,6 +71,10 @@ class ExtractedValue:
     cost_basis: str = "operating"  # 'operating' (excl. amortization) | 'psab_total' (incl.)
     printed_label: Optional[str] = None  # verbatim printed row/line label the number was read from
     table_reference: Optional[str] = None  # statement/note/schedule id, e.g. "Note 7", "Schedule 2"
+    # Set when this row is ONE PRINTED ADDEND of `metric_code` rather than the
+    # whole metric (the page prints the sub-lines but no total). Carries the
+    # addend's printed label; code sums the components deterministically.
+    component_label: Optional[str] = None
 
 
 def value_to_dict(v: ExtractedValue) -> dict:
@@ -88,6 +98,7 @@ def value_to_dict(v: ExtractedValue) -> dict:
         "cost_basis": v.cost_basis,
         "printed_label": v.printed_label,
         "table_reference": v.table_reference,
+        "component_label": v.component_label,
     }
 
 
@@ -111,6 +122,7 @@ def value_from_dict(d: dict) -> ExtractedValue:
         cost_basis=d.get("cost_basis", "operating"),
         printed_label=d.get("printed_label"),
         table_reference=d.get("table_reference"),
+        component_label=d.get("component_label"),
     )
 
 
@@ -126,13 +138,23 @@ class LLMClient(Protocol):
 
 # --- system prompt + structured-output tool ---------------------------------
 
-EXTRACTION_SYSTEM_PROMPT = f"""\
-You extract transit performance figures from a Canadian transit agency's annual
-report or budget. Return ONLY values you can read directly from the text.
+def _metric_list_block(codes) -> str:
+    """The prompt's 'extract ONLY these codes' paragraph, for a given code list."""
+    return (
+        f"Extract ONLY these {len(codes)} metric codes (ignore everything\n"
+        "else, and NEVER compute ratios or per-rider figures -- those are derived later):\n"
+        + ", ".join(codes)
+    )
 
-Extract ONLY these {len(SOURCED_METRIC_CODES)} metric codes (ignore everything
-else, and NEVER compute ratios or per-rider figures -- those are derived later):
-{", ".join(SOURCED_METRIC_CODES)}
+
+_METRIC_LIST_ALL = _metric_list_block(SOURCED_METRIC_CODES)
+
+EXTRACTION_SYSTEM_PROMPT = f"""\
+You extract transit performance figures from a Canadian or US transit agency's
+annual report, ACFR, or budget. Return ONLY values you can read directly from
+the text.
+
+{_METRIC_LIST_ALL}
 
 Rules:
 - One result per (metric, reporting period). Use the period the figure reports
@@ -148,6 +170,20 @@ Rules:
   (reliable); the code does the long-number arithmetic (exact, auditable).
 - Set `printed_sign` to 'negative' for an accounting-bracketed figure like
   "(1,234)"; otherwise 'positive'.
+- NEVER DO ARITHMETIC. You transcribe, the code calculates. Do not add sub-lines
+  together, do not subtract, do not convert units, do not annualize a partial
+  year, do not multiply out a "(in thousands)" header, do not compute a total,
+  a difference, or a ratio. Record ONLY figures physically printed on the page.
+- If a statement prints the SUB-LINES that make up one of our metrics but no
+  total line for it, do NOT add them up. Emit one row per printed sub-line, all
+  with the same `metric_code`, and set `component_label` to that sub-line's
+  printed label (e.g. metric_code 'energy_fuel_cost' with component_label
+  'Diesel fuel' and another with 'Electricity'). The code sums the components
+  and shows the reviewer that the total was summed, not printed. Leave
+  `component_label` null whenever the row IS the whole metric -- never mix a
+  printed total and its components for the same metric and period.
+- Money figures are in the agency's own reporting currency (CAD or USD); record
+  the amount as printed and never convert between currencies.
 - Canadian/French documents write a comma decimal ("12,5" = 12.5) and spaces as
   thousands separators ("1 234 567"); report the plain magnitude (e.g. 12.5).
 - confidence is 0..1. If you are NOT sure a figure maps to one of the codes,
@@ -181,6 +217,23 @@ Rules:
   out the transit agency as its own segment/schedule, do NOT map the city-wide
   figures to the agency -- skip them and record the gap in `note`. Never
   attribute a whole municipality's balance sheet to its transit system.
+
+US reports (ACFR / NTD-style):
+- Fiscal years often end June 30 or September 30, not December 31. "FY2024"
+  usually means the year ENDING in 2024 -> period_year 2024; state the span in
+  `note`.
+- Terminology differs: "fare revenues"/"passenger fares" = farebox revenue;
+  "operating assistance", "operating subsidies", "operating grants" = subsidy;
+  "depreciation" = amortization; "capital assets, net" = the tangible capital
+  assets line; "net position" = the accumulated surplus / net assets line.
+- An ACFR also prints a FIDUCIARY FUND statement (pension / OPEB trust: "Statement
+  of Fiduciary Net Position", "Statement of Changes in Fiduciary Net Position").
+  NEVER extract any figure from it -- those are the pension plan's assets, not
+  the agency's. The same goes for the plan's assets/liabilities in the pension
+  note.
+- Prefer the enterprise-fund / business-type statements for the transit agency
+  itself. A government-wide statement covering a whole city or county is
+  city_wide, not the transit service.
 
 Return your answer ONLY by calling the `record_metrics` tool.
 """
@@ -267,6 +320,10 @@ EXTRACTION_TOOL = {
                             "type": ["string", "null"],
                             "description": "Statement/note/schedule id, e.g. 'Note 7', 'Schedule 2'.",
                         },
+                        "component_label": {
+                            "type": ["string", "null"],
+                            "description": "Set ONLY when this row is one printed ADDEND of metric_code and the page prints no total line for it: the addend's printed label (e.g. 'Diesel fuel'). Emit one row per printed sub-line; the code adds them up. NEVER add them yourself. Leave null when the row IS the whole metric.",
+                        },
                     },
                     "required": [
                         "metric_code",
@@ -284,6 +341,38 @@ EXTRACTION_TOOL = {
         "required": ["values"],
     },
 }
+
+
+def extraction_system_prompt(allowed_codes: Optional[list[str]] = None) -> str:
+    """EXTRACTION_SYSTEM_PROMPT, optionally listing only `allowed_codes`.
+
+    Default (None) returns the shared prompt unchanged. A statement specialist
+    passes its own codes so the prompt's code list matches its tool schema --
+    otherwise the base prompt would name all 41 codes while the schema offers a
+    dozen, which reads as a contradiction.
+    """
+    if allowed_codes is None:
+        return EXTRACTION_SYSTEM_PROMPT
+    return EXTRACTION_SYSTEM_PROMPT.replace(
+        _METRIC_LIST_ALL, _metric_list_block(allowed_codes), 1
+    )
+
+
+def extraction_tool(allowed_codes: Optional[list[str]] = None) -> dict:
+    """The `record_metrics` tool schema, optionally with a narrowed metric enum.
+
+    Default (None) returns EXTRACTION_TOOL itself -- existing callers unchanged.
+    A statement specialist passes only its own statement's codes, so the SCHEMA
+    makes an out-of-statement code unrecordable: the balance-sheet parser
+    structurally cannot emit an income-statement metric.
+    """
+    if allowed_codes is None:
+        return EXTRACTION_TOOL
+    tool = copy.deepcopy(EXTRACTION_TOOL)
+    tool["input_schema"]["properties"]["values"]["items"]["properties"]["metric_code"][
+        "enum"
+    ] = list(allowed_codes)
+    return tool
 
 
 def parse_number(raw: object) -> Decimal:
@@ -338,15 +427,63 @@ def _strip_chars(text: str, chars: tuple[str, ...]) -> str:
     return text
 
 
-def quote_supports_value(printed: str, quote: Optional[str]) -> Optional[str]:
+# Number-ish runs inside a quote. Two passes: one that tolerates the space-family
+# thousands separators ("4 61.8" is one number), one that does not (so "525.5 521.4"
+# also yields its two numbers separately). A token is scored on its digits alone.
+_QUOTE_NUMBER_RES = (
+    re.compile(r"\d[\d,.\s]*\d|\d"),
+    re.compile(r"\d[\d,.]*\d|\d"),
+)
+
+# Below this many significant digits a scale-relaxed match is a coincidence, not
+# corroboration ("5" would "support" any figure starting with a 5).
+_MIN_SIGNIFICANT_DIGITS = 2
+
+
+def _significant_digits(text: str) -> str:
+    """A printed number's digits with the decimal point and end zeros removed.
+
+    "525.5" -> "5255", "525,500,000" -> "5255", "0.5" -> "5". This is the
+    scale-and-decimal-point-free identity of a figure: the equivalence class a
+    `printed_scale` header moves a number within.
+    """
+    return "".join(ch for ch in text if ch.isdigit()).strip("0")
+
+
+def _quote_number_tokens(quote: str) -> set[str]:
+    """The significant-digit forms of every number-ish token in the quote."""
+    tokens: set[str] = set()
+    for pattern in _QUOTE_NUMBER_RES:
+        for raw in pattern.findall(quote):
+            sig = _significant_digits(raw)
+            if sig:
+                tokens.add(sig)
+    return tokens
+
+
+def quote_supports_value(
+    printed: str, quote: Optional[str], printed_scale: str = "units"
+) -> Optional[str]:
     """Does the source quote contain the value's printed digits?
 
-    Returns None when the quote contains the printed value, 'missing' when there
-    is no quote, and 'mismatch' when a quote exists but the digits aren't in it.
-    Both strings are normalized (spaces / commas / accounting parens stripped);
-    the comma-decimal variant of `printed` is also tried so an English-printed
-    "525.5" matches a French-quoted "525,5". Compare on the as-printed string,
-    never the scaled Decimal."""
+    Returns None when the quote corroborates the printed value, 'missing' when
+    there is no quote, and 'mismatch' when a quote exists but the digits aren't
+    in it. Three passes, narrowest first:
+
+      1. Normalized substring (spaces / commas / accounting parens stripped).
+      2. The comma-decimal variant, so an English-printed "525.5" matches a
+         French-quoted "525,5".
+      3. Scale relaxation. A figure printed under a "(Millions)" header is read
+         off the page as "525.5" but may be reported already multiplied out, and
+         a scaled Decimal's digits ("525500000") are not a substring of the quote
+         -- a pure formatting artifact that used to slash confidence on ~24% of
+         values. So when the row declares a non-'units' `printed_scale`, or
+         either side carries a decimal point, the value's significant digits
+         (point and end zeros removed) must EQUAL those of a number token in the
+         quote. Equality, not substring, and at least
+         `_MIN_SIGNIFICANT_DIGITS` digits: a figure that simply is not in the
+         quote still fails.
+    """
     if quote is None or quote.strip() == "":
         return "missing"
     printed_norm = _strip_chars(printed, _QUOTE_STRIP)
@@ -359,6 +496,11 @@ def quote_supports_value(printed: str, quote: Optional[str]) -> Optional[str]:
     if "." in printed:
         comma_variant = _strip_chars(printed, _QUOTE_SPACES).replace(".", ",")
         if comma_variant in _strip_chars(quote, _QUOTE_SPACES + ("(", ")")):
+            return None
+    # Scale/decimal-point artifact: same significant digits at a different scale.
+    if printed_scale != "units" or "." in printed or "." in quote:
+        sig = _significant_digits(printed)
+        if len(sig) >= _MIN_SIGNIFICANT_DIGITS and sig in _quote_number_tokens(quote):
             return None
     return "mismatch"
 
@@ -384,13 +526,18 @@ def _append_note(note: Optional[str], addition: str) -> str:
     return f"{note}; {addition}" if note else addition
 
 
-def _row_to_value(row: dict) -> ExtractedValue:
+def _row_to_value(row: dict, currency: str = "CAD") -> ExtractedValue:
     """Build an ExtractedValue from one structured-output row (tool input).
 
     The model reports the number as printed plus printed_scale/printed_sign; the
     final value applies the scale multiplier and sign here in code. The free-text
     `unit` is discarded in favour of the metric's canonical unit, and a missing or
-    non-corroborating `source_quote` caps confidence (see quote_supports_value)."""
+    non-corroborating `source_quote` caps confidence (see quote_supports_value).
+
+    `currency` is the extracted agency's reporting currency (refdata
+    .agency_currency): the CAD-denominated catalog unit is redenominated to it,
+    so a US agency's figures come back as USD rather than being flagged
+    unit_mismatch downstream."""
     printed_scale = row.get("printed_scale") or "units"
     printed_sign = row.get("printed_sign") or "positive"
     service_scope = row.get("service_scope") or "total"
@@ -403,7 +550,7 @@ def _row_to_value(row: dict) -> ExtractedValue:
         note = _append_note(note, "restated figure")
     source_quote = row.get("source_quote")
     # Check the as-printed digits against the model's quote, never the scaled Decimal.
-    support = quote_supports_value(str(row["value"]), source_quote)
+    support = quote_supports_value(str(row["value"]), source_quote, printed_scale)
     if support == "missing":
         confidence = min(confidence, QUOTE_MISSING_CONFIDENCE_CAP)
         note = _append_note(note, "no source quote")
@@ -413,7 +560,7 @@ def _row_to_value(row: dict) -> ExtractedValue:
     return ExtractedValue(
         metric_code=row["metric_code"],
         value=value,
-        unit=METRICS[row["metric_code"]]["unit"],
+        unit=METRICS[row["metric_code"]]["unit"].replace("CAD", currency),
         period_kind=row["period_kind"],
         period_year=int(row["period_year"]),
         page_number=int(row["page_number"]),
@@ -430,6 +577,7 @@ def _row_to_value(row: dict) -> ExtractedValue:
         cost_basis=cost_basis,
         printed_label=row.get("printed_label"),
         table_reference=row.get("table_reference"),
+        component_label=row.get("component_label"),
     )
 
 
@@ -493,7 +641,8 @@ class AnthropicLLMClient:
         for block in message.content:
             if getattr(block, "type", None) == "tool_use" and block.name == EXTRACTION_TOOL["name"]:
                 rows.extend(block.input.get("values", []))
-        return [_row_to_value(r) for r in rows]
+        currency = agency_currency(agency_slug)
+        return [_row_to_value(r, currency) for r in rows]
 
 
 class FakeLLMClient:

@@ -19,7 +19,7 @@ import html
 from typing import Callable, Optional
 from urllib.parse import urlencode
 
-from ..refdata import AGENCIES
+from ..refdata import ALL_AGENCIES
 
 # scanner(document_id) -> {"ok": bool, "staged_count": int, "error": str|None}
 Scanner = Callable[[int], dict]
@@ -59,7 +59,7 @@ def mount_console(app, repo, *, scanner: Optional[Scanner] = None, db_lock=None)
     lock = db_lock or threading.Lock()
 
     slug_by_id = {}
-    for slug in AGENCIES:
+    for slug in ALL_AGENCIES:
         try:
             slug_by_id[repo.agency_id(slug)] = slug
         except ValueError:
