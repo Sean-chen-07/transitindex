@@ -52,18 +52,28 @@ export const SERVICE_FLEET_ROWS: SlotDef[] = [
   { code: "accessible_fleet_pct", label: "Accessible fleet %" },
 ];
 
-/** Spec §4 Statement of Operations, in statement order. Bold = totals, indent = components. */
+/** Spec §4 — the P&L (2026-08-25 redesign): revenue components → total revenue,
+ * expense components → total expenses, surplus/(deficit), then capital spending as a
+ * memo line (capex is not an expense — asset wear enters via amortization). Bold =
+ * totals, indent = components. */
 export const OPERATIONS_ROWS: StatementRowDef[] = [
-  { code: "total_revenue_excluding_subsidy", label: "Total revenue excluding subsidy", bold: false, indent: false },
+  { code: "farebox_revenue", label: "Farebox revenue", bold: false, indent: true },
+  { code: "other_revenue", label: "Other revenue", bold: false, indent: true },
+  { code: "subsidy", label: "Government subsidy", bold: false, indent: true },
+  { code: "total_revenue", label: "Total revenue", bold: true, indent: false },
   { code: "labour_cost", label: "Labour", bold: false, indent: true },
   { code: "energy_fuel_cost", label: "Energy & fuel", bold: false, indent: true },
   { code: "materials_services_cost", label: "Materials & services", bold: false, indent: true },
+  { code: "other_operating_expenses", label: "Other operating", bold: false, indent: true },
   { code: "operating_expenses", label: "Total operating expenses", bold: true, indent: false },
-  { code: "subsidy", label: "Subsidy (the gap)", bold: false, indent: false },
-  { code: "capital_expenditure", label: "Capital spending", bold: false, indent: false },
+  { code: "amortization", label: "Amortization (asset wear)", bold: false, indent: true },
+  { code: "total_expenses", label: "Total expenses", bold: true, indent: false },
+  { code: "annual_surplus_deficit", label: "Surplus / (deficit)", bold: true, indent: false },
+  { code: "capital_expenditure", label: "Capital spending (memo)", bold: false, indent: false },
 ];
 
-/** Spec §4 Statement of Financial Position, in statement order. */
+/** Balance-sheet rows — no longer rendered on the page (2026-08-25 P&L redesign) but
+ * still built into FinancialsVM.position so the paid CSV download stays complete. */
 export const POSITION_ROWS: StatementRowDef[] = [
   { code: "cash_and_investments", label: "Cash & investments", bold: false, indent: false },
   { code: "total_financial_assets", label: "Total financial assets", bold: true, indent: true },
@@ -128,6 +138,7 @@ export interface StatementRowVM {
 export interface FinancialsVM {
   years: { key: number; label: string }[];
   operations: StatementRowVM[];
+  /** CSV-only since the 2026-08-25 P&L redesign — not rendered on the page. */
   position: StatementRowVM[];
   hasFiscal: boolean;
 }

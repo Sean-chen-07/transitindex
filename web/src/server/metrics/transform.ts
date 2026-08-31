@@ -28,6 +28,69 @@ export interface RawMetricSeries {
   }[];
 }
 
+/* ------------------------------------------------------------------------- *
+ * Directory-card values (2026-08-05). The card now shows the FIGURE next to the
+ * ordinal, so the homepage needs one batched value read across every agency. The
+ * DB work stays in queries.ts; the picking rules live here so they are unit-tested
+ * offline, exactly like the rank suppression above.
+ * ------------------------------------------------------------------------- */
+
+/** One system-wide annual row as selected by queries.ts, chronological asc. */
+export interface DirectoryValueRow {
+  slug: string;
+  metricCode: string;
+  serviceScope: string;
+  unit: string;
+  value: number;
+  periodLabel: string;
+  endDate: string;
+}
+
+/** The latest annual figure for one metric on one agency's card. */
+export interface DirectoryValue {
+  metricCode: string;
+  value: number;
+  unit: string;
+  periodLabel: string;
+  endDate: string;
+}
+
+/**
+ * Latest annual value per (agency, metric). Scope preference mirrors getRawMetricSeries:
+ * 'total' when present, else the lexically-first scope, so a card never silently mixes a
+ * conventional-only figure with a total one. Rows must arrive endDate-ascending.
+ */
+export function pickDirectoryValues(
+  rows: DirectoryValueRow[],
+): Record<string, DirectoryValue[]> {
+  const groups = new Map<string, DirectoryValueRow[]>();
+  for (const r of rows) {
+    const key = `${r.slug} ${r.metricCode}`;
+    const list = groups.get(key) ?? [];
+    list.push(r);
+    groups.set(key, list);
+  }
+
+  const out: Record<string, DirectoryValue[]> = {};
+  for (const list of groups.values()) {
+    const scopes = [...new Set(list.map((r) => r.serviceScope))];
+    const scope = scopes.includes("total")
+      ? "total"
+      : scopes.reduce((a, b) => (a < b ? a : b));
+    const kept = list.filter((r) => r.serviceScope === scope);
+    const latest = kept[kept.length - 1];
+    if (!latest) continue; // unreachable: scope comes from the rows themselves
+    (out[latest.slug] ??= []).push({
+      metricCode: latest.metricCode,
+      value: latest.value,
+      unit: latest.unit,
+      periodLabel: latest.periodLabel,
+      endDate: latest.endDate,
+    });
+  }
+  return out;
+}
+
 function suppressedReason(raw: RawMetricSeries): MetricSuppressedReason | undefined {
   if (!raw.hasComparablePeriod) return "no_comparable_period";
   if (raw.rank == null || raw.denominator == null) return "pending";

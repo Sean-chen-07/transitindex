@@ -17,6 +17,7 @@ export async function listAgencies(): Promise<AgencyListGroup[]> {
       shortName: agencies.shortName,
       legalName: agencies.legalName,
       subdivision: agencies.subdivision,
+      currency: agencies.currency,
       primaryModes: agencies.primaryModes,
     })
     .from(agencies)
@@ -42,6 +43,7 @@ export async function listAgencies(): Promise<AgencyListGroup[]> {
       shortName: r.shortName,
       legalName: r.legalName,
       subdivision: r.subdivision,
+      currency: r.currency,
       primaryModes: r.primaryModes ?? [],
       hasAnyRank: rankedSlugs.has(r.slug),
     };
@@ -72,6 +74,7 @@ export async function listAllAgencies(): Promise<AgencyListItem[]> {
       shortName: agencies.shortName,
       legalName: agencies.legalName,
       subdivision: agencies.subdivision,
+      currency: agencies.currency,
       primaryModes: agencies.primaryModes,
     })
     .from(agencies);
@@ -87,6 +90,7 @@ export async function listAllAgencies(): Promise<AgencyListItem[]> {
       shortName: r.shortName,
       legalName: r.legalName,
       subdivision: r.subdivision,
+      currency: r.currency,
       primaryModes: r.primaryModes ?? [],
       hasAnyRank: rankedIds.has(r.id),
     }))

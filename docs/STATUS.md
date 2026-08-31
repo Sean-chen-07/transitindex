@@ -10,15 +10,16 @@
 > `in-progress` = partially built, real work remaining · `living` = a reference that
 > tracks reality and is maintained, not a build plan.
 >
-> **Last updated:** 2026-07-28
+> **Last updated:** 2026-08-25
 
 ## Design (`docs/design/`)
 
 | Doc | Status | Scope |
 |-----|--------|-------|
-| [DESIGN.md](design/DESIGN.md) | in-progress | Web design system (two-mood thesis, tokens, typography, components). Card grid + hero metrics + fleet composition shipped; 2-tab detail shipped 2026-06-10 per detail-view-metrics.md (Component #3 superseded). Remaining gaps are cross-cutting display rules: carry-forward / stale-amber states, estimate toggle, mode→color legend (F4). |
-| [detail-view-metrics.md](design/detail-view-metrics.md) | living | Source of truth for the agency detail page: 2 tabs (Highlights + Financials), history-display + rank-badge rules, Recharts, metric-set sync checklist. Built 2026-06-10; viewing free for everyone, subscription gates the per-agency CSV at /api/agency/[slug]/download. §2/§4's metric-code map still partly predates the Phase 4/5 renames (deferred). Pricing copy still TODO(pricing). |
+| [DESIGN.md](design/DESIGN.md) | in-progress | Web design system (two-mood thesis, tokens, typography, components). Card grid + hero metrics + fleet composition shipped; 2-tab detail shipped 2026-06-10 per detail-view-metrics.md (Component #3 superseded). Component #1 redesigned 2026-08-05: the agency card is now a paper fare ticket (route rail, perforation, stamped ridership rank, 5px radius) — added `--paper` / `--paper-line` / `--coral-ink` tokens. Remaining gaps are cross-cutting display rules: carry-forward / stale-amber states, estimate toggle, mode→color legend (F4). |
+| [detail-view-metrics.md](design/detail-view-metrics.md) | living | Source of truth for the agency detail page: 2 tabs (Highlights + Financials), history-display + rank-badge rules, Recharts, metric-set sync checklist. Built 2026-06-10; viewing free for everyone, subscription gates the per-agency CSV at /api/agency/[slug]/download. 2026-08-25: Financials tab redesigned as a single P&L (revenue → total revenue; expenses + amortization → total expenses; surplus; capex as memo); balance sheet off the page but kept in the CSV; §2/§4 updated to the live codes. Pricing copy still TODO(pricing). |
 | [data-model.md](design/data-model.md) | done | Conceptual data model: flat metric layer, provenance, mixed-frequency periods, ranks layer, balance-sheet family, equation graph. All entities exist in db/schema.sql + migrations. |
+| [diagrams/](design/diagrams/) | living | Three self-contained HTML diagrams (open in a browser): data-model-er.html (core tables around metric_values), ingest-data-flow.html (fetch → stage → review → promote → derive), system-architecture.html (browser/Next.js/Supabase/Stripe/ingest CLI/Claude). Generated 2026-08-14 from migrations 001–022 + code; redraw if schema or pipeline changes materially. |
 
 ## Planning (`docs/planning/`)
 

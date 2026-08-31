@@ -19,6 +19,7 @@ const config: Config = {
         "line-2": "var(--line-2)",
         grid: "var(--grid)",
         coral: "var(--coral)",
+        "coral-ink": "var(--coral-ink)", // small coral text (AA on paper/cream)
         "coral-soft": "var(--coral-soft)",
         teal: "var(--teal)",
         "teal-soft": "var(--teal-soft)",
@@ -26,12 +27,16 @@ const config: Config = {
         "mode-blue": "var(--blue)",
         "mode-sage": "var(--sage)",
         "mode-yellow": "var(--yellow)",
+        // agency-card ticket stock
+        paper: "var(--paper)",
+        "paper-line": "var(--paper-line)",
       },
       fontFamily: {
         sans: ["var(--font-outfit)", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       borderRadius: {
         card: "18px",
+        ticket: "5px", // the agency card is a paper ticket, not a soft card
         cell: "6px",
       },
       boxShadow: {

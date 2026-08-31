@@ -30,6 +30,9 @@ export interface AgencyListItem {
   shortName: string | null;
   legalName: string;
   subdivision: string;
+  /** Reporting currency ("CAD" | "USD"). The card prints figures for CA and US agencies
+   *  side by side and both render "$", so the card names the currency itself. */
+  currency: string;
   primaryModes: string[];
   hasAnyRank: boolean;
 }

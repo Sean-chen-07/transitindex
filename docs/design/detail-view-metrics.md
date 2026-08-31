@@ -61,33 +61,30 @@ yet reflected).
 | 13 | Fleet average age | `fleet_average_age` | Highlights · Service & Fleet | — | none (current only) | 7.4 yrs · annual |
 | 14 | Accessible fleet % | `accessible_fleet_pct` | Highlights · Service & Fleet | — | none (current only) | 100% · annual |
 | — | Fleet composition (Bus / Light rail / Heavy rail / Commuter rail) | `fleet_size` (per mode) | Highlights · Fleet composition | — | none (current only) | 4 labelled counts · annual |
-| 15 | Operating revenue ‡ | `operating_revenue` | Financials · Operations | — | year columns | $ · annual |
-| 16 | Labour cost | `labour_cost` | Financials · Operations | — | year columns | $ · annual |
-| 17 | Energy & fuel cost | `energy_fuel_cost` | Financials · Operations | — | year columns | $ · annual |
-| 18 | Materials & services cost | `materials_services_cost` | Financials · Operations | — | year columns | $ · annual |
-| 19 | Total operating expenses | `operating_expenses` | Financials · Operations | — | year columns | $ · annual |
-| 20 | Total operating subsidy | `total_operating_subsidy` | Financials · Operations | — | year columns | $ · annual |
-| 21 | Capital expenditure | `capital_expenditure` | Financials · Operations | — | year columns | $ · annual |
-| 22 | Cash & investments | `cash_and_investments` | Financials · Position | — | year columns | $ · annual |
-| 23 | Total financial assets | `total_financial_assets` | Financials · Position | — | year columns | $ · annual |
-| 24 | Long-term debt | `long_term_debt` | Financials · Position | — | year columns | $ · annual |
-| 25 | Total liabilities | `total_liabilities` | Financials · Position | — | year columns | $ · annual |
-| 26 | Net debt | `net_debt` | Financials · Position | — | year columns | $ · annual |
-| 27 | Tangible capital assets | `tangible_capital_assets` | Financials · Position | — | year columns | $ · annual |
-| 28 | Total non-financial assets | `total_non_financial_assets` | Financials · Position | — | year columns | $ · annual |
-| 29 | Total assets | `total_assets` | Financials · Position | — | year columns | $ · annual |
-| 30 | Accumulated surplus | `accumulated_surplus` | Financials · Position | — | year columns | $ · annual |
-| 31 | Debt to assets | `debt_to_assets` | Financials · Position | — | year columns | % · annual |
-| 32 | Net debt per capita | `net_debt_per_capita` | Financials · Position | — | year columns | $ · annual |
+| 15 | Farebox revenue | `farebox_revenue` | Financials · P&L | — | year columns | $ · annual |
+| 16 | Other revenue | `other_revenue` | Financials · P&L | — | year columns | $ · annual |
+| 17 | Government subsidy | `subsidy` | Financials · P&L | — | year columns | $ · annual |
+| 18 | Total revenue | `total_revenue` | Financials · P&L | — | year columns | $ · annual |
+| 19 | Labour cost | `labour_cost` | Financials · P&L | — | year columns | $ · annual |
+| 20 | Energy & fuel cost | `energy_fuel_cost` | Financials · P&L | — | year columns | $ · annual |
+| 21 | Materials & services cost | `materials_services_cost` | Financials · P&L | — | year columns | $ · annual |
+| 22 | Other operating expenses | `other_operating_expenses` | Financials · P&L | — | year columns | $ · annual |
+| 23 | Total operating expenses | `operating_expenses` | Financials · P&L | — | year columns | $ · annual |
+| 24 | Amortization | `amortization` | Financials · P&L | — | year columns | $ · annual |
+| 25 | Total expenses | `total_expenses` | Financials · P&L | — | year columns | $ · annual |
+| 26 | Surplus / (deficit) | `annual_surplus_deficit` | Financials · P&L | — | year columns | $ · annual |
+| 27 | Capital expenditure (memo) | `capital_expenditure` | Financials · P&L | — | year columns | $ · annual |
 
 *Average fare's inputs (revenue, ridership) are both monthly, so it *can* be charted monthly later
 if we promote it to a hero — for now it's a current-value ratio.
-‡ Operating revenue intentionally appears twice: once as a Highlights hero, once as the top line of
-the operations statement. That's the only deliberate repeat.
 
-**Not on Highlights, by decision:** `operating_expenses` and `total_operating_subsidy` (the big total
-dollar figures) live only on the Financials tab. The taxpayer angle is still represented on Highlights
-by **subsidy per rider** (hero). See §6 open item if you later want the total-subsidy dollar up top.
+**2026-08-25 P&L redesign:** the Financials tab is a single P&L (rows 15–27). The balance-sheet
+rows (`cash_and_investments` … `net_debt_per_capita`) are still collected and still exported in
+the paid CSV download (`POSITION_ROWS` in `detail-model.ts`), but no longer rendered on the page.
+
+**Not on Highlights, by decision:** the big total dollar figures live only on the Financials tab.
+The taxpayer angle is still represented on Highlights by **subsidy per rider** (hero). See §6 open
+item if you later want the total-subsidy dollar up top.
 
 ---
 
@@ -155,37 +152,33 @@ Laid out like the agency's audited statements, **all years shown as columns** by
 a statement line; bold rows are the totals/subtotals.
 
 ```
-STATEMENT OF OPERATIONS         2021    2022    2023    2024    2025
-Fare & operating revenue        $1.1B   $0.9B   $1.2B   $1.36B  $1.42B
+REVENUE & EXPENSES              2021    2022    2023    2024    2025
+  Farebox revenue               …       …       …       $1.02B  $1.08B
+  Other revenue                 …       …       …       $0.34B  $0.34B
+  Government subsidy            …       …       …       $0.92B  $0.98B
+Total revenue                   …       …       …       $2.28B  $2.40B
   Labour                        …       …       …       $1.48B  $1.55B
   Energy & fuel                 …       …       …       $0.19B  $0.21B
   Materials & services          …       …       …       $0.61B  $0.64B
-  Total operating expenses      $2.0B   $2.1B   $2.2B   $2.28B  $2.40B
-Operating subsidy (the gap)     …       …       …       $0.92B  $0.98B
-Capital spending                …       …       …       …       …
-
-STATEMENT OF FINANCIAL POSITION 2021    2022    2023    2024    2025
-Cash & investments              …       …       …       …       …
-  Total financial assets        …       …       …       …       …
-Long-term debt                  …       …       …       …       …
-  Total liabilities             …       …       …       …       …
-Net debt                        …       …       …       …       …
-Tangible capital assets         …       …       …       …       …
-  Total non-financial assets    …       …       …       …       …
-  Total assets                  …       …       …       …       …
-Accumulated surplus             …       …       …       …       …
-  Debt to assets                …       …       …       …       …
-  Net debt per capita           …       …       …       …       …
+  Other operating               …       …       …       …       …
+Total operating expenses        $2.0B   $2.1B   $2.2B   $2.28B  $2.40B
+  Amortization (asset wear)     …       …       …       …       …
+Total expenses                  …       …       …       …       …
+Surplus / (deficit)             …       …       …       …       …
+Capital spending (memo)         …       …       …       …       …
 ```
 
-- **Section A — Statement of Operations** (the income statement, the flow of money this year):
-  rows 16–22 above.
-- **Section B — Statement of Financial Position** (the balance sheet, the stock at fiscal year-end):
-  rows 23–33. This is the old "Financial Position" tab, now a section here. Keep its honest caption:
-  *"Balance-sheet figures are a snapshot as of each agency's fiscal year-end."*
-- A **missing year is a blank cell, never a 0** (a 0 reads as "the agency collapsed"). The two
-  statements may end on different latest years (operations monthly-fed; balance sheet annual-audited)
-  — each carries its own period, never one page-level "last updated" stamp
+- **One table: the P&L** (2026-08-25 redesign) — revenue components (farebox + other + subsidy)
+  sum to **Total revenue**; expense components (labour + energy + materials + other) sum to
+  **Total operating expenses**, plus **amortization** = **Total expenses**; the bottom line is
+  **Surplus / (deficit)**.
+- **Capital spending is a memo line, never summed into expenses** — buying a bus is not a cost
+  that year; its cost enters the P&L as amortization spread over the asset's life. The table
+  carries the note: *"Capital spending is shown for reference only — it is not counted as an
+  expense; the yearly wear on assets appears as amortization."*
+- **The balance sheet left the page** — its rows stay in the DB and the paid CSV download.
+- A **missing year is a blank cell, never a 0** (a 0 reads as "the agency collapsed"). Each row
+  carries its own period, never one page-level "last updated" stamp
   ([DESIGN.md](DESIGN.md) "Data display rules").
 
 ---

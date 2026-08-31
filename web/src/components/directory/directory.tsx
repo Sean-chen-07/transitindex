@@ -7,21 +7,24 @@ import { AgencyListRow } from "./agency-list-row";
 import { EmptySearch } from "@/components/common/states";
 import { provinceName } from "@/lib/format";
 import type { AgencyListItem, AgencyRank } from "@/server/data/types";
+import type { DirectoryValue } from "@/server/metrics/access";
 
 /**
  * The free directory: a search hero + ONE unified, table-like list of every Canadian and U.S.
- * agency (no per-province grids — province is a column/search term). Each agency is a
- * full-width row that expands in place to its ranks (wireframes-v5). Search filters the
- * ALREADY-SHIPPED, rank-only payload client-side — `ranksBySlug` carries ordinals only,
- * never a raw number. The agency names + links render in the server HTML (crawlable);
- * the client filter is progressive enhancement.
+ * agency (no per-province grids — province is a column/search term). Search filters the
+ * ALREADY-SHIPPED payload client-side. Since 2026-08-05 that payload carries figures
+ * (`valuesBySlug`) as well as ordinals (`ranksBySlug`) — viewing is free by decision, and
+ * the paid artifact is the per-agency download, not the numbers. The agency names + links
+ * render in the server HTML (crawlable); the client filter is progressive enhancement.
  */
 export function Directory({
   agencies,
   ranksBySlug,
+  valuesBySlug,
 }: {
   agencies: AgencyListItem[];
   ranksBySlug: Record<string, AgencyRank[]>;
+  valuesBySlug: Record<string, DirectoryValue[]>;
 }) {
   const [q, setQ] = React.useState("");
   const query = q.trim().toLowerCase();
@@ -69,7 +72,12 @@ export function Directory({
           {/* sm and up: grid of mini-page cards. 3-up at lg (matches the max-w-5xl container). */}
           <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((a) => (
-              <AgencyCard key={a.slug} item={a} ranks={ranksBySlug[a.slug] ?? []} />
+              <AgencyCard
+                key={a.slug}
+                item={a}
+                ranks={ranksBySlug[a.slug] ?? []}
+                values={valuesBySlug[a.slug] ?? []}
+              />
             ))}
           </div>
         </div>

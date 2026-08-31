@@ -112,15 +112,12 @@ export function Financials({
       ) : (
         <>
           <StatementTable
-            title="Statement of Operations"
+            title="Revenue & expenses"
+            note={
+              "Capital spending is shown for reference only — it is not counted as an expense; the yearly wear on assets appears as amortization."
+            }
             years={financials.years}
             rows={financials.operations}
-          />
-          <StatementTable
-            title="Statement of Financial Position"
-            note={"Balance-sheet figures are a snapshot as of each agency's fiscal year-end."}
-            years={financials.years}
-            rows={financials.position}
           />
           {financials.hasFiscal && (
             <p className="mt-3 text-xs text-ink-3">

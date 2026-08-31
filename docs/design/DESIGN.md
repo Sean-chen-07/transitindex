@@ -31,6 +31,9 @@ the free side a terminal; don't make the paid side bubbly.
 --ink     #2E2C28   --ink-2 #5F5B52   --ink-3 #6E6960   (ink-2/3 darkened to clear WCAG AA on cream)
 --line    #ECE6D9   --line-2 #F3EEE3   --grid #E7E1D4 (spreadsheet rules)
 --coral   #E2725B   (+ soft #FBE9E3)  primary action · paywall/upsell · "Paid"
+--coral-ink #BD4E37  SMALL coral TEXT only — plain --coral is only ~3:1 on paper/cream
+                     and fails AA below ~19px. Fills and borders keep --coral.
+--paper   #FDFAF2   --paper-line #CFC6AC   agency-card ticket stock + its perforation
 --teal    #3F9D92   (+ soft #E1F0ED)  interactive · "Free" · positive
 ```
 **Mode-group accents — color-CODE only, never the sole signal (always paired with a label/icon):**
@@ -48,12 +51,23 @@ No purple/violet gradients. No decorative blobs. No icon-in-colored-circle featu
 
 ## Shape & space
 - Radius: free cards 16–20px (soft); spreadsheet cells ~6px (tight); pills 9–20px.
+  **Exception:** the agency card is a ticket at 5px (`rounded-ticket`) — paper doesn't
+  have soft corners. Everything else on the free surface stays soft.
 - Shadows: soft and low (`0 6px 20px rgba(60,50,30,.06)`); elevate on hover / for the gate dialog.
 - Generous padding on free surfaces; tight, gridlined rows on the paid sheet.
 
 ## Components
-1. **Agency card (free):** mode-group color bar, name, city, mode pills, rank
-   grid (ordinals "1st"), 1–2 peek metrics + chevron. **Expands in place** (accordion).
+1. **Agency card (free):** *(Redesigned 2026-08-05 — the card is a **paper fare ticket**.)*
+   Ticket stock (`--paper`) with a fibre grain, a perforated stub edge, and the mode-group
+   colour as a **route rail** (a vertical line with station dots) running the full card
+   height. Name (2-line clamp) + `PROVINCE · MODE GROUP` caps. Ridership is pulled out as a
+   tilted **rubber stamp** ("RIDERS / 1st", or "RIDERS / PENDING"); the remaining four
+   ordinals — revenue, on-time, cost/rider, subsidy/rider — sit in a 2×2 grid on dotted
+   rules, "—" until sourced. Footer is a dashed-rule link (`FULL DATA →`, or
+   `REQUEST THIS AGENCY →` when nothing is ranked). Radius **5px**, not the soft 16–20px.
+   Still ordinals only: `AgencyRank` carries no raw `value`, so the card cannot show
+   figures like "411.5M" without a data-layer change. Grain + perforation are decorative
+   and safe to strip. Phones keep the compact `AgencyListRow`, which is unchanged.
 2. **Expand panel (free):** all ranks (each with its own "as of"), trend **shape**
    (exact values locked), `Open full data →` (paid). Scroll past to next agency, no back button.
 3. **Spreadsheet (paid):** *(Superseded 2026-06-09 — the detail view is now **two tabs**, Highlights +

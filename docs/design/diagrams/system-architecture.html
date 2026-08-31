@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TransitIndex · system architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #eb6c36;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 900px; display: block; }
+    .cards { display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 1rem; margin-top: 1.5rem; }
+    .card {
+      background: #ffffff;
+      border: 1px solid rgba(45,49,66,0.12);
+      border-radius: 6px;
+      padding: 1.25rem;
+    }
+    .card .eyebrow { margin-bottom: 0.75rem; }
+    .card ul { list-style: none; }
+    .card li {
+      font-size: 0.8rem;
+      color: var(--color-muted);
+      line-height: 1.55;
+      padding-left: 0.85rem;
+      position: relative;
+    }
+    .card li::before { content: "·"; position: absolute; left: 0; color: rgba(45,49,66,0.35); }
+    .card code { font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-ink); }
+    .colophon {
+      margin-top: 2rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(45,49,66,0.10);
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(79,93,117,0.7);
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · TransitIndex</p>
+    <h1>System architecture — web reads, ingest writes</h1>
+
+    <svg viewBox="0 0 1000 880" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ti-arch-title ti-arch-desc">
+      <title id="ti-arch-title">TransitIndex system architecture</title>
+      <desc id="ti-arch-desc">Architecture diagram showing browsers hitting a Next.js app that reads Supabase Postgres, Stripe handling billing, and a Python ingest CLI writing data from open-data feeds, PDFs in Supabase Storage, and Claude extraction.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+      <!-- ============ Zones (before arrows and nodes) ============ -->
+      <!-- Supabase zone -->
+      <rect x="540" y="76" width="320" height="304" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <rect x="560" y="80" width="88" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="604" y="89" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">SUPABASE</text>
+      <!-- Ingest zone -->
+      <rect x="500" y="460" width="460" height="220" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <rect x="520" y="464" width="128" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="584" y="473" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">INGEST · PYTHON</text>
+
+      <!-- ============ Arrows (before nodes) ============ -->
+      <!-- Browser -> Next.js -->
+      <line x1="180" y1="176" x2="280" y2="176" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <!-- Next.js -> Postgres -->
+      <line x1="460" y1="176" x2="580" y2="176" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- Next.js -> Stripe (checkout) -->
+      <line x1="324" y1="224" x2="324" y2="300" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <!-- Stripe -> Next.js (webhook, dashed) -->
+      <line x1="404" y1="300" x2="404" y2="224" stroke="#2e5aa8" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-link)"/>
+      <!-- Feeds -> Ingest CLI -->
+      <line x1="420" y1="580" x2="540" y2="580" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <!-- Ingest CLI -> Claude -->
+      <line x1="640" y1="608" x2="640" y2="720" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <!-- Ingest CLI -> Storage (straight up) -->
+      <line x1="600" y1="520" x2="600" y2="360" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- Ingest CLI -> Postgres (focal accent write path) -->
+      <path d="M 740,520 V 428 Q 740,420 748,420 H 832 Q 840,420 840,412 V 212 Q 840,204 832,204 H 820"
+            fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <!-- Review console -> Postgres -->
+      <path d="M 880,532 V 180 Q 880,172 872,172 H 820"
+            fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- ============ Arrow labels ============ -->
+      <rect x="198" y="154" width="44" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="220" y="163" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">HTTPS</text>
+
+      <rect x="486" y="154" width="68" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="520" y="163" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">WEB_READER</text>
+
+      <rect x="252" y="256" width="64" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="284" y="265" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CHECKOUT</text>
+
+      <rect x="412" y="256" width="60" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="442" y="265" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">WEBHOOK</text>
+
+      <rect x="456" y="560" width="48" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="480" y="569" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FETCH</text>
+
+      <rect x="648" y="642" width="56" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="676" y="651" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">EXTRACT</text>
+
+      <rect x="608" y="432" width="60" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="638" y="441" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PDF SYNC</text>
+
+      <rect x="748" y="464" width="64" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="780" y="473" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PROMOTE</text>
+
+      <rect x="888" y="344" width="48" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="912" y="353" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REVIEW</text>
+
+      <!-- ============ Nodes ============ -->
+      <!-- Browser -->
+      <rect x="40" y="140" width="140" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="40" y="140" width="140" height="72" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+      <rect x="48" y="146" width="28" height="12" rx="2" fill="transparent" stroke="rgba(122,131,153,0.5)" stroke-width="0.8"/>
+      <text x="62" y="155" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">USR</text>
+      <text x="110" y="180" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Browser</text>
+      <text x="110" y="196" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">city staff · public</text>
+
+      <!-- Next.js app -->
+      <rect x="260" y="128" width="200" height="96" rx="6" fill="#f5f5f5"/>
+      <rect x="260" y="128" width="200" height="96" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="268" y="134" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="282" y="143" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">WEB</text>
+      <text x="360" y="172" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Next.js app</text>
+      <text x="360" y="188" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">app router · rsc · nextauth</text>
+      <text x="360" y="204" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">web/src · drizzle</text>
+
+      <!-- Stripe -->
+      <rect x="280" y="300" width="160" height="64" rx="6" fill="#f5f5f5"/>
+      <rect x="280" y="300" width="160" height="64" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="288" y="306" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="302" y="315" fill="rgba(45,49,66,0.6)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <text x="360" y="336" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Stripe</text>
+      <text x="360" y="352" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">subscriptions</text>
+
+      <!-- Postgres (focal) -->
+      <rect x="580" y="140" width="240" height="96" rx="6" fill="#f5f5f5"/>
+      <rect x="580" y="140" width="240" height="96" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.2"/>
+      <rect x="588" y="146" width="28" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.5)" stroke-width="0.8"/>
+      <text x="602" y="155" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DB</text>
+      <text x="700" y="184" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Postgres</text>
+      <text x="700" y="200" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">core = facts · app = users</text>
+      <text x="700" y="216" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">dbmate migrations 001–022</text>
+
+      <!-- Storage -->
+      <rect x="580" y="288" width="240" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="580" y="288" width="240" height="72" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <rect x="588" y="294" width="28" height="12" rx="2" fill="transparent" stroke="rgba(79,93,117,0.5)" stroke-width="0.8"/>
+      <text x="602" y="303" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">OBJ</text>
+      <text x="700" y="326" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Storage</text>
+      <text x="700" y="342" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">annual-reports bucket · 64 pdfs</text>
+
+      <!-- Ingest CLI -->
+      <rect x="540" y="520" width="220" height="88" rx="6" fill="#f5f5f5"/>
+      <rect x="540" y="520" width="220" height="88" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="548" y="526" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="562" y="535" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CLI</text>
+      <text x="650" y="560" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">transitindex-ingest</text>
+      <text x="650" y="576" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">bulk load · pdf scan</text>
+      <text x="650" y="592" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">ranks · xlsx workbook</text>
+
+      <!-- Review console -->
+      <rect x="800" y="532" width="140" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="800" y="532" width="140" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="808" y="538" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="822" y="547" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">OPS</text>
+      <text x="870" y="570" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Review console</text>
+      <text x="870" y="586" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">fastapi · 127.0.0.1</text>
+
+      <!-- Open data feeds -->
+      <rect x="260" y="540" width="160" height="80" rx="6" fill="#f5f5f5"/>
+      <rect x="260" y="540" width="160" height="80" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="268" y="546" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="282" y="555" fill="rgba(45,49,66,0.6)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <text x="340" y="580" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Open data feeds</text>
+      <text x="340" y="596" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">statcan · ntd · hsr</text>
+
+      <!-- Claude -->
+      <rect x="540" y="720" width="220" height="64" rx="6" fill="#f5f5f5"/>
+      <rect x="540" y="720" width="220" height="64" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="548" y="726" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="562" y="735" fill="rgba(45,49,66,0.6)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <text x="650" y="752" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Anthropic Claude</text>
+      <text x="650" y="768" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">chunked hybrid · model routing</text>
+
+      <!-- ============ Legend ============ -->
+      <line x1="40" y1="816" x2="960" y2="816" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="40" y="832" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <rect x="40" y="846" width="14" height="10" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="60" y="854" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Primary store</text>
+
+      <rect x="148" y="846" width="14" height="10" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="168" y="854" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Service</text>
+
+      <rect x="240" y="846" width="14" height="10" rx="2" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <text x="260" y="854" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">External</text>
+
+      <rect x="336" y="846" width="14" height="10" rx="2" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+      <text x="356" y="854" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">User</text>
+
+      <line x1="420" y1="850" x2="452" y2="850" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <text x="460" y="854" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">HTTP / external call</text>
+
+      <line x1="576" y1="850" x2="608" y2="850" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <text x="616" y="854" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Internal call</text>
+
+      <line x1="700" y1="850" x2="732" y2="850" stroke="#2e5aa8" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-link)"/>
+      <text x="740" y="854" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Async / webhook</text>
+
+      <line x1="844" y1="850" x2="876" y2="850" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <text x="884" y="854" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Write path</text>
+    </svg>
+
+    <div class="cards">
+      <div class="card">
+        <p class="eyebrow">Read path</p>
+        <ul>
+          <li><code>force-dynamic</code> RSC pages → <code>server/data</code> + <code>metrics/access</code></li>
+          <li><code>metrics/queries.ts</code> is the only module allowed to read <code>core.metric_values</code> (ESLint-enforced)</li>
+          <li>Connects as <code>web_reader</code> — SELECT-only on core</li>
+          <li>Viewing is free; the sole paywall is the CSV download route</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Auth &amp; billing</p>
+        <ul>
+          <li>NextAuth v5, database sessions in <code>app.sessions</code></li>
+          <li>Google + Resend magic-link providers</li>
+          <li>Stripe webhook is the sole writer of <code>subscription_status</code></li>
+          <li>Download route: no session → sign-in · not paid → 403</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Write path</p>
+        <ul>
+          <li>All <code>core.*</code> writes go through the ingest CLI</li>
+          <li>Feeds auto-approve at tier 0; PDFs always human-reviewed</li>
+          <li>Promotion enforces <code>one_current_value</code> + audit rows</li>
+          <li>Ranks + derived values recompute after promotion</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="colophon">TransitIndex · web/src + ingest/ · 2026-08-14</p>
+  </div>
+</body>
+</html>

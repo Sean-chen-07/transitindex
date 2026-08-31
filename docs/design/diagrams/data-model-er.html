@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TransitIndex · core data model</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #eb6c36;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 900px; display: block; }
+    .cards { display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 1rem; margin-top: 1.5rem; }
+    .card {
+      background: #ffffff;
+      border: 1px solid rgba(45,49,66,0.12);
+      border-radius: 6px;
+      padding: 1.25rem;
+    }
+    .card .eyebrow { margin-bottom: 0.75rem; }
+    .card ul { list-style: none; }
+    .card li {
+      font-size: 0.8rem;
+      color: var(--color-muted);
+      line-height: 1.55;
+      padding-left: 0.85rem;
+      position: relative;
+    }
+    .card li::before { content: "·"; position: absolute; left: 0; color: rgba(45,49,66,0.35); }
+    .card code { font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-ink); }
+    .colophon {
+      margin-top: 2rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(45,49,66,0.10);
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(79,93,117,0.7);
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">ER · TransitIndex</p>
+    <h1>Core data model — everything orbits <em>metric_values</em></h1>
+
+    <svg viewBox="0 0 1000 784" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ti-er-title ti-er-desc">
+      <title id="ti-er-title">TransitIndex core data model</title>
+      <desc id="ti-er-desc">Entity-relationship diagram showing the metric_values fact table referencing agencies, metrics, reporting periods and modes, fed by staged pending_values with source documents, and feeding derived metric_ranks.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+      <!-- ============ Relationship lines (drawn first) ============ -->
+      <!-- metrics -> metric_values (elbow into top edge) -->
+      <path d="M 260,120 H 432 Q 440,120 440,128 V 160" fill="none" stroke="#4f5d75" stroke-width="1"/>
+      <!-- reporting_periods -> metric_values (elbow into top edge) -->
+      <path d="M 740,104 H 568 Q 560,104 560,112 V 160" fill="none" stroke="#4f5d75" stroke-width="1"/>
+      <!-- agencies -> metric_values (straight) -->
+      <line x1="260" y1="300" x2="380" y2="300" stroke="#4f5d75" stroke-width="1"/>
+      <!-- modes -> metric_values (elbow up into left edge) -->
+      <path d="M 260,532 H 332 Q 340,532 340,524 V 428 Q 340,420 348,420 H 380" fill="none" stroke="#4f5d75" stroke-width="1"/>
+      <!-- source_documents -> pending_values (straight) -->
+      <line x1="740" y1="580" x2="640" y2="580" stroke="#4f5d75" stroke-width="1"/>
+      <!-- pending_values -> metric_values (promotion flow, dashed, arrow up) -->
+      <path d="M 480,520 V 440" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <!-- metric_values -> metric_ranks (derivation flow, dashed) -->
+      <path d="M 640,300 H 740" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+
+      <!-- ============ Cardinality chips ============ -->
+      <!-- metrics 1..N -->
+      <rect x="272" y="112" width="12" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="278" y="122" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">1</text>
+      <rect x="434" y="130" width="12" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="440" y="140" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">N</text>
+      <!-- reporting_periods 1..N -->
+      <rect x="716" y="96" width="12" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="722" y="106" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">1</text>
+      <rect x="554" y="128" width="12" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="560" y="138" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">N</text>
+      <!-- agencies 1..N -->
+      <rect x="272" y="292" width="12" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="278" y="302" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">1</text>
+      <rect x="356" y="292" width="12" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="362" y="302" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">N</text>
+      <!-- modes 0..1 .. N -->
+      <rect x="264" y="524" width="28" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="278" y="534" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">0..1</text>
+      <rect x="334" y="468" width="12" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="340" y="478" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">N</text>
+      <!-- source_documents 1..N -->
+      <rect x="716" y="572" width="12" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="722" y="582" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">1</text>
+      <rect x="652" y="572" width="12" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="658" y="582" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">N</text>
+
+      <!-- ============ Flow labels ============ -->
+      <rect x="488" y="470" width="64" height="14" rx="2" fill="#f5f5f5"/>
+      <text x="492" y="480" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.12em">PROMOTE</text>
+      <rect x="662" y="278" width="56" height="14" rx="2" fill="#f5f5f5"/>
+      <text x="690" y="288" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">RANKS</text>
+
+      <!-- ============ Entity: metrics ============ -->
+      <rect x="60" y="40" width="200" height="160" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="60" y="40" width="200" height="40" rx="6" fill="rgba(45,49,66,0.04)"/>
+      <rect x="60" y="72" width="200" height="8" fill="rgba(45,49,66,0.04)"/>
+      <line x1="60" y1="80" x2="260" y2="80" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <text x="76" y="56" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">TABLE · CORE</text>
+      <text x="76" y="72" fill="#2d3142" font-size="14" font-weight="600" font-family="'Geist', sans-serif">metrics</text>
+      <text x="76" y="100" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace"># id</text>
+      <text x="244" y="100" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">bigint</text>
+      <text x="76" y="120" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">code</text>
+      <text x="244" y="120" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text · uniq</text>
+      <text x="76" y="140" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">display_name</text>
+      <text x="244" y="140" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+      <text x="76" y="160" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">unit_type</text>
+      <text x="244" y="160" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">enum·5</text>
+      <text x="76" y="180" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">higher_is_better</text>
+      <text x="244" y="180" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">bool</text>
+
+      <!-- ============ Entity: reporting_periods ============ -->
+      <rect x="740" y="40" width="220" height="180" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="740" y="40" width="220" height="40" rx="6" fill="rgba(45,49,66,0.04)"/>
+      <rect x="740" y="72" width="220" height="8" fill="rgba(45,49,66,0.04)"/>
+      <line x1="740" y1="80" x2="960" y2="80" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <text x="756" y="56" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">TABLE · CORE · SHARED</text>
+      <text x="756" y="72" fill="#2d3142" font-size="14" font-weight="600" font-family="'Geist', sans-serif">reporting_periods</text>
+      <text x="756" y="100" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace"># id</text>
+      <text x="944" y="100" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">bigint</text>
+      <text x="756" y="120" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">period_type</text>
+      <text x="944" y="120" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">enum·5</text>
+      <text x="756" y="140" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">start_date</text>
+      <text x="944" y="140" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">date</text>
+      <text x="756" y="160" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">end_date</text>
+      <text x="944" y="160" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">date</text>
+      <text x="756" y="180" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">label</text>
+      <text x="944" y="180" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+      <text x="756" y="200" fill="rgba(79,93,117,0.75)" font-size="9" font-family="'Geist Mono', monospace">uniq(type, start, end)</text>
+
+      <!-- ============ Entity: metric_values (focal) ============ -->
+      <rect x="380" y="160" width="260" height="280" rx="6" fill="rgba(235,108,54,0.04)" stroke="#eb6c36" stroke-width="1"/>
+      <rect x="380" y="160" width="260" height="40" rx="6" fill="rgba(235,108,54,0.10)"/>
+      <rect x="380" y="192" width="260" height="8" fill="rgba(235,108,54,0.10)"/>
+      <line x1="380" y1="200" x2="640" y2="200" stroke="rgba(235,108,54,0.40)" stroke-width="1"/>
+      <text x="396" y="176" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">FACT TABLE · HOT PATH</text>
+      <text x="396" y="192" fill="#2d3142" font-size="14" font-weight="600" font-family="'Geist', sans-serif">metric_values</text>
+      <text x="396" y="220" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace"># id</text>
+      <text x="624" y="220" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">bigint</text>
+      <text x="396" y="240" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">→ agency_id</text>
+      <text x="624" y="240" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">agencies</text>
+      <text x="396" y="260" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">→ metric_id</text>
+      <text x="624" y="260" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">metrics</text>
+      <text x="396" y="280" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">→ reporting_period_id</text>
+      <text x="624" y="280" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">periods</text>
+      <text x="396" y="300" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">→ mode_id</text>
+      <text x="624" y="300" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">null = system</text>
+      <text x="396" y="320" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">service_scope</text>
+      <text x="624" y="320" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">enum·4</text>
+      <text x="396" y="340" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">value</text>
+      <text x="624" y="340" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">numeric</text>
+      <text x="396" y="360" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">quality</text>
+      <text x="624" y="360" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">enum·4</text>
+      <text x="396" y="380" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">cost_basis</text>
+      <text x="624" y="380" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">enum·2</text>
+      <text x="396" y="400" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">is_current</text>
+      <text x="624" y="400" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">bool</text>
+      <text x="396" y="420" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">→ restatement_of_id</text>
+      <text x="624" y="420" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">self</text>
+
+      <!-- ============ Entity: agencies ============ -->
+      <rect x="60" y="260" width="200" height="180" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="60" y="260" width="200" height="40" rx="6" fill="rgba(45,49,66,0.04)"/>
+      <rect x="60" y="292" width="200" height="8" fill="rgba(45,49,66,0.04)"/>
+      <line x1="60" y1="300" x2="260" y2="300" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <text x="76" y="276" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">TABLE · CORE</text>
+      <text x="76" y="292" fill="#2d3142" font-size="14" font-weight="600" font-family="'Geist', sans-serif">agencies</text>
+      <text x="76" y="320" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace"># id</text>
+      <text x="244" y="320" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">bigint</text>
+      <text x="76" y="340" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">slug</text>
+      <text x="244" y="340" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text · uniq</text>
+      <text x="76" y="360" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">legal_name</text>
+      <text x="244" y="360" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+      <text x="76" y="380" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">country</text>
+      <text x="244" y="380" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">CA | US</text>
+      <text x="76" y="400" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">ntd_id</text>
+      <text x="244" y="400" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text · uniq</text>
+      <text x="76" y="420" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">→ parent_agency_id</text>
+      <text x="244" y="420" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">self</text>
+
+      <!-- ============ Entity: modes ============ -->
+      <rect x="60" y="500" width="200" height="120" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="60" y="500" width="200" height="40" rx="6" fill="rgba(45,49,66,0.04)"/>
+      <rect x="60" y="532" width="200" height="8" fill="rgba(45,49,66,0.04)"/>
+      <line x1="60" y1="540" x2="260" y2="540" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <text x="76" y="516" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">TABLE · CORE</text>
+      <text x="76" y="532" fill="#2d3142" font-size="14" font-weight="600" font-family="'Geist', sans-serif">modes</text>
+      <text x="76" y="560" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace"># id</text>
+      <text x="244" y="560" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">bigint</text>
+      <text x="76" y="580" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">code</text>
+      <text x="244" y="580" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text · uniq</text>
+      <text x="76" y="600" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">display_name</text>
+      <text x="244" y="600" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+
+      <!-- ============ Entity: metric_ranks ============ -->
+      <rect x="740" y="260" width="220" height="200" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="740" y="260" width="220" height="40" rx="6" fill="rgba(45,49,66,0.04)"/>
+      <rect x="740" y="292" width="220" height="8" fill="rgba(45,49,66,0.04)"/>
+      <line x1="740" y1="300" x2="960" y2="300" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <text x="756" y="276" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">TABLE · CORE · DERIVED</text>
+      <text x="756" y="292" fill="#2d3142" font-size="14" font-weight="600" font-family="'Geist', sans-serif">metric_ranks</text>
+      <text x="756" y="320" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace"># id</text>
+      <text x="944" y="320" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">bigint</text>
+      <text x="756" y="340" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">→ agency_id</text>
+      <text x="944" y="340" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">agencies</text>
+      <text x="756" y="360" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">→ metric_id</text>
+      <text x="944" y="360" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">metrics</text>
+      <text x="756" y="380" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">→ reporting_period_id</text>
+      <text x="944" y="380" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">periods</text>
+      <text x="756" y="400" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">comparison_set</text>
+      <text x="944" y="400" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">all | subdiv</text>
+      <text x="756" y="420" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">rank</text>
+      <text x="944" y="420" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">int</text>
+      <text x="756" y="440" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">denominator</text>
+      <text x="944" y="440" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">int</text>
+
+      <!-- ============ Entity: pending_values (staging) ============ -->
+      <rect x="380" y="520" width="260" height="180" rx="6" fill="rgba(45,49,66,0.04)" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3"/>
+      <rect x="380" y="520" width="260" height="40" rx="6" fill="rgba(45,49,66,0.06)"/>
+      <rect x="380" y="552" width="260" height="8" fill="rgba(45,49,66,0.06)"/>
+      <line x1="380" y1="560" x2="640" y2="560" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <text x="396" y="536" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">STAGING · NOT WEB-READABLE</text>
+      <text x="396" y="552" fill="#2d3142" font-size="14" font-weight="600" font-family="'Geist', sans-serif">pending_values</text>
+      <text x="396" y="580" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace"># id</text>
+      <text x="624" y="580" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">bigint</text>
+      <text x="396" y="600" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">→ agency·metric·period·mode</text>
+      <text x="624" y="600" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">fks</text>
+      <text x="396" y="620" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">→ source_document_id</text>
+      <text x="624" y="620" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">docs</text>
+      <text x="396" y="640" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">review_status</text>
+      <text x="624" y="640" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">enum·4</text>
+      <text x="396" y="660" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">flags</text>
+      <text x="624" y="660" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text[]</text>
+      <text x="396" y="680" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">confidence</text>
+      <text x="624" y="680" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">0..1</text>
+
+      <!-- ============ Entity: source_documents ============ -->
+      <rect x="740" y="520" width="220" height="180" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="740" y="520" width="220" height="40" rx="6" fill="rgba(45,49,66,0.04)"/>
+      <rect x="740" y="552" width="220" height="8" fill="rgba(45,49,66,0.04)"/>
+      <line x1="740" y1="560" x2="960" y2="560" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <text x="756" y="536" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">TABLE · PROVENANCE</text>
+      <text x="756" y="552" fill="#2d3142" font-size="14" font-weight="600" font-family="'Geist', sans-serif">source_documents</text>
+      <text x="756" y="580" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace"># id</text>
+      <text x="944" y="580" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">bigint</text>
+      <text x="756" y="600" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">→ agency_id</text>
+      <text x="944" y="600" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">agencies</text>
+      <text x="756" y="620" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">document_type</text>
+      <text x="944" y="620" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">enum·10</text>
+      <text x="756" y="640" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">title</text>
+      <text x="944" y="640" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+      <text x="756" y="660" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">source_url</text>
+      <text x="944" y="660" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+      <text x="756" y="680" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace">license</text>
+      <text x="944" y="680" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">enum</text>
+
+      <!-- ============ Legend ============ -->
+      <line x1="40" y1="728" x2="960" y2="728" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="40" y="744" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <rect x="40" y="758" width="14" height="10" rx="2" fill="rgba(235,108,54,0.04)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="60" y="766" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Fact table</text>
+
+      <rect x="132" y="758" width="14" height="10" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="152" y="766" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Reference table</text>
+
+      <rect x="252" y="758" width="14" height="10" rx="2" fill="rgba(45,49,66,0.04)" stroke="#4f5d75" stroke-width="1" stroke-dasharray="3,2"/>
+      <text x="272" y="766" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Staging</text>
+
+      <text x="344" y="766" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace" font-weight="600">#</text>
+      <text x="360" y="766" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Primary key</text>
+
+      <text x="444" y="766" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace" font-weight="600">→</text>
+      <text x="460" y="766" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Foreign key</text>
+
+      <text x="548" y="766" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" font-weight="600">1 / N</text>
+      <text x="580" y="766" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Cardinality</text>
+
+      <line x1="668" y1="762" x2="700" y2="762" stroke="#4f5d75" stroke-width="1" stroke-dasharray="5,4"/>
+      <text x="708" y="766" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Flow (promote / rank), not a FK</text>
+    </svg>
+
+    <div class="cards">
+      <div class="card">
+        <p class="eyebrow">Also in core · not drawn</p>
+        <ul>
+          <li><code>metric_value_sources</code> — N:M link values ↔ documents (page, method, confidence)</li>
+          <li><code>metric_value_audit</code> — trigger-written change history</li>
+          <li><code>documents</code> — PDF catalog + scan queue (Supabase Storage)</li>
+          <li><code>source_feeds</code> + <code>feed_runs</code> — feed health per batch</li>
+          <li><code>metric_equations</code> + derivations — lineage of computed values</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="eyebrow">app schema · web-written</p>
+        <ul>
+          <li><code>users</code> — holds <code>subscription_status</code> (Stripe-driven)</li>
+          <li><code>accounts</code> · <code>sessions</code> · <code>verification_token</code> — Auth.js</li>
+          <li><code>watchlists</code>, <code>conversion_events</code>, <code>agency_requests</code></li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Invariants</p>
+        <ul>
+          <li><code>one_current_value</code> — one live row per (agency, metric, period, mode, scope)</li>
+          <li><code>web_reader</code> is SELECT-only on core; staging + audit revoked</li>
+          <li>Restatements chain via <code>restatement_of_id</code>, never overwrite</li>
+          <li>Promotion is the only door into <code>metric_values</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="colophon">TransitIndex · db/migrations 001–022 · 2026-08-14</p>
+  </div>
+</body>
+</html>

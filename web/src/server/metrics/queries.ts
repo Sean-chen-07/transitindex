@@ -1,11 +1,22 @@
 import "server-only";
-import { and, eq, asc, isNull, isNotNull } from "drizzle-orm";
+import { and, eq, asc, inArray, isNull, isNotNull } from "drizzle-orm";
 import { db } from "@/server/db";
-import { metricValues, metrics, modes, reportingPeriods, metricRanks } from "@/db/schema";
+import {
+  agencies,
+  metricValues,
+  metrics,
+  modes,
+  reportingPeriods,
+  metricRanks,
+} from "@/db/schema";
 import { getAgencyBySlug } from "@/server/data/agencies";
 import { getLatestRankedPeriodPerMetric } from "@/server/data/ranks";
 import { FREE_COMPARISON_SET } from "@/server/data/constants";
-import type { RawMetricSeries } from "./transform";
+import {
+  pickDirectoryValues,
+  type RawMetricSeries,
+  type DirectoryValue,
+} from "./transform";
 import type { FleetClassCount } from "./types";
 
 // Mode -> fleet display class (metric-set-build-plan.md Phase 6), mirroring
@@ -20,6 +31,23 @@ const FLEET_CLASS: Record<string, string> = {
   subway: "heavy_rail",
   commuter_rail: "commuter_rail",
 };
+
+// The six metrics the directory card prints a figure for. `fleet_size` is read the same
+// system-wide way as the rest: it has NO per-mode rows in the loaded data (checked
+// 2026-08-05 — 0 rows with mode_id set), so summing a composition would always yield
+// nothing. It is also unranked, so the card shows its figure with no ordinal.
+const CARD_METRIC_CODES = [
+  "ridership",
+  "total_revenue_excluding_subsidy",
+  "on_time_performance",
+  "cost_per_rider",
+  "subsidy_per_rider",
+  "fleet_size",
+];
+
+// The card prints an ANNUAL figure. Restricting the period type here is what keeps this
+// query small — ridership alone has ~134k monthly rows that the card must never pull.
+const ANNUAL_PERIOD_TYPES = ["annual_calendar", "annual_fiscal"];
 
 /**
  * THE ONLY module permitted to read the raw value-bearing table (core.metric_values).
@@ -125,6 +153,44 @@ export async function getRawMetricSeries(slug: string): Promise<RawMetricSeries[
     });
   }
   return out;
+}
+
+/**
+ * Every directory card's figures in ONE constant query — no N+1 across the 657-agency
+ * grid. Returns slug -> the latest annual value per card metric.
+ *
+ * Viewing is free by decision 2026-06-09, so shipping these figures to anonymous users on
+ * the directory is the same posture as the detail page — no gate, no reveal branch.
+ */
+export async function getDirectoryCardValues(): Promise<
+  Record<string, DirectoryValue[]>
+> {
+  const rows = await db
+    .select({
+      slug: agencies.slug,
+      metricCode: metrics.code,
+      serviceScope: metricValues.serviceScope,
+      unit: metricValues.unit,
+      value: metricValues.value,
+      periodLabel: reportingPeriods.label,
+      endDate: reportingPeriods.endDate,
+    })
+    .from(metricValues)
+    .innerJoin(agencies, eq(metricValues.agencyId, agencies.id))
+    .innerJoin(metrics, eq(metricValues.metricId, metrics.id))
+    .innerJoin(reportingPeriods, eq(metricValues.reportingPeriodId, reportingPeriods.id))
+    .where(
+      and(
+        eq(metricValues.isCurrent, true),
+        isNull(metricValues.modeId),
+        inArray(metrics.code, CARD_METRIC_CODES),
+        inArray(reportingPeriods.periodType, ANNUAL_PERIOD_TYPES),
+      ),
+    )
+    .orderBy(asc(reportingPeriods.endDate));
+
+  // drizzle numeric comes back as a string.
+  return pickDirectoryValues(rows.map((r) => ({ ...r, value: Number(r.value) })));
 }
 
 /**

@@ -4,7 +4,6 @@ import {
   RATIO_ROWS,
   SERVICE_FLEET_ROWS,
   OPERATIONS_ROWS,
-  POSITION_ROWS,
   buildDetailModel,
 } from "@/server/metrics/detail-model";
 import type { MetricView, SeriesPoint } from "@/server/metrics/types";
@@ -121,14 +120,14 @@ describe("yoy (like-for-like, neutral direction)", () => {
 describe("financials grid", () => {
   it("a missing year stays null — never 0", () => {
     const model = buildDetailModel([
-      metric("total_revenue_excluding_subsidy", [
+      metric("farebox_revenue", [
         pt("annual_calendar", "2023", "2023-12-31", 900),
         pt("annual_calendar", "2025", "2025-12-31", 1100),
       ]),
       metric("labour_cost", [pt("annual_calendar", "2024", "2024-12-31", 700)]),
     ]);
     expect(model.financials.years.map((y) => y.key)).toEqual([2023, 2024, 2025]);
-    const revenue = model.financials.operations.find((r) => r.code === "total_revenue_excluding_subsidy");
+    const revenue = model.financials.operations.find((r) => r.code === "farebox_revenue");
     const labour = model.financials.operations.find((r) => r.code === "labour_cost");
     expect(revenue?.cells).toEqual([900, null, 1100]);
     expect(labour?.cells).toEqual([null, 700, null]);
@@ -136,32 +135,33 @@ describe("financials grid", () => {
 
   it("hasFiscal flags any contributing fiscal-year point", () => {
     const calendarOnly = buildDetailModel([
-      metric("net_debt", [pt("annual_calendar", "2024", "2024-12-31", 5)]),
+      metric("total_revenue", [pt("annual_calendar", "2024", "2024-12-31", 5)]),
     ]);
     expect(calendarOnly.financials.hasFiscal).toBe(false);
 
     const withFiscal = buildDetailModel([
-      metric("net_debt", [pt("annual_fiscal", "FY2024", "2024-03-31", 5)]),
+      metric("total_revenue", [pt("annual_fiscal", "FY2024", "2024-03-31", 5)]),
     ]);
     expect(withFiscal.financials.hasFiscal).toBe(true);
   });
 
   it("an absent metric still renders its row, all cells null", () => {
     const model = buildDetailModel([
-      metric("total_revenue_excluding_subsidy", [pt("annual_calendar", "2024", "2024-12-31", 900)]),
+      metric("farebox_revenue", [pt("annual_calendar", "2024", "2024-12-31", 900)]),
     ]);
-    expect(model.financials.position).toHaveLength(POSITION_ROWS.length);
-    const netDebt = model.financials.position.find((r) => r.code === "net_debt");
-    expect(netDebt?.cells).toEqual([null]);
+    expect(model.financials.operations).toHaveLength(OPERATIONS_ROWS.length);
+    const amortization = model.financials.operations.find((r) => r.code === "amortization");
+    expect(amortization?.cells).toEqual([null]);
     expect(model.ratios.find((r) => r.code === "average_fare")?.value).toBeNull();
   });
 });
 
-describe("placement (the spec's 32-metric map)", () => {
-  // Hard-coded from docs/design/detail-view-metrics.md §2 — 32 unique codes,
-  // 33 placements (total_revenue_excluding_subsidy is the one deliberate repeat).
-  // fleet_capacity (metric-set-build-plan.md Phase 6) is removed: the fleet
-  // composition is a non-ranked block outside this spec's placement map.
+describe("placement (the spec's metric map)", () => {
+  // Hard-coded from docs/design/detail-view-metrics.md §2 — 27 unique codes, no
+  // repeats. The 2026-08-25 P&L redesign replaced the two-statement Financials tab
+  // with a single P&L (revenue components → total revenue, expense components →
+  // total expenses, surplus, capex memo); the balance-sheet rows left the page
+  // (still collected, still in the CSV download).
   const SPEC_CODES = [
     "ridership",
     "total_revenue_excluding_subsidy",
@@ -177,41 +177,31 @@ describe("placement (the spec's 32-metric map)", () => {
     "fleet_size",
     "fleet_average_age",
     "accessible_fleet_pct",
+    "farebox_revenue",
+    "other_revenue",
+    "subsidy",
+    "total_revenue",
     "labour_cost",
     "energy_fuel_cost",
     "materials_services_cost",
+    "other_operating_expenses",
     "operating_expenses",
-    "subsidy",
+    "amortization",
+    "total_expenses",
+    "annual_surplus_deficit",
     "capital_expenditure",
-    "cash_and_investments",
-    "total_financial_assets",
-    "long_term_debt",
-    "total_liabilities",
-    "net_debt",
-    "tangible_capital_assets",
-    "total_non_financial_assets",
-    "total_assets",
-    "accumulated_surplus",
-    "debt_to_assets",
-    "net_debt_per_capita",
   ];
 
-  it("the union of all sections equals the 31 unique spec codes", () => {
-    expect(SPEC_CODES).toHaveLength(31);
-    expect(new Set(SPEC_CODES).size).toBe(31);
+  it("the union of all sections equals the 27 unique spec codes", () => {
+    expect(SPEC_CODES).toHaveLength(27);
+    expect(new Set(SPEC_CODES).size).toBe(27);
     const placed = [
       ...HERO_SLOTS,
       ...RATIO_ROWS,
       ...SERVICE_FLEET_ROWS,
       ...OPERATIONS_ROWS,
-      ...POSITION_ROWS,
     ].map((d) => d.code);
-    expect(placed).toHaveLength(32); // 31 unique + the deliberate repeat
+    expect(placed).toHaveLength(27);
     expect(new Set(placed)).toEqual(new Set(SPEC_CODES));
-  });
-
-  it("total_revenue_excluding_subsidy appears in BOTH heroes and operations", () => {
-    expect(HERO_SLOTS.some((s) => s.code === "total_revenue_excluding_subsidy")).toBe(true);
-    expect(OPERATIONS_ROWS.some((r) => r.code === "total_revenue_excluding_subsidy")).toBe(true);
   });
 });

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TransitIndex · ingest pipeline</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #eb6c36;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1100px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 840px; display: block; }
+    .cards { display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 1rem; margin-top: 1.5rem; }
+    .card {
+      background: #ffffff;
+      border: 1px solid rgba(45,49,66,0.12);
+      border-radius: 6px;
+      padding: 1.25rem;
+    }
+    .card .eyebrow { margin-bottom: 0.75rem; }
+    .card ul { list-style: none; }
+    .card li {
+      font-size: 0.8rem;
+      color: var(--color-muted);
+      line-height: 1.55;
+      padding-left: 0.85rem;
+      position: relative;
+    }
+    .card li::before { content: "·"; position: absolute; left: 0; color: rgba(45,49,66,0.35); }
+    .card code { font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-ink); }
+    .colophon {
+      margin-top: 2rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(45,49,66,0.10);
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(79,93,117,0.7);
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Data flow · TransitIndex</p>
+    <h1>Ingest pipeline — every number is staged before it is real</h1>
+
+    <svg viewBox="0 0 840 436" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ti-flow-title ti-flow-desc">
+      <title id="ti-flow-title">TransitIndex ingest pipeline</title>
+      <desc id="ti-flow-desc">Data-flow diagram showing open-data feeds and PDF extraction staging values into pending_values, human review approving them, and promotion into metric_values followed by derived rollups and ranks.</desc>
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="11" cy="11" r="0.8" fill="rgba(45,49,66,0.10)"/>
+        </pattern>
+        <marker id="arr-muted"  markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#4f5d75"/></marker>
+        <marker id="arr-accent" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#eb6c36"/></marker>
+        <marker id="arr-link"   markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2e5aa8"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.6"/>
+
+      <!-- Lane tints (lanes 0 and 2) -->
+      <rect x="0" y="36"  width="840" height="80" fill="rgba(45,49,66,0.018)"/>
+      <rect x="0" y="196" width="840" height="80" fill="rgba(45,49,66,0.018)"/>
+
+      <!-- Lane dividers -->
+      <line x1="0" y1="36"  x2="840" y2="36"  stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+      <line x1="0" y1="116" x2="840" y2="116" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+      <line x1="0" y1="196" x2="840" y2="196" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+      <line x1="0" y1="276" x2="840" y2="276" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+      <line x1="0" y1="356" x2="840" y2="356" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+      <!-- Label column border -->
+      <line x1="140" y1="36" x2="140" y2="356" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+
+      <!-- Step header chips -->
+      <rect x="180" y="6" width="32" height="16" rx="8" fill="rgba(45,49,66,0.12)"/>
+      <text x="196" y="17" fill="#2d3142" font-size="8" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">01</text>
+      <text x="196" y="29" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">FETCH</text>
+
+      <rect x="292" y="6" width="32" height="16" rx="8" fill="rgba(45,49,66,0.12)"/>
+      <text x="308" y="17" fill="#2d3142" font-size="8" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">02</text>
+      <text x="308" y="29" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">EXTRACT</text>
+
+      <rect x="404" y="6" width="32" height="16" rx="8" fill="rgba(45,49,66,0.12)"/>
+      <text x="420" y="17" fill="#2d3142" font-size="8" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">03</text>
+      <text x="420" y="29" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">STAGE</text>
+
+      <rect x="516" y="6" width="32" height="16" rx="8" fill="rgba(45,49,66,0.12)"/>
+      <text x="532" y="17" fill="#2d3142" font-size="8" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">04</text>
+      <text x="532" y="29" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">REVIEW</text>
+
+      <rect x="628" y="6" width="32" height="16" rx="8" fill="rgba(235,108,54,0.20)"/>
+      <text x="644" y="17" fill="#eb6c36" font-size="8" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">05</text>
+      <text x="644" y="29" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">PROMOTE</text>
+
+      <rect x="740" y="6" width="32" height="16" rx="8" fill="rgba(45,49,66,0.12)"/>
+      <text x="756" y="17" fill="#2d3142" font-size="8" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">06</text>
+      <text x="756" y="29" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">DERIVE</text>
+
+      <!-- Lane labels -->
+      <text x="70" y="72"  fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">OPEN-DATA</text>
+      <text x="70" y="84"  fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">FEEDS</text>
+      <text x="70" y="152" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">PDF</text>
+      <text x="70" y="164" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">EXTRACTOR</text>
+      <text x="70" y="232" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">HUMAN</text>
+      <text x="70" y="244" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">REVIEWER</text>
+      <text x="70" y="312" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">DATABASE</text>
+      <text x="70" y="324" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">CORE</text>
+
+      <!-- ============ Arrows (before nodes) ============ -->
+      <!-- Fetch feeds -> pending_values (cross-lane, enters top) -->
+      <path d="M 246,76 H 412 Q 420,76 420,84 V 284" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arr-muted)"/>
+      <!-- Catalog PDFs -> LLM extract (same lane) -->
+      <path d="M 246,156 H 258" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arr-muted)"/>
+      <!-- LLM extract -> pending_values -->
+      <path d="M 358,156 H 388 Q 396,156 396,164 V 284" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arr-muted)"/>
+      <!-- pending_values -> Review queue (up into bottom edge) -->
+      <path d="M 470,300 H 524 Q 532,300 532,292 V 268" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arr-muted)"/>
+      <!-- Review queue -> metric_values (focal accent) -->
+      <path d="M 582,236 H 636 Q 644,236 644,244 V 284" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arr-accent)"/>
+      <!-- pending_values -> metric_values (tier-0 auto-approve, dashed trigger) -->
+      <path d="M 470,332 H 594" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr-muted)"/>
+      <!-- metric_values -> Derive + rank -->
+      <path d="M 694,316 H 706" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arr-muted)"/>
+
+      <!-- Focal arrow label -->
+      <rect x="588" y="218" width="52" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="614" y="227" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">APPROVED</text>
+
+      <!-- ============ Nodes ============ -->
+      <!-- FED / 01: Fetch feeds -->
+      <rect x="146" y="44" width="100" height="64" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+      <rect x="150" y="48" width="18" height="10" rx="3" fill="rgba(45,49,66,0.08)"/>
+      <text x="159" y="56" fill="#4f5d75" font-size="6" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FED</text>
+      <text x="196" y="67" fill="#2d3142" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Fetch feeds</text>
+      <text x="196" y="79" fill="#4f5d75" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">statcan · ntd · hsr</text>
+      <text x="196" y="91" fill="#7a8399" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">httpx · socrata csv</text>
+      <rect x="226" y="98" width="16" height="8" rx="3" fill="#5e7a9b"/>
+      <text x="234" y="104" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">DB</text>
+
+      <!-- PDF / 01: Catalog PDFs -->
+      <rect x="146" y="124" width="100" height="64" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+      <rect x="150" y="128" width="18" height="10" rx="3" fill="rgba(45,49,66,0.08)"/>
+      <text x="159" y="136" fill="#4f5d75" font-size="6" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PDF</text>
+      <text x="196" y="147" fill="#2d3142" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Catalog PDFs</text>
+      <text x="196" y="159" fill="#4f5d75" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">core.documents queue</text>
+      <text x="196" y="171" fill="#7a8399" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">catalog.py · storage</text>
+      <rect x="226" y="178" width="16" height="8" rx="3" fill="#9c6b50"/>
+      <text x="234" y="184" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">FL</text>
+
+      <!-- PDF / 02: LLM extract -->
+      <rect x="258" y="124" width="100" height="64" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+      <rect x="262" y="128" width="18" height="10" rx="3" fill="rgba(45,49,66,0.08)"/>
+      <text x="271" y="136" fill="#4f5d75" font-size="6" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PDF</text>
+      <text x="308" y="147" fill="#2d3142" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">LLM extract</text>
+      <text x="308" y="159" fill="#4f5d75" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">chunks + scans → values</text>
+      <text x="308" y="171" fill="#7a8399" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">chunked_hybrid.py</text>
+      <rect x="262" y="178" width="16" height="8" rx="3" fill="#9c6b50"/>
+      <text x="270" y="184" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">FL</text>
+      <rect x="338" y="178" width="16" height="8" rx="3" fill="#5e7a9b"/>
+      <text x="346" y="184" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">DB</text>
+
+      <!-- DB / 03: pending_values -->
+      <rect x="370" y="284" width="100" height="64" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+      <rect x="374" y="288" width="18" height="10" rx="3" fill="rgba(45,49,66,0.08)"/>
+      <text x="383" y="296" fill="#4f5d75" font-size="6" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DB</text>
+      <text x="420" y="307" fill="#2d3142" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">pending_values</text>
+      <text x="420" y="319" fill="#4f5d75" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">validate · flag</text>
+      <text x="420" y="331" fill="#7a8399" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">staging.py</text>
+      <rect x="374" y="338" width="16" height="8" rx="3" fill="#5e7a9b"/>
+      <text x="382" y="344" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">DB</text>
+      <rect x="450" y="338" width="16" height="8" rx="3" fill="#b8915a"/>
+      <text x="458" y="344" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">TB</text>
+
+      <!-- REV / 04: Review queue -->
+      <rect x="482" y="204" width="100" height="64" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+      <rect x="486" y="208" width="18" height="10" rx="3" fill="rgba(45,49,66,0.08)"/>
+      <text x="495" y="216" fill="#4f5d75" font-size="6" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REV</text>
+      <text x="532" y="227" fill="#2d3142" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Review queue</text>
+      <text x="532" y="239" fill="#4f5d75" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">approve · reject · edit</text>
+      <text x="532" y="251" fill="#7a8399" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">console · xlsx workbook</text>
+      <rect x="486" y="258" width="16" height="8" rx="3" fill="#b8915a"/>
+      <text x="494" y="264" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">TB</text>
+      <rect x="566" y="258" width="16" height="8" rx="3" fill="#b8915a"/>
+      <text x="574" y="264" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">TB</text>
+
+      <!-- DB / 05: metric_values (focal) -->
+      <rect x="594" y="284" width="100" height="64" rx="4" fill="rgba(235,108,54,0.07)" stroke="#eb6c36" stroke-width="1.2"/>
+      <rect x="598" y="288" width="18" height="10" rx="3" fill="rgba(235,108,54,0.18)"/>
+      <text x="607" y="296" fill="#eb6c36" font-size="6" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DB</text>
+      <text x="644" y="307" fill="#2d3142" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">metric_values</text>
+      <text x="644" y="319" fill="#4f5d75" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">diff-aware upsert</text>
+      <text x="644" y="331" fill="#7a8399" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">promotion.py · bulk</text>
+      <rect x="598" y="338" width="16" height="8" rx="3" fill="#b8915a"/>
+      <text x="606" y="344" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">TB</text>
+      <rect x="678" y="338" width="16" height="8" rx="3" fill="#b8915a"/>
+      <text x="686" y="344" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">TB</text>
+
+      <!-- DB / 06: Derive + rank -->
+      <rect x="706" y="284" width="100" height="64" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+      <rect x="710" y="288" width="18" height="10" rx="3" fill="rgba(45,49,66,0.08)"/>
+      <text x="719" y="296" fill="#4f5d75" font-size="6" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DB</text>
+      <text x="756" y="307" fill="#2d3142" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Derive + rank</text>
+      <text x="756" y="319" fill="#4f5d75" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">rollups · equations</text>
+      <text x="756" y="331" fill="#7a8399" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">jobs/*.py</text>
+      <rect x="710" y="338" width="16" height="8" rx="3" fill="#b8915a"/>
+      <text x="718" y="344" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">TB</text>
+      <rect x="790" y="338" width="16" height="8" rx="3" fill="#b8915a"/>
+      <text x="798" y="344" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">TB</text>
+
+      <!-- ============ Legend ============ -->
+      <text x="132" y="375" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.14em">STEPS</text>
+      <rect x="152" y="366" width="20" height="12" rx="6" fill="rgba(45,49,66,0.12)"/>
+      <text x="162" y="375" fill="#2d3142" font-size="7" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">01</text>
+      <text x="178" y="375" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace">FETCH</text>
+      <rect x="264" y="366" width="20" height="12" rx="6" fill="rgba(45,49,66,0.12)"/>
+      <text x="274" y="375" fill="#2d3142" font-size="7" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">02</text>
+      <text x="290" y="375" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace">EXTRACT</text>
+      <rect x="376" y="366" width="20" height="12" rx="6" fill="rgba(45,49,66,0.12)"/>
+      <text x="386" y="375" fill="#2d3142" font-size="7" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">03</text>
+      <text x="402" y="375" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace">STAGE</text>
+      <rect x="488" y="366" width="20" height="12" rx="6" fill="rgba(45,49,66,0.12)"/>
+      <text x="498" y="375" fill="#2d3142" font-size="7" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">04</text>
+      <text x="514" y="375" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace">REVIEW</text>
+      <rect x="600" y="366" width="20" height="12" rx="6" fill="rgba(235,108,54,0.20)"/>
+      <text x="610" y="375" fill="#eb6c36" font-size="7" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">05</text>
+      <text x="626" y="375" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace">PROMOTE</text>
+      <rect x="712" y="366" width="20" height="12" rx="6" fill="rgba(45,49,66,0.12)"/>
+      <text x="722" y="375" fill="#2d3142" font-size="7" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">06</text>
+      <text x="738" y="375" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace">DERIVE</text>
+
+      <text x="132" y="396" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.14em">DATA TYPE</text>
+      <rect x="152" y="388" width="16" height="8" rx="3" fill="#5e7a9b"/>
+      <text x="160" y="394" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">DB</text>
+      <text x="174" y="395" fill="#4f5d75" font-size="7" font-family="'Geist', sans-serif">raw dataset</text>
+      <rect x="252" y="388" width="16" height="8" rx="3" fill="#9c6b50"/>
+      <text x="260" y="394" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">FL</text>
+      <text x="274" y="395" fill="#4f5d75" font-size="7" font-family="'Geist', sans-serif">pdf / file</text>
+      <rect x="340" y="388" width="16" height="8" rx="3" fill="#b8915a"/>
+      <text x="348" y="394" fill="#ffffff" font-size="5" font-weight="700" font-family="'Geist Mono', monospace" text-anchor="middle">TB</text>
+      <text x="362" y="395" fill="#4f5d75" font-size="7" font-family="'Geist', sans-serif">db table rows</text>
+      <text x="460" y="395" fill="#7a8399" font-size="6.5" font-family="'Geist Mono', monospace">left chip = input · right chip = output</text>
+
+      <text x="132" y="418" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.14em">FLOW</text>
+      <line x1="152" y1="414" x2="184" y2="414" stroke="#4f5d75" stroke-width="1" marker-end="url(#arr-muted)"/>
+      <text x="192" y="417" fill="#4f5d75" font-size="7" font-family="'Geist', sans-serif">data hand-off</text>
+      <line x1="280" y1="414" x2="312" y2="414" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr-muted)"/>
+      <text x="320" y="417" fill="#4f5d75" font-size="7" font-family="'Geist', sans-serif">auto-approve · tier 0, zero flags</text>
+      <line x1="480" y1="414" x2="512" y2="414" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arr-accent)"/>
+      <text x="520" y="417" fill="#4f5d75" font-size="7" font-family="'Geist', sans-serif">human-approved → promote</text>
+    </svg>
+
+    <div class="cards">
+      <div class="card">
+        <p class="eyebrow">Trust tiers</p>
+        <ul>
+          <li>Tier 0 (StatCan · NTD · Hamilton open data) auto-approves only when validation raises <em>zero</em> flags</li>
+          <li>Tier 2 (PDF extraction) always lands as <code>pending</code> — a human approves every value</li>
+          <li>Every batch writes a <code>feed_runs</code> health row</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Bulk path</p>
+        <ul>
+          <li>One transaction per feed, guarded by <code>pg_advisory_xact_lock</code></li>
+          <li>Diff-aware: absent → insert · changed → supersede · identical → skip</li>
+          <li><code>--reset</code> wipes only that feed's provenance, dry-run first</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Derived layer</p>
+        <ul>
+          <li>Monthly → annual / YTD rollups (<code>period_rollup</code>)</li>
+          <li>Equation solver runs to fixpoint, records lineage</li>
+          <li>Ranks for <code>all</code> + <code>subdivision</code> cohorts; CAD→USD inside the rank job only</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="colophon">TransitIndex · ingest/transitindex_ingest · 2026-08-14</p>
+  </div>
+</body>
+</html>

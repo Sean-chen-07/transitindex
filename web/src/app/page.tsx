@@ -1,19 +1,22 @@
 import { listAllAgencies } from "@/server/data/agencies";
 import { getAllAgencyRanks } from "@/server/data/ranks";
 import { getFeedFreshness } from "@/server/data/freshness";
+import { getDirectoryCardValues } from "@/server/metrics/access";
 import { Directory } from "@/components/directory/directory";
 import { FreshnessBanner } from "@/components/common/states";
 
-// Server-rendered each request (SEO-crawlable HTML, no per-user caching). The payload
-// shipped to the client Directory is rank-only — never a raw number.
+// Server-rendered each request (SEO-crawlable HTML, no per-user caching). Since
+// 2026-08-05 the payload carries FIGURES as well as ordinals — viewing is free by
+// decision, so there is nothing here that an anonymous user may not see.
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  // One flat list of every agency + one batched rank read (ordinals only, safe to
-  // serialize). Both are constant-query — no N+1 across the full directory.
-  const [agencies, ranksBySlug, feeds] = await Promise.all([
+  // One flat list of every agency + batched rank and value reads. All constant-query —
+  // no N+1 across the full directory.
+  const [agencies, ranksBySlug, valuesBySlug, feeds] = await Promise.all([
     listAllAgencies(),
     getAllAgencyRanks(),
+    getDirectoryCardValues(),
     getFeedFreshness(),
   ]);
 
@@ -31,7 +34,11 @@ export default async function HomePage() {
           <FreshnessBanner feeds={feeds} />
         </div>
       </section>
-      <Directory agencies={agencies} ranksBySlug={ranksBySlug} />
+      <Directory
+        agencies={agencies}
+        ranksBySlug={ranksBySlug}
+        valuesBySlug={valuesBySlug}
+      />
     </main>
   );
 }

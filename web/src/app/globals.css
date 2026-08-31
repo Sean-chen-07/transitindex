@@ -18,7 +18,8 @@
   --line: #ece6d9;
   --line-2: #f3eee3;
   --grid: #e7e1d4; /* spreadsheet rules */
-  --coral: #e2725b; /* primary action · paywall/upsell */
+  --coral: #e2725b; /* primary action · paywall/upsell — fills, borders, large type */
+  --coral-ink: #bd4e37; /* SMALL coral TEXT only: --coral is ~3:1 on paper, this is 4.7:1 */
   --coral-soft: #fbe9e3;
   --teal: #3f9d92; /* interactive · "Free" · positive */
   --teal-soft: #e1f0ed;
@@ -26,6 +27,9 @@
   --blue: #7ba7c7; /* commuter-rail */
   --sage: #9dbf8e; /* light-rail */
   --yellow: #e9b850; /* bus-only */
+  /* agency card = paper fare ticket (DESIGN.md components §1) */
+  --paper: #fdfaf2; /* ticket stock — warmer than --card */
+  --paper-line: #cfc6ac; /* perforation dots + dotted field rules */
 }
 
 @layer base {
@@ -42,5 +46,26 @@
   :focus-visible {
     outline: 2px solid var(--teal);
     outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /*
+   * The two ticket textures Tailwind can't express. Both are DECORATIVE: strip them
+   * and the card still reads — the paper colour, route rail and labels carry it.
+   */
+  /* Paper fibre grain. */
+  .ticket-paper {
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      rgba(120, 105, 70, 0.055) 1px,
+      transparent 0
+    );
+    background-size: 4px 4px;
+  }
+  /* Punched perforation running down the stub edge. */
+  .ticket-perf {
+    background-image: radial-gradient(circle, var(--paper-line) 1.1px, transparent 1.2px);
+    background-size: 2px 8px;
   }
 }
